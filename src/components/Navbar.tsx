@@ -96,6 +96,16 @@ function NavbarContent() {
 
           {/* User & Auth Actions */}
           <div className="hidden md:flex items-center space-x-3">
+            {mounted && user?.is_manager && (
+              <Link
+                href="/admin"
+                className="px-3 py-1.5 rounded-full bg-purple-600/20 text-purple-300 border border-purple-500/40 text-xs font-bold hover:bg-purple-600 hover:text-white transition-all flex items-center gap-1.5 shadow-sm"
+              >
+                <Shield className="w-3.5 h-3.5 text-purple-400" />
+                Admin
+              </Link>
+            )}
+
             {mounted && user ? (
               <div className="relative">
                 <button
@@ -159,12 +169,12 @@ function NavbarContent() {
 
                     {user.is_manager && (
                       <Link
-                        href="/manager/dashboard"
+                        href="/admin"
                         onClick={() => setUserDropdownOpen(false)}
-                        className="flex items-center px-4 py-2.5 text-xs text-purple-300 hover:bg-purple-500/10 border-t border-[#2C3960]/60"
+                        className="flex items-center px-4 py-2.5 text-xs text-purple-300 hover:bg-purple-500/10 border-t border-[#2C3960]/60 font-bold"
                       >
-                        <Lock className="w-4 h-4 mr-2.5 text-purple-400" />
-                        Manager Portal
+                        <Shield className="w-4 h-4 mr-2.5 text-purple-400" />
+                        Admin Command Center
                       </Link>
                     )}
 
@@ -201,7 +211,7 @@ function NavbarContent() {
 
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center space-x-2">
-            {user && (
+            {mounted && user && (
               <Link
                 href={`/members/${user.username}`}
                 className="w-8 h-8 rounded-full bg-emerald-700/50 flex items-center justify-center border border-emerald-400/30"
@@ -254,11 +264,11 @@ function NavbarContent() {
                 </Link>
                 {user.is_manager && (
                   <Link
-                    href="/manager/dashboard"
+                    href="/admin"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 text-sm text-purple-400 font-semibold"
+                    className="block px-3 py-2 text-sm text-purple-400 font-bold"
                   >
-                    Manager Portal
+                    Admin Command Center
                   </Link>
                 )}
                 <button

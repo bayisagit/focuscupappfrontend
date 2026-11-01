@@ -212,8 +212,8 @@ export default function Footer() {
             <Link href="/about" className="hover:text-slate-400">
               Fellowship Teams
             </Link>
-            <Link href="/manager/login" className="hover:text-purple-400">
-              Manager Administration
+            <Link href="/admin" className="hover:text-purple-400 font-semibold">
+              Frontend &amp; Backend Admin
             </Link>
           </div>
         </div>
