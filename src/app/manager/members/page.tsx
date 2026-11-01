@@ -34,6 +34,17 @@ export default function ManagerMembersPage() {
     }
   };
 
+  const handleDeleteMember = async (memberId: number, memberName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete member "${memberName}"? This will permanently remove their user account, player registrations, and profile.`)) return;
+    try {
+      const res = await api.manager.deleteMember(memberId);
+      alert(res.message || 'Member deleted permanently.');
+      loadMembers();
+    } catch (err: any) {
+      alert(err.data?.error || err.message || 'Failed to delete member.');
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-screen">
       <div className="mb-6 flex items-center justify-between">
@@ -112,16 +123,25 @@ export default function ManagerMembersPage() {
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => handleToggleSuspend(m.id)}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                          m.is_suspended
-                            ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
-                            : 'bg-rose-500/20 text-rose-300 hover:bg-rose-500 hover:text-white border border-rose-500/30'
-                        }`}
-                      >
-                        {m.is_suspended ? 'Reactivate' : 'Suspend'}
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleToggleSuspend(m.id)}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                            m.is_suspended
+                              ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+                              : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500 hover:text-slate-950 border border-amber-500/30'
+                          }`}
+                        >
+                          {m.is_suspended ? 'Reactivate' : 'Suspend'}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMember(m.id, m.full_name)}
+                          className="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-rose-500/20 text-rose-300 hover:bg-rose-500 hover:text-white border border-rose-500/30"
+                          title="Permanently delete user"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

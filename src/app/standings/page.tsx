@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '@/lib/api';
-import { Trophy, Shield, Info, ArrowUpRight } from 'lucide-react';
+import { Trophy, Info, ArrowUpRight } from 'lucide-react';
+import TeamCrest from '@/components/TeamCrest';
 
 export default function StandingsPage() {
   const [standings, setStandings] = useState<any[]>([]);
@@ -98,12 +99,7 @@ export default function StandingsPage() {
 
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-white shrink-0 shadow"
-                          style={{ backgroundColor: row.color_hex || '#10B981' }}
-                        >
-                          <Shield className="w-4 h-4 text-white" />
-                        </div>
+                        <TeamCrest team={row} size="sm" />
                         <div>
                           <Link
                             href={`/batches/${row.batch_code}`}

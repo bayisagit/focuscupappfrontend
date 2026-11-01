@@ -8,14 +8,18 @@ import MobileNav from "@/components/MobileNav";
 import AastuLogoLoader from "@/components/AastuLogoLoader";
 
 export const metadata: Metadata = {
-  title: "AASTU Focus Fellowship – Focus Football Cup",
+  title: "AASTU Focus Cup Fellowship – Focus Football Cup",
   description:
     "Official tournament and community platform for AASTU Focus Fellowship. Fixtures, live results, league standings, player profiles, and fellowship in Christ.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon-192.png",
-    apple: "/icon-512.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon.png", sizes: "640x640", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
   },
 };
 
@@ -36,6 +40,8 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
       </head>
       <body className="min-h-full flex flex-col bg-[#0B132B] text-slate-100 antialiased selection:bg-emerald-500 selection:text-slate-950">
         <AuthProvider>

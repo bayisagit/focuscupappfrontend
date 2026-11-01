@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { Trophy, Calendar, MapPin, ChevronRight, Shield, Award } from 'lucide-react';
+import { Trophy, Calendar, MapPin, ChevronRight, Award } from 'lucide-react';
+import TeamCrest from '@/components/TeamCrest';
 
 export default function ResultsPage() {
   const [results, setResults] = useState<any[]>([]);
@@ -65,27 +66,17 @@ export default function ResultsPage() {
                     </h3>
                     <p className="text-xs text-slate-400">{match.home_team.nickname}</p>
                   </div>
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white shrink-0"
-                    style={{ backgroundColor: match.home_team.color_hex || '#10B981' }}
-                  >
-                    <Shield className="w-5 h-5 text-white" />
-                  </div>
+                  <TeamCrest team={match.home_team} size="md" />
                 </div>
 
                 <div className="md:col-span-1 text-center py-2 md:py-0">
-                  <div className="inline-block px-5 py-2 rounded-xl bg-[#0B132B] border border-emerald-500/40 text-emerald-400 font-black text-2xl shadow-inner">
+                  <div className="inline-block px-5 py-2 rounded-xl bg-[#0B132B] border border-emerald-500/40 text-emerald-400 font-black text-2xl shadow-inner whitespace-nowrap tabular-nums tracking-wide">
                     {match.home_score} - {match.away_score}
                   </div>
                 </div>
 
                 <div className="md:col-span-3 flex items-center justify-start gap-3 text-left">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white shrink-0"
-                    style={{ backgroundColor: match.away_team.color_hex || '#3B82F6' }}
-                  >
-                    <Shield className="w-5 h-5 text-white" />
-                  </div>
+                  <TeamCrest team={match.away_team} size="md" />
                   <div>
                     <h3 className="text-base sm:text-lg font-bold text-white">
                       {match.away_team.name}

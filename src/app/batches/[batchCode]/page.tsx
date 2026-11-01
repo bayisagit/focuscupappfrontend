@@ -15,6 +15,7 @@ import {
   Flame,
   Award,
 } from 'lucide-react';
+import TeamCrest from '@/components/TeamCrest';
 
 import { Suspense } from 'react';
 
@@ -63,12 +64,7 @@ function BatchDetailContent() {
       >
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center font-black text-white shadow-xl shrink-0"
-              style={{ backgroundColor: team.color_hex }}
-            >
-              <Shield className="w-10 h-10 text-white" />
-            </div>
+            <TeamCrest team={team} size="xl" className="rounded-2xl" />
             <div>
               <span
                 className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-slate-950 inline-block mb-1"

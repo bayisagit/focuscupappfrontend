@@ -199,6 +199,9 @@ export const api = {
     toggleSuspend: (memberId: number) => fetchAPI<any>(`/api/v1/manager/members/${memberId}/suspend/`, {
       method: 'POST'
     }),
+    deleteMember: (memberId: number) => fetchAPI<any>(`/api/v1/manager/members/${memberId}/delete/`, {
+      method: 'DELETE'
+    }),
     getPlayerRegistrations: (status?: string) => {
       const qs = status ? `?status=${status}` : '';
       return fetchAPI<any>(`/api/v1/manager/player-registrations/${qs}`);

@@ -14,11 +14,12 @@ import {
   Clock,
   MapPin,
   Sparkles,
-  Shield,
+  GraduationCap,
   Heart,
   ArrowUpRight,
   Radio,
 } from 'lucide-react';
+import TeamCrest from '@/components/TeamCrest';
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
@@ -181,30 +182,36 @@ export default function HomePage() {
                   </div>
 
                   {/* Scoreboard */}
-                  <div className="grid grid-cols-7 items-center gap-2 py-2">
-                    <div className="col-span-3 text-right">
-                      <p className="text-sm font-bold text-white truncate">
-                        {latestAndNext.latest_result.home_team.name}
-                      </p>
-                      <span className="text-[10px] text-slate-400">
-                        {latestAndNext.latest_result.home_team.nickname || 'Warriors'}
-                      </span>
+                  <div className="flex items-center justify-between gap-3 py-2">
+                    <div className="flex-1 flex items-center justify-end gap-2.5 min-w-0">
+                      <div className="text-right min-w-0">
+                        <p className="text-sm font-bold text-white truncate">
+                          {latestAndNext.latest_result.home_team.name}
+                        </p>
+                        <span className="text-[10px] text-slate-400 truncate block">
+                          {latestAndNext.latest_result.home_team.nickname || 'Warriors'}
+                        </span>
+                      </div>
+                      <TeamCrest team={latestAndNext.latest_result.home_team} size="md" />
                     </div>
 
-                    <div className="col-span-1 text-center">
-                      <div className="px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-black text-lg">
+                    <div className="shrink-0 text-center px-1">
+                      <div className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-black text-base sm:text-lg whitespace-nowrap tabular-nums tracking-wide">
                         {latestAndNext.latest_result.home_score} - {latestAndNext.latest_result.away_score}
                       </div>
-                      <span className="text-[9px] text-slate-400 block mt-1 uppercase font-bold">FT</span>
+                      <span className="text-[9px] text-slate-400 block mt-1 uppercase font-bold tracking-wider">FT</span>
                     </div>
 
-                    <div className="col-span-3 text-left">
-                      <p className="text-sm font-bold text-white truncate">
-                        {latestAndNext.latest_result.away_team.name}
-                      </p>
-                      <span className="text-[10px] text-slate-400">
-                        {latestAndNext.latest_result.away_team.nickname || 'Light Bearers'}
-                      </span>
+                    <div className="flex-1 flex items-center justify-start gap-2.5 min-w-0">
+                      <TeamCrest team={latestAndNext.latest_result.away_team} size="md" />
+                      <div className="text-left min-w-0">
+                        <p className="text-sm font-bold text-white truncate">
+                          {latestAndNext.latest_result.away_team.name}
+                        </p>
+                        <span className="text-[10px] text-slate-400 truncate block">
+                          {latestAndNext.latest_result.away_team.nickname || 'Light Bearers'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -239,11 +246,14 @@ export default function HomePage() {
                   </div>
 
                   <div className="grid grid-cols-7 items-center gap-2 py-2">
-                    <div className="col-span-3 text-right">
-                      <p className="text-sm font-bold text-white truncate">
-                        {latestAndNext.next_upcoming.home_team.name}
-                      </p>
-                      <span className="text-[10px] text-slate-400">Home Batch</span>
+                    <div className="col-span-3 flex items-center justify-end gap-2 text-right">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-white truncate">
+                          {latestAndNext.next_upcoming.home_team.name}
+                        </p>
+                        <span className="text-[10px] text-slate-400">Home Batch</span>
+                      </div>
+                      <TeamCrest team={latestAndNext.next_upcoming.home_team} size="sm" />
                     </div>
 
                     <div className="col-span-1 text-center">
@@ -255,11 +265,14 @@ export default function HomePage() {
                       </span>
                     </div>
 
-                    <div className="col-span-3 text-left">
-                      <p className="text-sm font-bold text-white truncate">
-                        {latestAndNext.next_upcoming.away_team.name}
-                      </p>
-                      <span className="text-[10px] text-slate-400">Away Batch</span>
+                    <div className="col-span-3 flex items-center justify-start gap-2 text-left">
+                      <TeamCrest team={latestAndNext.next_upcoming.away_team} size="sm" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-white truncate">
+                          {latestAndNext.next_upcoming.away_team.name}
+                        </p>
+                        <span className="text-[10px] text-slate-400">Away Batch</span>
+                      </div>
                     </div>
                   </div>
 
@@ -290,8 +303,10 @@ export default function HomePage() {
       <section className="py-14 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
           <div>
-            <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-              <Shield className="w-6 h-6 text-emerald-400" />
+            <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+              <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                <GraduationCap className="w-5 h-5" />
+              </span>
               COMPETING ACADEMIC BATCHES
             </h2>
             <p className="text-xs text-slate-400 mt-1">
@@ -326,12 +341,17 @@ export default function HomePage() {
                 </span>
               </div>
 
-              <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">
-                {batch.name}
-              </h3>
-              <p className="text-xs text-amber-400 font-semibold mb-2">
-                &ldquo;{batch.nickname || batch.motto}&rdquo;
-              </p>
+              <div className="flex items-center gap-3 mb-2">
+                <TeamCrest team={batch} size="sm" />
+                <div className="min-w-0">
+                  <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors truncate">
+                    {batch.name}
+                  </h3>
+                  <p className="text-xs text-amber-400 font-semibold truncate">
+                    &ldquo;{batch.nickname || batch.motto}&rdquo;
+                  </p>
+                </div>
+              </div>
 
               <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4">
                 {batch.description || 'Dedicated to fellowship and competitive sportsmanship.'}
@@ -401,11 +421,8 @@ export default function HomePage() {
                               row.position
                             )}
                           </td>
-                          <td className="py-3.5 px-3 font-bold text-white flex items-center gap-2">
-                            <span
-                              className="w-2.5 h-2.5 rounded-full"
-                              style={{ backgroundColor: row.color_hex }}
-                            />
+                          <td className="py-3.5 px-3 font-bold text-white flex items-center gap-2.5">
+                            <TeamCrest team={row} size="xs" />
                             <Link href={`/batches/${row.batch_code}`} className="hover:text-emerald-400 truncate">
                               {row.name}
                             </Link>

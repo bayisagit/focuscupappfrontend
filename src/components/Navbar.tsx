@@ -11,7 +11,8 @@ import {
   Calendar,
   Award,
   Users,
-  Shield,
+  UserCog,
+  LayoutDashboard,
   Image as ImageIcon,
   Info,
   Menu,
@@ -58,7 +59,8 @@ function NavbarContent() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-[#0B132B]/90 backdrop-blur-md border-b border-[#2C3960]">
+    <>
+      <header className="sticky top-0 z-50 bg-[#0B132B]/90 backdrop-blur-md border-b border-[#2C3960]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
@@ -110,7 +112,7 @@ function NavbarContent() {
                 href="/admin"
                 className="px-3 py-1.5 rounded-full bg-purple-600/20 text-purple-300 border border-purple-500/40 text-xs font-bold hover:bg-purple-600 hover:text-white transition-all flex items-center gap-1.5 shadow-sm"
               >
-                <Shield className="w-3.5 h-3.5 text-purple-400" />
+                <LayoutDashboard className="w-3.5 h-3.5 text-purple-400" />
                 Admin
               </Link>
             )}
@@ -161,7 +163,7 @@ function NavbarContent() {
                       onClick={() => setUserDropdownOpen(false)}
                       className="flex items-center px-4 py-2.5 text-xs text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-400"
                     >
-                      <Shield className="w-4 h-4 mr-2.5 text-slate-400" />
+                      <UserCog className="w-4 h-4 mr-2.5 text-slate-400" />
                       Edit Profile & Jersey
                     </Link>
 
@@ -182,7 +184,7 @@ function NavbarContent() {
                         onClick={() => setUserDropdownOpen(false)}
                         className="flex items-center px-4 py-2.5 text-xs text-purple-300 hover:bg-purple-500/10 border-t border-[#2C3960]/60 font-bold"
                       >
-                        <Shield className="w-4 h-4 mr-2.5 text-purple-400" />
+                        <LayoutDashboard className="w-4 h-4 mr-2.5 text-purple-400" />
                         Admin Command Center
                       </Link>
                     )}
@@ -328,42 +330,50 @@ function NavbarContent() {
         </div>
       )}
 
-      {/* Sign Out Confirmation Modal */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="card-gloss max-w-sm w-full p-6 rounded-3xl border border-rose-500/30 shadow-2xl relative space-y-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mx-auto">
-              <LogOut className="w-6 h-6" />
-            </div>
-            <div className="text-center space-y-2">
-              <h3 className="text-lg font-bold text-white">Sign Out Confirmation</h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Are you sure you want to log out? Any unsaved edits will be lost, and you will need to sign back in with your credentials.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowLogoutConfirm(false)}
-                className="py-2.5 px-4 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800/80 hover:bg-slate-700 hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowLogoutConfirm(false);
-                  logout();
-                }}
-                className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 shadow-lg shadow-rose-600/30 transition-all hover:scale-[1.02]"
-              >
-                Yes, Sign Out
-              </button>
-            </div>
+    </header>
+
+    {/* Sign Out Confirmation Modal - Rendered outside header to center perfectly in viewport */}
+    {showLogoutConfirm && (
+      <div
+        className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4"
+        onClick={() => setShowLogoutConfirm(false)}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="card-gloss max-w-sm w-full p-6 sm:p-7 rounded-3xl border border-rose-500/30 shadow-2xl relative space-y-4 animate-in fade-in zoom-in-95 duration-200 m-auto"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mx-auto">
+            <LogOut className="w-6 h-6" />
+          </div>
+          <div className="text-center space-y-2">
+            <h3 className="text-lg font-bold text-white">Sign Out Confirmation</h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Are you sure you want to log out? Any unsaved edits will be lost, and you will need to sign back in with your credentials.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowLogoutConfirm(false)}
+              className="py-2.5 px-4 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800/80 hover:bg-slate-700 hover:text-white transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowLogoutConfirm(false);
+                logout();
+              }}
+              className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 shadow-lg shadow-rose-600/30 transition-all hover:scale-[1.02] cursor-pointer"
+            >
+              Yes, Sign Out
+            </button>
           </div>
         </div>
-      )}
-    </header>
+      </div>
+    )}
+  </>
   );
 }
 

@@ -9,7 +9,6 @@ import {
   Search,
   Filter,
   Heart,
-  Shield,
   Trophy,
   Check,
   ChevronDown,

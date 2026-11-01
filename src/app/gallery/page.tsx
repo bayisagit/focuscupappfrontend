@@ -3,7 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { Image as ImageIcon, Upload, Camera, Plus, X } from 'lucide-react';
+import {
+  Image as ImageIcon,
+  Camera,
+  Plus,
+  X,
+  History,
+  Maximize2,
+  Trophy,
+  Heart,
+  Sparkles,
+} from 'lucide-react';
+import { FORMER_GALLERY_PHOTOS, FormerPhoto } from '@/data/formerGallery';
+import FormerPhotoItem from '@/components/FormerPhotoItem';
+import GalleryLightbox from '@/components/GalleryLightbox';
 
 export default function GalleryPage() {
   const { user } = useAuth();
@@ -21,6 +34,12 @@ export default function GalleryPage() {
     can_upload: true,
     remaining: 3,
   });
+
+  // Former Gallery State (dynamically supports photo-16, photo-17, etc.)
+  const [formerPhotos, setFormerPhotos] = useState<FormerPhoto[]>(FORMER_GALLERY_PHOTOS);
+  const [formerCategory, setFormerCategory] = useState<string>('All');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentFormerIndex, setCurrentFormerIndex] = useState(0);
 
   const loadQuota = () => {
     if (user) {
@@ -53,6 +72,18 @@ export default function GalleryPage() {
     }
   }, [user]);
 
+  // Dynamically fetch all former gallery photos (detects photo-16, photo-17, etc.)
+  useEffect(() => {
+    fetch('/api/former-gallery')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.photos) && data.photos.length > 0) {
+          setFormerPhotos(data.photos);
+        }
+      })
+      .catch((err) => console.error('Failed to load former photos from API', err));
+  }, []);
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quota.can_upload) {
@@ -84,15 +115,24 @@ export default function GalleryPage() {
     }
   };
 
+  const currentAlbumData = albums.find((a) => a.id === selectedAlbum) || albums[0];
+
+  const filteredFormerPhotos = formerCategory === 'All'
+    ? formerPhotos
+    : formerPhotos.filter((p) => p.category === formerCategory);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-screen">
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-[#2C3960]/60 pb-6">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-2">
-            <Camera className="w-8 h-8 text-emerald-400" />
+          <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+            <span className="p-2 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+              <Camera className="w-7 h-7" />
+            </span>
             FELLOWSHIP &amp; MATCH GALLERY
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-400 mt-2">
             Capturing memories, match action, prayers, and fellowship in Christ
           </p>
         </div>
@@ -114,7 +154,7 @@ export default function GalleryPage() {
             )}
             <button
               onClick={() => setUploadModalOpen(true)}
-              className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all"
+              className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" /> Share Match Photo
             </button>
@@ -122,67 +162,166 @@ export default function GalleryPage() {
         )}
       </div>
 
-      {/* Albums & Photos */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-64 rounded-2xl bg-[#1C2541]/40 animate-pulse" />
-          ))}
-        </div>
-      ) : albums.length > 0 ? (
-        <div className="space-y-12">
-          {albums.map((album) => (
-            <div key={album.id} className="space-y-4">
-              <div className="border-b border-[#2C3960]/40 pb-2">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-amber-400" />
-                  {album.title}
+      {/* 2-Column Responsive Layout: Left = Current Active Tournament Photos; Right = Former Focus Cup Fellowship Gallery */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column (Current Focus Cup Gallery) */}
+        <div className="lg:col-span-7 xl:col-span-7 space-y-6">
+          <div className="card-gloss p-6 sm:p-7 rounded-3xl border border-[#2C3960]/80 shadow-2xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-6 border-b border-[#2C3960]/60">
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    Current Active Tournament
+                  </span>
+                  <span className="text-xs text-slate-400 font-semibold">Semester Highlights</span>
+                </div>
+                <h2 className="text-xl font-black text-white flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-emerald-400" />
+                  {currentAlbumData?.title || 'Focus Cup Opening Match Highlights'}
                 </h2>
-                {album.description && (
-                  <p className="text-xs text-slate-400 mt-0.5">{album.description}</p>
-                )}
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  {currentAlbumData?.description || 'Joyful moments, prayers, and competitive action from our opening match fixtures.'}
+                </p>
               </div>
 
-              {album.photos && album.photos.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {album.photos.map((photo: any) => (
-                    <div
-                      key={photo.id}
-                      className="card-gloss rounded-2xl overflow-hidden group relative aspect-square"
+              {albums.length > 1 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {albums.map((alb) => (
+                    <button
+                      key={alb.id}
+                      onClick={() => setSelectedAlbum(alb.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        selectedAlbum === alb.id
+                          ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                          : 'bg-[#161D36] text-slate-300 hover:text-white border border-[#2C3960]'
+                      }`}
                     >
-                      <img
-                        src={photo.image}
-                        alt={photo.caption || 'Match moment'}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
-                        {photo.caption && (
-                          <p className="text-xs font-semibold text-white truncate">{photo.caption}</p>
-                        )}
-                        <p className="text-[10px] text-emerald-400 font-medium">
-                          Photo by {photo.uploaded_by_name}
-                        </p>
-                      </div>
-                    </div>
+                      {alb.title}
+                    </button>
                   ))}
-                </div>
-              ) : (
-                <div className="card-gloss p-8 rounded-2xl text-center text-slate-400 text-xs">
-                  No photographs uploaded for this album yet.
                 </div>
               )}
             </div>
-          ))}
+
+            {/* Current Photos Grid */}
+            {loading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="aspect-square rounded-2xl bg-[#1C2541]/40 animate-pulse" />
+                ))}
+              </div>
+            ) : currentAlbumData && currentAlbumData.photos && currentAlbumData.photos.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {currentAlbumData.photos.map((photo: any) => (
+                  <div
+                    key={photo.id}
+                    className="card-gloss rounded-2xl overflow-hidden group relative aspect-square border border-[#2C3960]"
+                  >
+                    <img
+                      src={photo.image}
+                      alt={photo.caption || 'Match moment'}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
+                      {photo.caption && (
+                        <p className="text-xs font-semibold text-white truncate">{photo.caption}</p>
+                      )}
+                      <p className="text-[10px] text-emerald-400 font-medium">
+                        Photo by {photo.uploaded_by_name}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="card-gloss p-8 rounded-2xl text-center space-y-3 border border-dashed border-[#2C3960]">
+                <Camera className="w-10 h-10 text-slate-500 mx-auto" />
+                <h3 className="text-sm font-bold text-white">Opening Match Gallery Uploads</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                  Photographs from opening match fixtures are being curated by fellowship media members. Fellowship members can also share match photographs using the &ldquo;Share Match Photo&rdquo; button above!
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      ) : (
-        <div className="text-center py-20 card-gloss rounded-2xl">
-          <ImageIcon className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-white">No gallery albums available</h3>
-          <p className="text-xs text-slate-400 mt-1">
-            Match and tournament photos will be uploaded by fellowship media members.
-          </p>
+
+        {/* Right Column: Former Focus Cup Fellowship Gallery */}
+        <div className="lg:col-span-5 xl:col-span-5 space-y-6">
+          <div className="card-gloss p-6 sm:p-7 rounded-3xl border border-amber-500/30 shadow-2xl relative overflow-hidden bg-gradient-to-b from-[#1C2541]/90 to-[#0B1120]/90">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 inline-flex items-center gap-1 mb-1.5">
+                  <History className="w-3 h-3" /> Historical Heritage
+                </span>
+                <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                  Former Focus Cup Gallery
+                </h2>
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  Memories of previous games, match action &amp; championship fellowship in Christ.
+                </p>
+              </div>
+              <span className="shrink-0 px-2.5 py-1 rounded-xl bg-amber-500 text-slate-950 text-xs font-black shadow-md shadow-amber-500/20">
+                {formerPhotos.length} Photos
+              </span>
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-4 scrollbar-thin">
+              {['All', 'Match Action', 'Fellowship & Prayer', 'Celebration & Trophy', 'Batch Squads'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setFormerCategory(cat)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                    formerCategory === cat
+                      ? 'bg-amber-400 text-slate-950 shadow-sm shadow-amber-400/30'
+                      : 'bg-[#161D36] text-slate-400 hover:text-white border border-[#2C3960]'
+                  }`}
+                >
+                  {cat === 'All' ? `All (${formerPhotos.length})` : cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Interactive Grid of Former Photos */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {filteredFormerPhotos.map((photo, index) => {
+                const globalIndex = formerPhotos.findIndex((p) => p.id === photo.id);
+                return (
+                  <FormerPhotoItem
+                    key={photo.id}
+                    photo={photo}
+                    onClick={() => {
+                      setCurrentFormerIndex(globalIndex >= 0 ? globalIndex : index);
+                      setLightboxOpen(true);
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Open Fullscreen Lightbox Button */}
+            <button
+              onClick={() => {
+                setCurrentFormerIndex(0);
+                setLightboxOpen(true);
+              }}
+              className="mt-5 w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Maximize2 className="w-4 h-4" /> Open Fullscreen Lightbox ({formerPhotos.length} Photos)
+            </button>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Lightbox Modal (Supports any number of photos: 15, 16, 20+) */}
+      <GalleryLightbox
+        photos={formerPhotos}
+        currentIndex={currentFormerIndex}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        onSelectIndex={(idx) => setCurrentFormerIndex(idx)}
+      />
 
       {/* Upload Photo Modal */}
       {uploadModalOpen && (
@@ -190,7 +329,7 @@ export default function GalleryPage() {
           <div className="card-gloss max-w-md w-full p-6 rounded-3xl border border-[#2C3960] relative">
             <button
               onClick={() => setUploadModalOpen(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-white"
+              className="absolute right-4 top-4 text-slate-400 hover:text-white cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -259,14 +398,14 @@ export default function GalleryPage() {
                 <button
                   type="button"
                   onClick={() => setUploadModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 cursor-pointer"
                 >
                   Close
                 </button>
                 <button
                   type="submit"
                   disabled={uploading || !quota.can_upload}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {uploading
                     ? 'Uploading...'

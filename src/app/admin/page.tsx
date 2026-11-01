@@ -7,7 +7,9 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import {
   Trophy,
-  Shield,
+  ShieldCheck,
+  BarChart3,
+  GraduationCap,
   Users,
   Calendar,
   FileText,
@@ -31,8 +33,32 @@ import {
   ChevronLeft,
   Menu,
   X,
-  Plus,
 } from 'lucide-react';
+
+const isPlayerInBatchTeam = (player: any, team: any) => {
+  if (!player || !team) return false;
+  const teamBatchCode = String(team.batch_code || team.code || '').trim();
+  const teamName = String(team.name || '').toLowerCase().trim();
+
+  if (player.competing_batch && teamBatchCode && player.competing_batch === teamBatchCode) {
+    return true;
+  }
+  if (player.batch_code && teamBatchCode && player.batch_code === teamBatchCode) {
+    return true;
+  }
+  if (player.batch && teamName && (teamName.includes(player.batch.toLowerCase()) || player.batch.toLowerCase().includes(teamName))) {
+    return true;
+  }
+  if (player.academic_year && teamName && teamName.includes(player.academic_year.toLowerCase())) {
+    return true;
+  }
+  const matchTeamDigit = teamBatchCode.match(/\d/)?.[0] || teamName.match(/\d/)?.[0];
+  const matchPlayerDigit = (player.competing_batch || player.batch_code || player.batch || player.academic_year || '').match(/\d/)?.[0];
+  if (matchTeamDigit && matchPlayerDigit && matchTeamDigit === matchPlayerDigit) {
+    return true;
+  }
+  return false;
+};
 
 export default function FrontendAdminPage() {
   const { user, login } = useAuth();
@@ -86,6 +112,7 @@ export default function FrontendAdminPage() {
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const [eventData, setEventData] = useState({
     event_type: 'GOAL',
+    team_id: '',
     player_id: '',
     related_player_id: '',
     minute: 45,
@@ -128,10 +155,6 @@ export default function FrontendAdminPage() {
   // Audit Logs State
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
-  // Generator State
-  const [genLoading, setGenLoading] = useState(false);
-  const [genMessage, setGenMessage] = useState('');
-
   // Load Initial Admin Data
   const loadDashboard = () => {
     setDashLoading(true);
@@ -145,33 +168,70 @@ export default function FrontendAdminPage() {
     setMatchLoading(true);
     api.matches.list()
       .then((res: any) => {
-        setMatches(res);
-        if (res.length > 0 && !selectedMatch) {
-          setSelectedMatch(res[0]);
-          setHomeScore(res[0].home_score);
-          setAwayScore(res[0].away_score);
+        const list = Array.isArray(res) ? res : res?.results || [];
+        setMatches(list);
+        if (list.length > 0) {
+          setSelectedMatch((prev: any) => {
+            if (prev) {
+              const found = list.find((m: any) => m.id === prev.id);
+              if (found) return found;
+            }
+            setHomeScore(list[0].home_score);
+            setAwayScore(list[0].away_score);
+            return list[0];
+          });
         }
       })
-      .catch((err: any) => console.error(err))
+      .catch((err: any) => {
+        console.error(err);
+        setMatches([]);
+      })
       .finally(() => setMatchLoading(false));
   };
 
   const loadPendingPlayers = () => {
     api.manager.getPlayerRegistrations('PENDING')
-      .then((res: any) => setPendingPlayers(res))
-      .catch((err: any) => console.error(err));
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.results || [];
+        setPendingPlayers(list);
+      })
+      .catch((err: any) => {
+        console.error(err);
+        setPendingPlayers([]);
+      });
   };
 
-  const loadMembers = () => {
-    api.manager.getMembers(memberSearch, memberBatchFilter)
-      .then((res: any) => setMembersList(res))
-      .catch((err: any) => console.error(err));
+  const loadMembers = (overrideBatch?: string, overrideSearch?: string) => {
+    const batch = typeof overrideBatch === 'string' ? overrideBatch : memberBatchFilter;
+    const search = typeof overrideSearch === 'string' ? overrideSearch : memberSearch;
+    api.manager.getMembers(search, batch)
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.results || [];
+        setMembersList(list);
+      })
+      .catch((err: any) => {
+        console.error(err);
+        setMembersList([]);
+      });
+  };
+
+  const handleBatchClick = (rawBatch: string) => {
+    const clean = String(rawBatch || '').replace('_', ' ').trim();
+    setMemberBatchFilter(clean);
+    loadMembers(clean, memberSearch);
+    setActiveTab('members');
   };
 
   const loadAuditLogs = () => {
     api.manager.getAuditLogs()
-      .then((res: any) => setAuditLogs(res))
-      .catch((err: any) => console.error(err));
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.results || [];
+        setAuditLogs(list);
+      })
+      .catch((err: any) => {
+        console.error(err);
+        setAuditLogs([]);
+      });
   };
 
   const loadSettings = () => {
@@ -251,20 +311,73 @@ export default function FrontendAdminPage() {
     }
   };
 
+  const handleSelectMatch = (m: any) => {
+    setSelectedMatch(m);
+    setHomeScore(m.home_score);
+    setAwayScore(m.away_score);
+    setEventData((prev) => ({
+      ...prev,
+      team_id: String(m.home_team.id),
+      player_id: '',
+      related_player_id: '',
+    }));
+    api.matches.getDetail(m.id).then((detailed: any) => {
+      if (detailed) {
+        setSelectedMatch(detailed);
+        setHomeScore(detailed.home_score);
+        setAwayScore(detailed.away_score);
+      }
+    }).catch((err) => console.error(err));
+  };
+
   const handleAddEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMatch) return;
+    const teamIdToUse = eventData.team_id || String(selectedMatch.home_team.id);
+
     try {
-      await api.manager.addMatchEvent(selectedMatch.id, {
-        ...eventData,
+      const res = await api.manager.addMatchEvent(selectedMatch.id, {
+        event_type: eventData.event_type,
+        team_id: Number(teamIdToUse),
         player_id: eventData.player_id ? Number(eventData.player_id) : null,
         related_player_id: eventData.related_player_id ? Number(eventData.related_player_id) : null,
+        minute: Number(eventData.minute) || 1,
+        description: eventData.description,
       });
-      alert('Match incident recorded successfully!');
+      alert(res.message || 'Match incident recorded successfully!');
+      setEventData((prev) => ({
+        ...prev,
+        player_id: '',
+        related_player_id: '',
+        description: '',
+      }));
       loadMatches();
-      api.matches.getDetail(selectedMatch.id).then((m: any) => setSelectedMatch(m));
+      loadDashboard();
+      api.matches.getDetail(selectedMatch.id).then((detailed: any) => {
+        setSelectedMatch(detailed);
+        setHomeScore(detailed.home_score);
+        setAwayScore(detailed.away_score);
+      });
     } catch (err: any) {
       alert(err.data?.error || 'Failed to add match event.');
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: number) => {
+    if (!selectedMatch) return;
+    if (!confirm('Are you sure you want to delete this recorded incident? If it was a goal, the official match score will automatically be rolled back.')) return;
+    try {
+      const res = await api.manager.deleteMatchEvent(selectedMatch.id, eventId);
+      alert(res.message || 'Event deleted successfully.');
+      loadMatches();
+      loadDashboard();
+      api.matches.getDetail(selectedMatch.id).then((detailed: any) => {
+        setSelectedMatch(detailed);
+        setHomeScore(detailed.home_score);
+        setAwayScore(detailed.away_score);
+      });
+    } catch (err: any) {
+      alert(err.data?.error || 'Failed to delete event.');
     }
   };
 
@@ -285,31 +398,31 @@ export default function FrontendAdminPage() {
     }
   };
 
-  // Member Suspend
+  // Member Suspend & Management
   const handleToggleSuspend = async (memberId: number) => {
     try {
       const res = await api.manager.toggleSuspend(memberId);
       alert(res.message);
-      loadMembers();
+      loadMembers(memberBatchFilter, memberSearch);
+      loadAuditLogs();
     } catch (err: any) {
       alert(err.data?.error || 'Failed to change suspension status.');
     }
   };
 
-  // Generate Fixtures
-  const handleGenerateFixtures = async () => {
-    if (!confirm('Auto-generate single round-robin fixtures for all competing batches in the active season?')) return;
-    setGenLoading(true);
-    setGenMessage('');
+  // Member Permanent Delete
+  const handleDeleteMember = async (memberId: number, memberName: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete member "${memberName}"? This will permanently remove their user account, player registrations, and profile. This action cannot be undone.`)) {
+      return;
+    }
     try {
-      const res = await api.manager.generateFixtures();
-      setGenMessage(res.message);
-      loadMatches();
+      const res = await api.manager.deleteMember(memberId);
+      alert(res.message || 'Member deleted permanently.');
+      loadMembers(memberBatchFilter, memberSearch);
       loadDashboard();
+      loadAuditLogs();
     } catch (err: any) {
-      setGenMessage(err.data?.error || 'Failed to generate fixtures.');
-    } finally {
-      setGenLoading(false);
+      alert(err.data?.error || err.message || 'Failed to delete member.');
     }
   };
 
@@ -568,23 +681,12 @@ export default function FrontendAdminPage() {
                   {!sidebarCollapsed && <span>Create Custom Fixture</span>}
                 </button>
 
-                <button
-                  onClick={handleGenerateFixtures}
-                  disabled={genLoading}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-[#161D36] transition-all cursor-pointer"
-                  title="Auto-Generate Round-Robin"
-                >
-                  <RefreshCw className={`w-4 h-4 text-blue-400 shrink-0 ${genLoading ? 'animate-spin' : ''}`} />
-                  {!sidebarCollapsed && <span>Auto-Gen Fixtures</span>}
-                </button>
-
                 <Link
                   href="/fixtures"
-                  target="_blank"
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-emerald-400 hover:bg-[#161D36] transition-all"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-[#161D36] transition-all"
                   title="Public Fixtures Page"
                 >
-                  <ExternalLink className="w-4 h-4 shrink-0" />
+                  <Calendar className="w-4 h-4 text-emerald-400 shrink-0" />
                   {!sidebarCollapsed && <span>Public Fixtures</span>}
                 </Link>
               </div>
@@ -638,7 +740,7 @@ export default function FrontendAdminPage() {
                   }`}
                   title="Member Directory"
                 >
-                  <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <Users className="w-4 h-4 text-emerald-400 shrink-0" />
                   {!sidebarCollapsed && <span>Member Directory</span>}
                 </button>
 
@@ -663,7 +765,7 @@ export default function FrontendAdminPage() {
                 className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider hover:text-slate-200 cursor-pointer"
               >
                 <span className="flex items-center gap-2">
-                  <Shield className="w-3.5 h-3.5 text-purple-400" /> Governance
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-400" /> Governance
                 </span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${governanceOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -783,25 +885,11 @@ export default function FrontendAdminPage() {
               <PlusCircle className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">New Fixture</span>
             </button>
-            <button
-              onClick={handleGenerateFixtures}
-              disabled={genLoading}
-              className="px-3 py-1.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${genLoading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Auto-Gen</span>
-            </button>
           </div>
         </header>
 
         {/* Tab Body */}
         <div className="p-4 sm:p-6 lg:p-8 flex-1">
-          {genMessage && (
-            <div className="mb-6 p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>{genMessage}</span>
-            </div>
-          )}
 
       {/* ========================================================================= */}
       {/* TAB 1: OVERVIEW & KPIS */}
@@ -814,27 +902,74 @@ export default function FrontendAdminPage() {
             <>
               {/* Stat Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                <div className="card-gloss p-5 sm:p-6 rounded-2xl border border-purple-500/20">
-                  <span className="text-xs text-slate-400 font-medium">Registered Fellowship Members</span>
-                  <p className="text-3xl sm:text-4xl font-black text-white mt-2">{kpis?.total_members || 0}</p>
-                  <p className="text-[11px] text-purple-400 mt-2 font-semibold">Across all AASTU colleges</p>
+                <div
+                  onClick={() => {
+                    setMemberBatchFilter('');
+                    loadMembers('', '');
+                    setActiveTab('members');
+                  }}
+                  className="card-gloss p-5 sm:p-6 rounded-2xl border border-purple-500/20 hover:border-purple-500/80 hover:bg-[#1C2541] transition-all cursor-pointer group shadow-lg"
+                  title="Click to view Member Directory"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-medium group-hover:text-purple-300 transition-colors">Registered Fellowship Members</span>
+                    <span className="text-[10px] text-purple-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                      View &rarr;
+                    </span>
+                  </div>
+                  <p className="text-3xl sm:text-4xl font-black text-white mt-2 group-hover:text-purple-300 transition-colors">{kpis?.total_members || 0}</p>
+                  <p className="text-[11px] text-purple-400 mt-2 font-semibold">Across all AASTU colleges &bull; Click to open directory</p>
                 </div>
-                <div className="card-gloss p-5 sm:p-6 rounded-2xl border border-emerald-500/20">
-                  <span className="text-xs text-slate-400 font-medium">Approved Tournament Players</span>
+
+                <div
+                  onClick={() => setActiveTab('players')}
+                  className="card-gloss p-5 sm:p-6 rounded-2xl border border-emerald-500/20 hover:border-emerald-500/80 hover:bg-[#1C2541] transition-all cursor-pointer group shadow-lg"
+                  title="Click to view Player Rosters & Review Applications"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-medium group-hover:text-emerald-300 transition-colors">Approved Tournament Players</span>
+                    <span className="text-[10px] text-emerald-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                      Review &rarr;
+                    </span>
+                  </div>
                   <p className="text-3xl sm:text-4xl font-black text-emerald-400 mt-2">{kpis?.approved_players || 0}</p>
-                  <p className="text-[11px] text-slate-400 mt-2">{pendingPlayers.length} pending review</p>
+                  <p className="text-[11px] text-slate-400 mt-2">
+                    <span className="text-amber-400 font-semibold">{pendingPlayers.length} pending review</span> &bull; Click to manage
+                  </p>
                 </div>
-                <div className="card-gloss p-5 sm:p-6 rounded-2xl border border-amber-500/20">
-                  <span className="text-xs text-slate-400 font-medium">Tournament Matches</span>
+
+                <div
+                  onClick={() => setActiveTab('matches')}
+                  className="card-gloss p-5 sm:p-6 rounded-2xl border border-amber-500/20 hover:border-amber-500/80 hover:bg-[#1C2541] transition-all cursor-pointer group shadow-lg"
+                  title="Click to manage Fixtures & Live Match Events"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-medium group-hover:text-amber-300 transition-colors">Tournament Matches</span>
+                    <span className="text-[10px] text-amber-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                      Scores &rarr;
+                    </span>
+                  </div>
                   <p className="text-3xl sm:text-4xl font-black text-amber-400 mt-2">
                     {kpis?.completed_matches || 0} / {kpis?.total_matches || 0}
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-2">{kpis?.upcoming_matches || 0} scheduled</p>
+                  <p className="text-[11px] text-slate-400 mt-2">
+                    <span className="text-emerald-400 font-semibold">{kpis?.upcoming_matches || 0} scheduled</span> &bull; Click to record scores
+                  </p>
                 </div>
-                <div className="card-gloss p-5 sm:p-6 rounded-2xl border border-blue-500/20">
-                  <span className="text-xs text-slate-400 font-medium">Official Tournament Goals</span>
+
+                <div
+                  onClick={() => setActiveTab('matches')}
+                  className="card-gloss p-5 sm:p-6 rounded-2xl border border-blue-500/20 hover:border-blue-500/80 hover:bg-[#1C2541] transition-all cursor-pointer group shadow-lg"
+                  title="Click to view and manage Goal Events"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-medium group-hover:text-blue-300 transition-colors">Official Tournament Goals</span>
+                    <span className="text-[10px] text-blue-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                      Events &rarr;
+                    </span>
+                  </div>
                   <p className="text-3xl sm:text-4xl font-black text-blue-400 mt-2">{kpis?.total_goals || 0}</p>
-                  <p className="text-[11px] text-slate-400 mt-2">Excludes own goals</p>
+                  <p className="text-[11px] text-slate-400 mt-2">Excludes own goals &bull; Click to manage events</p>
                 </div>
               </div>
 
@@ -842,24 +977,40 @@ export default function FrontendAdminPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="card-gloss p-6 rounded-2xl">
                   <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-emerald-400" />
+                    <BarChart3 className="w-4 h-4 text-emerald-400" />
                     Member Registration Distribution by Batch
                   </h3>
                   <div className="space-y-3">
                     {Array.isArray(members_by_batch) ? (
                       members_by_batch.map((b: any, idx: number) => (
-                        <div key={b.batch || idx} className="flex items-center justify-between p-3 rounded-xl bg-[#161D36] border border-[#2C3960]">
-                          <span className="text-xs font-semibold text-slate-300">{String(b.batch || 'Batch').replace('_', ' ')}</span>
-                          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <div
+                          key={b.batch || idx}
+                          onClick={() => handleBatchClick(b.batch || '')}
+                          className="flex items-center justify-between p-3.5 rounded-xl bg-[#161D36] border border-[#2C3960] hover:border-emerald-500/60 hover:bg-[#1E294B] transition-all cursor-pointer group"
+                          title={`Click to view ${String(b.batch || 'Batch').replace('_', ' ')} members in directory`}
+                        >
+                          <span className="text-xs font-semibold text-slate-300 group-hover:text-white transition-colors flex items-center gap-2">
+                            <span>{String(b.batch || 'Batch').replace('_', ' ')}</span>
+                            <span className="text-[10px] text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">View Members &rarr;</span>
+                          </span>
+                          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/40">
                             {b.count} members
                           </span>
                         </div>
                       ))
                     ) : members_by_batch && typeof members_by_batch === 'object' ? (
                       Object.entries(members_by_batch).map(([batch, count]: any) => (
-                        <div key={batch} className="flex items-center justify-between p-3 rounded-xl bg-[#161D36] border border-[#2C3960]">
-                          <span className="text-xs font-semibold text-slate-300">{batch.replace('_', ' ')}</span>
-                          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <div
+                          key={batch}
+                          onClick={() => handleBatchClick(batch)}
+                          className="flex items-center justify-between p-3.5 rounded-xl bg-[#161D36] border border-[#2C3960] hover:border-emerald-500/60 hover:bg-[#1E294B] transition-all cursor-pointer group"
+                          title={`Click to view ${batch.replace('_', ' ')} members in directory`}
+                        >
+                          <span className="text-xs font-semibold text-slate-300 group-hover:text-white transition-colors flex items-center gap-2">
+                            <span>{batch.replace('_', ' ')}</span>
+                            <span className="text-[10px] text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">View Members &rarr;</span>
+                          </span>
+                          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/40">
                             {typeof count === 'object' && count !== null ? count.count : count} members
                           </span>
                         </div>
@@ -882,31 +1033,31 @@ export default function FrontendAdminPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => setActiveTab('matches')}
-                        className="p-3.5 rounded-xl bg-[#161D36] border border-[#2C3960] hover:border-emerald-500 text-left transition-all cursor-pointer"
+                        className="p-3.5 rounded-xl bg-[#161D36] border border-[#2C3960] hover:border-emerald-500 hover:bg-[#1E294B] text-left transition-all cursor-pointer group"
                       >
-                        <p className="text-xs font-bold text-white">Record Match Score</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Publish or adjust goals</p>
+                        <p className="text-xs font-bold text-white group-hover:text-emerald-300">Record Match Score</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Publish or adjust goals &rarr;</p>
                       </button>
                       <button
                         onClick={() => setActiveTab('players')}
-                        className="p-3.5 rounded-xl bg-[#161D36] border border-[#2C3960] hover:border-purple-500 text-left transition-all cursor-pointer"
+                        className="p-3.5 rounded-xl bg-[#161D36] border border-[#2C3960] hover:border-purple-500 hover:bg-[#1E294B] text-left transition-all cursor-pointer group"
                       >
-                        <p className="text-xs font-bold text-white">Approve Rosters</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">{pendingPlayers.length} applications</p>
+                        <p className="text-xs font-bold text-white group-hover:text-purple-300">Approve Rosters</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{pendingPlayers.length} applications &rarr;</p>
                       </button>
                       <button
                         onClick={() => setActiveTab('content')}
-                        className="p-3.5 rounded-xl bg-[#161D36] border border-[#2C3960] hover:border-amber-500 text-left transition-all cursor-pointer"
+                        className="p-3.5 rounded-xl bg-[#161D36] border border-[#2C3960] hover:border-amber-500 hover:bg-[#1E294B] text-left transition-all cursor-pointer group"
                       >
-                        <p className="text-xs font-bold text-white">Post Announcement</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Fellowship updates</p>
+                        <p className="text-xs font-bold text-white group-hover:text-amber-300">Post Announcement</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Fellowship updates &rarr;</p>
                       </button>
                       <button
                         onClick={() => setActiveTab('reports')}
-                        className="p-3.5 rounded-xl bg-[#161D36] border border-[#2C3960] hover:border-blue-500 text-left transition-all cursor-pointer"
+                        className="p-3.5 rounded-xl bg-[#161D36] border border-[#2C3960] hover:border-blue-500 hover:bg-[#1E294B] text-left transition-all cursor-pointer group"
                       >
-                        <p className="text-xs font-bold text-white">Export Tournament CSV</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Rosters & standings</p>
+                        <p className="text-xs font-bold text-white group-hover:text-blue-300">Export Tournament CSV</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Rosters &amp; standings &rarr;</p>
                       </button>
                     </div>
                   </div>
@@ -931,48 +1082,50 @@ export default function FrontendAdminPage() {
           {/* Matches List */}
           <div className="lg:col-span-1 card-gloss p-5 rounded-2xl space-y-3">
             <h3 className="text-sm font-bold text-white mb-2 flex items-center justify-between">
-              <span>Fixtures ({matches.length})</span>
+              <span>Fixtures ({Array.isArray(matches) ? matches.length : 0})</span>
               <button onClick={loadMatches} className="text-xs text-emerald-400 hover:underline cursor-pointer">
                 Refresh
               </button>
             </h3>
 
             <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-              {matches.map((m) => {
-                const isSelected = selectedMatch?.id === m.id;
-                return (
-                  <div
-                    key={m.id}
-                    onClick={() => {
-                      setSelectedMatch(m);
-                      setHomeScore(m.home_score);
-                      setAwayScore(m.away_score);
-                    }}
-                    className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
-                      isSelected
-                        ? 'bg-purple-600/20 border-purple-500 shadow-md'
-                        : 'bg-[#161D36] border-[#2C3960] hover:border-slate-500'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1.5">
-                      <span>Match #{m.id}</span>
-                      <span className={`px-2 py-0.5 rounded-full font-bold ${
-                        m.is_published ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-300'
-                      }`}>
-                        {m.is_published ? 'PUBLISHED' : m.status}
-                      </span>
+              {Array.isArray(matches) && matches.length > 0 ? (
+                matches.map((m) => {
+                  const isSelected = selectedMatch?.id === m.id;
+                  return (
+                    <div
+                      key={m.id}
+                      onClick={() => handleSelectMatch(m)}
+                      className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
+                        isSelected
+                          ? 'bg-purple-600/20 border-purple-500 shadow-md'
+                          : 'bg-[#161D36] border-[#2C3960] hover:border-slate-500'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1.5">
+                        <span>Match #{m.id}</span>
+                        <span className={`px-2 py-0.5 rounded-full font-bold ${
+                          m.is_published ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-300'
+                        }`}>
+                          {m.is_published ? 'PUBLISHED' : m.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between font-bold text-xs text-white">
+                        <span>{m.home_team.name}</span>
+                        <span className="text-sm px-2 py-0.5 rounded bg-slate-900 border border-[#2C3960]">
+                          {m.home_score} - {m.away_score}
+                        </span>
+                        <span>{m.away_team.name}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1.5">{m.match_date} &bull; {m.venue}</p>
                     </div>
-                    <div className="flex items-center justify-between font-bold text-xs text-white">
-                      <span>{m.home_team.name}</span>
-                      <span className="text-sm px-2 py-0.5 rounded bg-slate-900 border border-[#2C3960]">
-                        {m.home_score} - {m.away_score}
-                      </span>
-                      <span>{m.away_team.name}</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1">{m.match_date} &bull; {m.venue}</p>
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <div className="card-gloss p-8 rounded-xl text-center text-xs text-slate-400">
+                  {matchLoading ? 'Loading fixtures...' : 'No matches found.'}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1008,131 +1161,290 @@ export default function FrontendAdminPage() {
                         Correct Published Score
                       </button>
                     )}
-                    <Link
-                      href={`/matches/${selectedMatch.id}`}
-                      target="_blank"
-                      className="px-3 py-2 rounded-xl bg-[#161D36] text-slate-300 hover:text-white border border-[#2C3960] text-xs font-semibold"
-                    >
-                      View Live Match
-                    </Link>
                   </div>
                 </div>
 
                 {/* Live Event Recorder Form */}
-                <div className="p-5 rounded-2xl bg-[#161D36] border border-[#2C3960]">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <PlusCircle className="w-4 h-4 text-emerald-400" />
-                    Record Match Incident (Goal, Assist, Card, Sub)
-                  </h3>
-                  <form onSubmit={handleAddEvent} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">Event Type</label>
-                      <select
-                        value={eventData.event_type}
-                        onChange={(e) => setEventData({ ...eventData, event_type: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white"
-                      >
-                        <option value="GOAL">⚽ Goal (Scorer)</option>
-                        <option value="ASSIST">🎯 Assist (Playmaker)</option>
-                        <option value="OWN_GOAL">⚠️ Own Goal (Opponent Score)</option>
-                        <option value="YELLOW_CARD">🟨 Yellow Card</option>
-                        <option value="RED_CARD">🟥 Red Card</option>
-                        <option value="SUBSTITUTION">🔄 Substitution</option>
-                      </select>
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#161D36] border border-[#2C3960] space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#2C3960]/60 pb-3">
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                      <PlusCircle className="w-4 h-4 text-emerald-400" />
+                      Record Match Incident / Event
+                    </h3>
+                    <span className="text-[11px] text-slate-400">
+                      Live Score: <strong className="text-white">{selectedMatch.home_team.name} {selectedMatch.home_score} - {selectedMatch.away_score} {selectedMatch.away_team.name}</strong>
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleAddEvent} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Event Type */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          Incident Type <span className="text-rose-400">*</span>
+                        </label>
+                        <select
+                          value={eventData.event_type}
+                          onChange={(e) => setEventData({ ...eventData, event_type: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                        >
+                          <option value="GOAL">⚽ Goal Scored</option>
+                          <option value="ASSIST">🎯 Goal Assist</option>
+                          <option value="OWN_GOAL">⚠️ Own Goal (Conceded)</option>
+                          <option value="YELLOW_CARD">🟨 Yellow Card</option>
+                          <option value="RED_CARD">🟥 Red Card</option>
+                          <option value="SUBSTITUTION">🔄 Substitution</option>
+                        </select>
+                      </div>
+
+                      {/* Batch Team Selector */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          Batch Team <span className="text-rose-400">*</span>
+                        </label>
+                        <select
+                          value={eventData.team_id || String(selectedMatch.home_team.id)}
+                          onChange={(e) => {
+                            const newTeamId = e.target.value;
+                            setEventData({
+                              ...eventData,
+                              team_id: newTeamId,
+                              player_id: '',
+                              related_player_id: '',
+                            });
+                          }}
+                          required
+                          className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white font-bold focus:outline-none focus:border-purple-500 cursor-pointer"
+                        >
+                          <option value={selectedMatch.home_team.id}>
+                            {selectedMatch.home_team.name} ({selectedMatch.home_team.nickname || 'Home'})
+                          </option>
+                          <option value={selectedMatch.away_team.id}>
+                            {selectedMatch.away_team.name} ({selectedMatch.away_team.nickname || 'Away'})
+                          </option>
+                        </select>
+                      </div>
+
+                      {/* Minute */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          Match Minute (&apos;) <span className="text-rose-400">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="120"
+                          value={eventData.minute}
+                          onChange={(e) => setEventData({ ...eventData, minute: Number(e.target.value) })}
+                          required
+                          className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                        />
+                      </div>
+
+                      {/* Player & Assister Selectors (Strictly filtered to the selected Batch Team) */}
+                      {(() => {
+                        const isAway = String(eventData.team_id) === String(selectedMatch.away_team.id);
+                        const currentTeam = isAway ? selectedMatch.away_team : selectedMatch.home_team;
+                        const currentBatchPlayers = (Array.isArray(membersList) ? membersList : []).filter((p) =>
+                          isPlayerInBatchTeam(p, currentTeam)
+                        );
+
+                        return (
+                          <>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                                Player ({currentTeam.name}) <span className="text-rose-400">*</span>
+                              </label>
+                              <select
+                                value={eventData.player_id}
+                                onChange={(e) => setEventData({ ...eventData, player_id: e.target.value })}
+                                required
+                                className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                              >
+                                <option value="">Select registered {currentTeam.name} player...</option>
+                                {currentBatchPlayers.length > 0 ? (
+                                  currentBatchPlayers.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                      #{p.preferred_jersey_number || '-'} {p.full_name} ({p.department ? `${p.department} · ` : ''}{p.primary_position || 'Player'})
+                                    </option>
+                                  ))
+                                ) : (
+                                  <option value="" disabled>No registered players found for {currentTeam.name}</option>
+                                )}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                                Assister / Subbed Player ({currentTeam.name} - Optional)
+                              </label>
+                              <select
+                                value={eventData.related_player_id}
+                                onChange={(e) => setEventData({ ...eventData, related_player_id: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                              >
+                                <option value="">None / N/A</option>
+                                {currentBatchPlayers.map((p) => (
+                                  <option key={p.id} value={p.id} disabled={String(p.id) === String(eventData.player_id)}>
+                                    #{p.preferred_jersey_number || '-'} {p.full_name} {p.department ? `(${p.department})` : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </>
+                        );
+                      })()}
+
+                      {/* Description */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">Event Note / Description</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Free-kick into top corner"
+                          value={eventData.description}
+                          onChange={(e) => setEventData({ ...eventData, description: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">Select Player</label>
-                      <select
-                        value={eventData.player_id}
-                        onChange={(e) => setEventData({ ...eventData, player_id: e.target.value })}
-                        required
-                        className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white"
-                      >
-                        <option value="">-- Choose player --</option>
-                        <optgroup label={selectedMatch.home_team.name}>
-                          {membersList
-                            .filter((m) => m.competing_batch === selectedMatch.home_team.code)
-                            .map((p) => (
-                              <option key={p.id} value={p.id}>
-                                #{p.preferred_jersey_number || '-'} {p.full_name} ({p.department ? `${p.department} · ` : ''}{p.primary_position || 'Player'})
-                              </option>
-                            ))}
-                        </optgroup>
-                        <optgroup label={selectedMatch.away_team.name}>
-                          {membersList
-                            .filter((m) => m.competing_batch === selectedMatch.away_team.code)
-                            .map((p) => (
-                              <option key={p.id} value={p.id}>
-                                #{p.preferred_jersey_number || '-'} {p.full_name} ({p.department ? `${p.department} · ` : ''}{p.primary_position || 'Player'})
-                              </option>
-                            ))}
-                        </optgroup>
-                      </select>
-                    </div>
+                    {/* Dynamic Impact & Score Explanation Banner */}
+                    {(() => {
+                      const activeTeamId = Number(eventData.team_id || selectedMatch.home_team.id);
+                      const isHome = activeTeamId === selectedMatch.home_team.id;
+                      const activeTeamName = isHome ? selectedMatch.home_team.name : selectedMatch.away_team.name;
+                      const opponentTeamName = isHome ? selectedMatch.away_team.name : selectedMatch.home_team.name;
+                      const projectedHomeScore = eventData.event_type === 'GOAL'
+                        ? (isHome ? selectedMatch.home_score + 1 : selectedMatch.home_score)
+                        : (eventData.event_type === 'OWN_GOAL' ? (isHome ? selectedMatch.home_score : selectedMatch.home_score + 1) : selectedMatch.home_score);
+                      const projectedAwayScore = eventData.event_type === 'GOAL'
+                        ? (isHome ? selectedMatch.away_score : selectedMatch.away_score + 1)
+                        : (eventData.event_type === 'OWN_GOAL' ? (isHome ? selectedMatch.away_score + 1 : selectedMatch.away_score) : selectedMatch.away_score);
 
-                    <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">Assister / Subbed Player (Optional)</label>
-                      <select
-                        value={eventData.related_player_id}
-                        onChange={(e) => setEventData({ ...eventData, related_player_id: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white"
-                      >
-                        <option value="">None / N/A</option>
-                        <optgroup label={selectedMatch.home_team.name}>
-                          {membersList
-                            .filter((m) => m.competing_batch === selectedMatch.home_team.code)
-                            .map((p) => (
-                              <option key={p.id} value={p.id}>
-                                #{p.preferred_jersey_number || '-'} {p.full_name} {p.department ? `(${p.department})` : ''}
-                              </option>
-                            ))}
-                        </optgroup>
-                        <optgroup label={selectedMatch.away_team.name}>
-                          {membersList
-                            .filter((m) => m.competing_batch === selectedMatch.away_team.code)
-                            .map((p) => (
-                              <option key={p.id} value={p.id}>
-                                #{p.preferred_jersey_number || '-'} {p.full_name} {p.department ? `(${p.department})` : ''}
-                              </option>
-                            ))}
-                        </optgroup>
-                      </select>
-                    </div>
+                      return (
+                        <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="text-slate-400">Credited to:</span>
+                            <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold border ${
+                              isHome
+                                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                                : 'bg-teal-500/20 text-teal-300 border-teal-500/30'
+                            }`}>
+                              {activeTeamName}
+                            </span>
+                          </div>
+                          <div className="font-semibold text-[11px]">
+                            {eventData.event_type === 'GOAL' && (
+                              <span className="text-emerald-400 flex items-center gap-1.5">
+                                <span>⚽</span>
+                                <span>Goal automatically credits <strong>+1</strong> to {activeTeamName} &bull; Score becomes: <strong className="text-white">{projectedHomeScore} - {projectedAwayScore}</strong></span>
+                              </span>
+                            )}
+                            {eventData.event_type === 'OWN_GOAL' && (
+                              <span className="text-amber-400 flex items-center gap-1.5">
+                                <span>⚠️</span>
+                                <span>Own goal conceded by {activeTeamName} &bull; credits <strong>+1</strong> goal to {opponentTeamName}! (Score: <strong className="text-white">{projectedHomeScore} - {projectedAwayScore}</strong>)</span>
+                              </span>
+                            )}
+                            {eventData.event_type === 'ASSIST' && (
+                              <span className="text-blue-400">🎯 Playmaker assist logged to {activeTeamName}&apos;s player statistics</span>
+                            )}
+                            {(eventData.event_type === 'YELLOW_CARD' || eventData.event_type === 'RED_CARD') && (
+                              <span className="text-amber-300">Disciplinary card logged for {activeTeamName}</span>
+                            )}
+                            {eventData.event_type === 'SUBSTITUTION' && (
+                              <span className="text-slate-300">Tactical substitution recorded for {activeTeamName}</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
-                    <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">Minute</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="120"
-                        value={eventData.minute}
-                        onChange={(e) => setEventData({ ...eventData, minute: Number(e.target.value) })}
-                        required
-                        className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="block text-[11px] text-slate-400 mb-1">Incident Description / Notes</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Magnificent curved strike into top right corner!"
-                        value={eventData.description}
-                        onChange={(e) => setEventData({ ...eventData, description: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white"
-                      />
-                    </div>
-
-                    <div className="flex items-end">
+                    <div className="flex justify-end">
                       <button
                         type="submit"
-                        className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all shadow-md cursor-pointer"
+                        className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all shadow-md shadow-purple-600/30 cursor-pointer"
                       >
                         Save Event
                       </button>
                     </div>
                   </form>
+                </div>
+
+                {/* Chronological Match Events Table */}
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#161D36] border border-[#2C3960] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#2C3960]/60 pb-3">
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                      <History className="w-4 h-4 text-purple-400" />
+                      Chronological Match Events ({Array.isArray(selectedMatch.events) ? selectedMatch.events.length : 0})
+                    </h3>
+                    <span className="text-[11px] text-slate-400">
+                      Score: <strong className="text-white">{selectedMatch.home_team.name} {selectedMatch.home_score} - {selectedMatch.away_score} {selectedMatch.away_team.name}</strong>
+                    </span>
+                  </div>
+
+                  {!Array.isArray(selectedMatch.events) || selectedMatch.events.length === 0 ? (
+                    <div className="p-6 rounded-xl bg-[#0B132B] border border-[#2C3960]/60 text-center text-xs text-slate-400">
+                      No events logged for this fixture yet. Use the incident recorder above to register goals, assists, cards, or substitutions.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {selectedMatch.events.map((ev: any) => {
+                        const isHomeEvent = ev.team === selectedMatch.home_team.id || ev.team_batch === selectedMatch.home_team.code;
+                        return (
+                          <div
+                            key={ev.id}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs gap-3 hover:border-slate-500 transition-colors"
+                          >
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                              <span className="px-2 py-0.5 rounded font-mono font-bold bg-emerald-500/20 text-emerald-300 text-xs">
+                                {ev.minute}&apos;
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                ev.event_type === 'GOAL'
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                  : ev.event_type === 'OWN_GOAL'
+                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                  : ev.event_type === 'YELLOW_CARD'
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                  : ev.event_type === 'RED_CARD'
+                                  ? 'bg-rose-600/30 text-rose-400 border border-rose-600/40'
+                                  : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                              }`}>
+                                {ev.event_type_display || ev.event_type}
+                              </span>
+                              <div className="space-x-1.5">
+                                <strong className="text-white">{ev.player_name || 'Team Event'}</strong>
+                                {ev.related_player_name && (
+                                  <span className="text-slate-400 text-[11px]">(Assist: {ev.related_player_name})</span>
+                                )}
+                                {ev.description && (
+                                  <span className="text-slate-400 italic text-[11px]">&mdash; &ldquo;{ev.description}&rdquo;</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                              <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold border ${
+                                isHomeEvent
+                                  ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                                  : 'bg-teal-500/20 text-teal-300 border-teal-500/30'
+                              }`}>
+                                {ev.team_name || (isHomeEvent ? selectedMatch.home_team.name : selectedMatch.away_team.name)}
+                              </span>
+                              <button
+                                onClick={() => handleDeleteEvent(ev.id)}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 cursor-pointer transition-colors"
+                                title="Delete this event (if goal, match score will be rolled back automatically)"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Score Correction Modal */}
@@ -1247,7 +1559,7 @@ export default function FrontendAdminPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
                   >
                     <option value="">-- Select Home Batch --</option>
-                    {batchTeams.map((team) => (
+                    {(Array.isArray(batchTeams) ? batchTeams : []).map((team) => (
                       <option key={team.id} value={team.id} disabled={String(team.id) === String(customFixture.away_team_id)}>
                         {team.name} ({team.nickname || team.batch_code})
                       </option>
@@ -1266,7 +1578,7 @@ export default function FrontendAdminPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
                   >
                     <option value="">-- Select Away Batch --</option>
-                    {batchTeams.map((team) => (
+                    {(Array.isArray(batchTeams) ? batchTeams : []).map((team) => (
                       <option key={team.id} value={team.id} disabled={String(team.id) === String(customFixture.home_team_id)}>
                         {team.name} ({team.nickname || team.batch_code})
                       </option>
@@ -1399,7 +1711,7 @@ export default function FrontendAdminPage() {
             </button>
           </div>
 
-          {pendingPlayers.length === 0 ? (
+          {!Array.isArray(pendingPlayers) || pendingPlayers.length === 0 ? (
             <div className="p-8 rounded-2xl bg-[#161D36] border border-[#2C3960] text-center">
               <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
               <p className="text-sm font-bold text-white">All player applications reviewed!</p>
@@ -1453,27 +1765,90 @@ export default function FrontendAdminPage() {
       {/* ========================================================================= */}
       {activeTab === 'members' && (
         <div className="card-gloss p-6 sm:p-8 rounded-2xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-white">Fellowship Member Management</h2>
-              <p className="text-xs text-slate-400">Search members, verify eligibility, or manage account suspension.</p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-white">Fellowship Member Management</h2>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  {Array.isArray(membersList) ? membersList.length : 0} members
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">Search members, verify eligibility, or filter by academic batch.</p>
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Search member..."
-                value={memberSearch}
-                onChange={(e) => setMemberSearch(e.target.value)}
-                className="px-3 py-1.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white"
-              />
-              <button
-                onClick={loadMembers}
-                className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold cursor-pointer"
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Batch Filter Dropdown */}
+              <select
+                value={memberBatchFilter}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setMemberBatchFilter(val);
+                  loadMembers(val, memberSearch);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                title="Filter by Batch"
               >
-                Search
-              </button>
+                <option value="">All Batches</option>
+                <option value="2nd Year">2nd Year Batch</option>
+                <option value="3rd Year">3rd Year Batch</option>
+                <option value="4th Year">4th Year Batch</option>
+                <option value="5th Year">5th Year Batch</option>
+                <option value="Other">Other / 1st Year</option>
+              </select>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  loadMembers(memberBatchFilter, memberSearch);
+                }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  placeholder="Search member..."
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                />
+                <button
+                  type="submit"
+                  className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold cursor-pointer transition-colors"
+                >
+                  Search
+                </button>
+              </form>
+
+              {(memberBatchFilter || memberSearch) && (
+                <button
+                  onClick={() => {
+                    setMemberBatchFilter('');
+                    setMemberSearch('');
+                    loadMembers('', '');
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Clear all filters"
+                >
+                  Clear Filters &times;
+                </button>
+              )}
             </div>
           </div>
+
+          {memberBatchFilter && (
+            <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-between text-xs">
+              <span className="text-purple-300">
+                Filtered by batch: <strong className="text-white">{memberBatchFilter}</strong> ({Array.isArray(membersList) ? membersList.length : 0} members found)
+              </span>
+              <button
+                onClick={() => {
+                  setMemberBatchFilter('');
+                  loadMembers('', memberSearch);
+                }}
+                className="text-purple-400 hover:text-purple-200 text-xs font-bold cursor-pointer underline"
+              >
+                Show all batches &rarr;
+              </button>
+            </div>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-300">
@@ -1489,44 +1864,68 @@ export default function FrontendAdminPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#2C3960]/50">
-                {membersList.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-800/20">
-                    <td className="py-3 px-4 font-semibold text-white">
-                      <Link href={`/members/${m.username}`} className="hover:text-emerald-400">
-                        {m.full_name}
-                      </Link>
-                    </td>
-                    <td className="py-3 px-4">{m.batch}</td>
-                    <td className="py-3 px-4 text-slate-400">{m.department}</td>
-                    <td className="py-3 px-4 text-slate-400">{m.fellowship_team}</td>
-                    <td className="py-3 px-4">
-                      {m.is_football_eligible ? (
-                        <span className="text-emerald-400 font-bold">Eligible</span>
-                      ) : (
-                        <span className="text-slate-500">Community</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        m.is_active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
-                      }`}>
-                        {m.is_active ? 'Active' : 'Suspended'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => handleToggleSuspend(m.id)}
-                        className={`px-2.5 py-1 rounded text-[11px] font-semibold cursor-pointer ${
-                          m.is_active
-                            ? 'bg-rose-500/10 text-rose-300 hover:bg-rose-500/20'
-                            : 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
-                        }`}
-                      >
-                        {m.is_active ? 'Suspend' : 'Reactivate'}
-                      </button>
+                {!Array.isArray(membersList) || membersList.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-10 text-center text-slate-400">
+                      <div className="space-y-1">
+                        <p className="font-semibold text-slate-300">No fellowship members found</p>
+                        <p className="text-[11px] text-slate-500">
+                          {memberBatchFilter ? `No members matched filter "${memberBatchFilter}".` : 'No member profiles match the current filter criteria.'}
+                        </p>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  membersList.map((m) => (
+                    <tr key={m.id} className="hover:bg-slate-800/20">
+                      <td className="py-3 px-4 font-semibold text-white">
+                        <Link href={`/members/${m.username}`} className="hover:text-emerald-400">
+                          {m.full_name}
+                        </Link>
+                      </td>
+                      <td className="py-3 px-4">{m.batch}</td>
+                      <td className="py-3 px-4 text-slate-400">{m.department}</td>
+                      <td className="py-3 px-4 text-slate-400">{m.fellowship_team}</td>
+                      <td className="py-3 px-4">
+                        {m.is_football_eligible ? (
+                          <span className="text-emerald-400 font-bold">Eligible</span>
+                        ) : (
+                          <span className="text-slate-500">Community</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          !m.is_suspended
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                        }`}>
+                          {!m.is_suspended ? 'Active' : 'Suspended'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleToggleSuspend(m.id)}
+                            className={`px-2.5 py-1 rounded text-[11px] font-semibold cursor-pointer border transition-colors ${
+                              !m.is_suspended
+                                ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border-amber-500/30'
+                                : 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border-emerald-500/30'
+                            }`}
+                          >
+                            {!m.is_suspended ? 'Suspend' : 'Reactivate'}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMember(m.id, m.full_name)}
+                            className="px-2.5 py-1 rounded text-[11px] font-semibold cursor-pointer border transition-colors bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 border-rose-500/30"
+                            title="Permanently delete user"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -1731,7 +2130,7 @@ export default function FrontendAdminPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#2C3960]/50">
-                {auditLogs.length === 0 ? (
+                {!Array.isArray(auditLogs) || auditLogs.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-slate-500">
                       No administrative changes logged yet.
@@ -1785,7 +2184,7 @@ export default function FrontendAdminPage() {
               download
               className="p-5 rounded-2xl bg-[#161D36] border border-[#2C3960] hover:border-purple-500 transition-all text-left block group cursor-pointer"
             >
-              <Shield className="w-7 h-7 text-purple-400 mb-3 group-hover:scale-110 transition-transform" />
+              <GraduationCap className="w-7 h-7 text-purple-400 mb-3 group-hover:scale-110 transition-transform" />
               <h4 className="font-bold text-white text-sm">Batch Squad Rosters CSV</h4>
               <p className="text-[11px] text-slate-400 mt-1">Approved competition players, jersey numbers, and positions.</p>
             </a>

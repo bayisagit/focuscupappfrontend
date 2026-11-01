@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { Shield, Users, Trophy, ArrowRight } from 'lucide-react';
+import { GraduationCap, ArrowRight } from 'lucide-react';
+import TeamCrest from '@/components/TeamCrest';
 
 export default function BatchesIndexPage() {
   const [batches, setBatches] = useState<any[]>([]);
@@ -19,11 +20,13 @@ export default function BatchesIndexPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-screen">
       <div className="mb-8 border-b border-[#2C3960]/60 pb-6">
-        <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-2">
-          <Shield className="w-8 h-8 text-emerald-400" />
+        <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+          <span className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            <GraduationCap className="w-7 h-7" />
+          </span>
           FELLOWSHIP ACADEMIC BATCHES
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-slate-400 mt-2">
           Explore rosters, fixtures, and community members across academic years
         </p>
       </div>
@@ -49,12 +52,17 @@ export default function BatchesIndexPage() {
                 </span>
               </div>
 
-              <h2 className="text-xl font-extrabold text-white group-hover:text-emerald-400 transition-colors">
-                {b.name}
-              </h2>
-              <p className="text-xs font-semibold text-amber-400 mb-2">
-                &ldquo;{b.nickname || b.motto}&rdquo;
-              </p>
+              <div className="flex items-center gap-3 mb-3">
+                <TeamCrest team={b} size="md" />
+                <div>
+                  <h2 className="text-xl font-extrabold text-white group-hover:text-emerald-400 transition-colors">
+                    {b.name}
+                  </h2>
+                  <p className="text-xs font-semibold text-amber-400">
+                    &ldquo;{b.nickname || b.motto}&rdquo;
+                  </p>
+                </div>
+              </div>
 
               <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed mb-6">
                 {b.description || 'AASTU Focus Fellowship academic batch team.'}

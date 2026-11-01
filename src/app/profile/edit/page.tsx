@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { Shield, User, Trophy, Check, ArrowLeft } from 'lucide-react';
+import { UserCog, User, Trophy, Check, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EditProfilePage() {
@@ -137,8 +137,10 @@ export default function EditProfilePage() {
       </div>
 
       <div className="card-gloss p-8 rounded-3xl border border-[#2C3960] shadow-2xl">
-        <h1 className="text-2xl font-black text-white tracking-tight mb-2 flex items-center gap-2">
-          <Shield className="w-6 h-6 text-emerald-400" />
+        <h1 className="text-2xl font-black text-white tracking-tight mb-2 flex items-center gap-3">
+          <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            <UserCog className="w-5 h-5" />
+          </span>
           Edit Fellowship &amp; Football Profile
         </h1>
         <p className="text-xs text-slate-400 mb-6">

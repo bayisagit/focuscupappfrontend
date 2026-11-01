@@ -184,18 +184,9 @@ export default function ManagerMatchesPage() {
             MATCH OPERATIONS &amp; LIVE EVENTS
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Generate fixtures, manage match scores, record real-time goals, and publish official results
+            Manage match scores, record real-time goals, and publish official results
           </p>
         </div>
-
-        <button
-          onClick={handleGenerateFixtures}
-          disabled={generating}
-          className="px-5 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all self-start md:self-auto"
-        >
-          <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
-          {generating ? 'Scheduling...' : 'Generate Round-Robin Fixtures'}
-        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

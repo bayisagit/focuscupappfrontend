@@ -9,7 +9,7 @@ import {
   Trophy,
   Users,
   Calendar,
-  Shield,
+  BarChart3,
   FileText,
   Clock,
   ArrowRight,
@@ -124,7 +124,7 @@ export default function ManagerDashboardPage() {
         <div className="lg:col-span-6 card-gloss p-6 rounded-2xl space-y-4">
           <h2 className="text-base font-bold text-white flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-emerald-400" /> Member Distribution by Academic Batch
+              <BarChart3 className="w-5 h-5 text-emerald-400" /> Member Distribution by Academic Batch
             </span>
             <Link href="/manager/members" className="text-xs text-emerald-400 hover:underline">
               Manage Members

@@ -34,12 +34,11 @@ export default function AboutPage() {
   ];
 
   const fellowshipTeams = [
-    { name: 'Ebenezer', desc: 'Voluntary services supporting the poor, helping those in need, and offering spiritual and practical advice.' },
+    { name: 'Ebenim', desc: 'Merged voluntary benevolence, poor and needy relief, member practical support & counsel, financial stewardship, fellowship collections, and hospitality seating.' },
     { name: 'BS Team', desc: 'Bible Study facilitation and freshman coordinating & discipleship.' },
     { name: 'Lady', desc: 'Creative arts ministry, drama, and artistic expression to serve God and minister to the fellowship.' },
     { name: 'Elios', desc: 'Song and choir ministry, leading the fellowship in deep worship and praise.' },
     { name: 'Media', desc: 'Photography, tournament digital coverage, graphics, audio engineering, photo editing, and stage instrument management.' },
-    { name: 'Nathanism', desc: 'Finance coordination, gathering fellowship collections, ushering, and serving member seating.' },
     { name: 'Action and Prayer', desc: 'Missionary outreach, prayer ministry, intercession, and multifaceted fellowship service roles.' },
     { name: 'No Team', desc: 'General fellowship members not currently active in a specific ministry team.' },
   ];

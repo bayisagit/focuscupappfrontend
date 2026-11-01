@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { Calendar, MapPin, Clock, Filter, ChevronRight, Shield } from 'lucide-react';
+import { Calendar, MapPin, Clock, Filter, ChevronRight } from 'lucide-react';
+import TeamCrest from '@/components/TeamCrest';
 
 export default function FixturesPage() {
   const [matches, setMatches] = useState<any[]>([]);
@@ -158,22 +159,17 @@ export default function FixturesPage() {
                         {match.home_team.nickname || match.home_team.batch_code.replace('_', ' ')}
                       </p>
                     </div>
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white shrink-0"
-                      style={{ backgroundColor: match.home_team.color_hex || '#10B981' }}
-                    >
-                      <Shield className="w-5 h-5 text-white" />
-                    </div>
+                    <TeamCrest team={match.home_team} size="md" />
                   </div>
 
                   {/* Score or VS */}
                   <div className="md:col-span-1 text-center py-2 md:py-0">
                     {isCompleted || isLive ? (
-                      <div className="inline-block px-4 py-1.5 rounded-xl bg-[#0B132B] border border-emerald-500/40 text-emerald-400 font-black text-xl">
+                      <div className="inline-block px-4 py-1.5 rounded-xl bg-[#0B132B] border border-emerald-500/40 text-emerald-400 font-black text-xl whitespace-nowrap tabular-nums tracking-wide">
                         {match.home_score} - {match.away_score}
                       </div>
                     ) : (
-                      <div className="inline-block px-3 py-1 rounded-lg bg-[#2C3960] text-slate-300 font-extrabold text-xs">
+                      <div className="inline-block px-3 py-1 rounded-lg bg-[#2C3960] text-slate-300 font-extrabold text-xs whitespace-nowrap">
                         VS
                       </div>
                     )}
@@ -181,12 +177,7 @@ export default function FixturesPage() {
 
                   {/* Away Team */}
                   <div className="md:col-span-3 flex items-center justify-start gap-3 text-left">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white shrink-0"
-                      style={{ backgroundColor: match.away_team.color_hex || '#3B82F6' }}
-                    >
-                      <Shield className="w-5 h-5 text-white" />
-                    </div>
+                    <TeamCrest team={match.away_team} size="md" />
                     <div>
                       <h3 className="text-base sm:text-lg font-bold text-white">
                         {match.away_team.name}

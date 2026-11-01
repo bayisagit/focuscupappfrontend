@@ -18,6 +18,7 @@ import {
   FileText,
   User,
 } from 'lucide-react';
+import TeamCrest from '@/components/TeamCrest';
 
 import { Suspense } from 'react';
 
@@ -109,51 +110,43 @@ function MatchDetailContent() {
         </div>
 
         {/* Big Match Scoreboard */}
-        <div className="grid grid-cols-1 md:grid-cols-7 items-center gap-6 py-4">
+        <div className="flex flex-row items-center justify-between gap-3 sm:gap-6 py-4">
           {/* Home Batch */}
-          <div className="md:col-span-3 text-center md:text-right space-y-2">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-white mx-auto md:ml-auto md:mr-0 shadow-lg"
-              style={{ backgroundColor: match.home_team.color_hex || '#10B981' }}
-            >
-              <Shield className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+          <div className="flex-1 text-center sm:text-right space-y-1.5 sm:space-y-2 min-w-0">
+            <TeamCrest team={match.home_team} size="lg" className="mx-auto sm:ml-auto sm:mr-0" />
+            <h2 className="text-base sm:text-2xl font-black text-white tracking-tight break-words">
               {match.home_team.name}
             </h2>
-            <p className="text-xs text-amber-400 font-semibold">
+            <p className="text-[10px] sm:text-xs text-amber-400 font-semibold truncate sm:whitespace-normal">
               &ldquo;{match.home_team.nickname || match.home_team.motto}&rdquo;
             </p>
           </div>
 
           {/* Central Score Display */}
-          <div className="md:col-span-1 text-center py-2">
+          <div className="shrink-0 px-1 sm:px-4 text-center">
             {isCompleted || isLive ? (
-              <div className="inline-block px-6 py-3 rounded-2xl bg-[#0B132B] border-2 border-emerald-500/50 text-emerald-400 font-black text-3xl sm:text-4xl shadow-inner">
-                {match.home_score} - {match.away_score}
+              <div className="inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 rounded-2xl bg-[#0B132B] border-2 border-emerald-500/50 text-emerald-400 font-black text-2xl sm:text-3xl md:text-4xl shadow-inner whitespace-nowrap tabular-nums tracking-wider select-none">
+                <span>{match.home_score}</span>
+                <span className="mx-1.5 sm:mx-2.5 text-slate-500 text-xl sm:text-2xl md:text-3xl font-light">-</span>
+                <span>{match.away_score}</span>
               </div>
             ) : (
-              <div className="inline-block px-4 py-2 rounded-xl bg-[#2C3960] text-slate-300 font-extrabold text-base">
+              <div className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[#2C3960] text-slate-300 font-extrabold text-xs sm:text-base whitespace-nowrap">
                 VS
               </div>
             )}
-            <span className="block text-[11px] text-slate-400 mt-2 font-medium">
+            <span className="block text-[10px] sm:text-[11px] text-slate-400 mt-1.5 sm:mt-2 font-medium uppercase tracking-wider whitespace-nowrap">
               {isCompleted ? 'Final Score' : (isLive ? 'In Play' : 'Scheduled')}
             </span>
           </div>
 
           {/* Away Batch */}
-          <div className="md:col-span-3 text-center md:text-left space-y-2">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-white mx-auto md:mr-auto md:ml-0 shadow-lg"
-              style={{ backgroundColor: match.away_team.color_hex || '#3B82F6' }}
-            >
-              <Shield className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+          <div className="flex-1 text-center sm:text-left space-y-1.5 sm:space-y-2 min-w-0">
+            <TeamCrest team={match.away_team} size="lg" className="mx-auto sm:mr-auto sm:ml-0" />
+            <h2 className="text-base sm:text-2xl font-black text-white tracking-tight break-words">
               {match.away_team.name}
             </h2>
-            <p className="text-xs text-blue-400 font-semibold">
+            <p className="text-[10px] sm:text-xs text-blue-400 font-semibold truncate sm:whitespace-normal">
               &ldquo;{match.away_team.nickname || match.away_team.motto}&rdquo;
             </p>
           </div>

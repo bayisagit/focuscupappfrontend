@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { Trophy, Shield, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Trophy, GraduationCap, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 
 export default function PlayerRegistrationPage() {
   const router = useRouter();
@@ -32,7 +32,7 @@ export default function PlayerRegistrationPage() {
   if (!user.profile?.is_football_eligible) {
     return (
       <div className="max-w-lg mx-auto px-4 py-20 text-center card-gloss rounded-2xl my-10 space-y-4">
-        <Shield className="w-12 h-12 text-amber-500 mx-auto" />
+        <GraduationCap className="w-12 h-12 text-amber-400 mx-auto" />
         <h2 className="text-lg font-bold text-white">Competition Eligibility Notice</h2>
         <p className="text-xs text-slate-300 leading-relaxed">
           Based on your academic profile ({user.profile?.batch || 'Community Member'}), you are registered as a community fellowship member.
