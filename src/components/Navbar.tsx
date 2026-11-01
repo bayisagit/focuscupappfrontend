@@ -111,8 +111,21 @@ function NavbarContent() {
           <div className="hidden md:flex items-center space-x-3">
             {/* Install App Button */}
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (typeof window !== 'undefined') {
+                  const prompt = (window as any).__focusCupDeferredPrompt;
+                  if (prompt) {
+                    try {
+                      await prompt.prompt();
+                      const choice = await prompt.userChoice;
+                      if (choice.outcome === 'accepted') {
+                        (window as any).__focusCupDeferredPrompt = null;
+                      }
+                      return;
+                    } catch (e) {
+                      console.warn(e);
+                    }
+                  }
                   window.dispatchEvent(new Event('trigger-pwa-install'));
                 }
               }}
@@ -296,9 +309,22 @@ function NavbarContent() {
 
           {/* Install Mobile App Trigger in Mobile Menu */}
           <button
-            onClick={() => {
+            onClick={async () => {
               setMobileMenuOpen(false);
               if (typeof window !== 'undefined') {
+                const prompt = (window as any).__focusCupDeferredPrompt;
+                if (prompt) {
+                  try {
+                    await prompt.prompt();
+                    const choice = await prompt.userChoice;
+                    if (choice.outcome === 'accepted') {
+                      (window as any).__focusCupDeferredPrompt = null;
+                    }
+                    return;
+                  } catch (e) {
+                    console.warn(e);
+                  }
+                }
                 window.dispatchEvent(new Event('trigger-pwa-install'));
               }
             }}

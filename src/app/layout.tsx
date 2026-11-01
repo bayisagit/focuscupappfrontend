@@ -49,8 +49,23 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Focus Cup" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="Focus Cup" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.__focusCupDeferredPrompt = null;
+              window.addEventListener('beforeinstallprompt', function(e) {
+                e.preventDefault();
+                window.__focusCupDeferredPrompt = e;
+                window.dispatchEvent(new CustomEvent('focuscup-pwa-ready'));
+              });
+            `,
+          }}
+        />
       </head>
       <body className="min-h-full flex flex-col bg-[#0B132B] text-slate-100 antialiased selection:bg-emerald-500 selection:text-slate-950">
+        {/* Invisible dummy targets that neutralize Netlify's injected HUD badge script from rendering */}
+        <div id="nl-badge-frame" style={{ display: 'none' }} aria-hidden="true" />
+        <div id="nl-hud-frame" style={{ display: 'none' }} aria-hidden="true" />
         <AuthProvider>
           <Suspense fallback={<div className="h-16 bg-[#0B132B] border-b border-[#2C3960]/60" />}>
             <Navbar />
