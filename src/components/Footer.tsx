@@ -60,7 +60,7 @@ export default function Footer() {
     instagram_url: 'https://www.instagram.com/aastufocus/',
     youtube_url: 'https://www.youtube.com/@aastufocusofficial9025',
     contact_email: 'contact@aastufocus.org',
-    contact_phone: '+251 900 000 000',
+    contact_phone: '+25191 784 1282',
   });
 
   useEffect(() => {

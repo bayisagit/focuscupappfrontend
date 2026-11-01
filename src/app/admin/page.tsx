@@ -38,8 +38,8 @@ export default function FrontendAdminPage() {
   }, []);
 
   // Login form state (if not logged in as manager)
-  const [loginUsername, setLoginUsername] = useState('manager');
-  const [loginPassword, setLoginPassword] = useState('focuscup2026');
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
@@ -321,11 +321,12 @@ export default function FrontendAdminPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Manager Username</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Email or Username</label>
               <input
                 type="text"
                 value={loginUsername}
                 onChange={(e) => setLoginUsername(e.target.value)}
+                placeholder="Enter manager email or username"
                 required
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-sm text-white focus:outline-none focus:border-purple-500"
               />
@@ -337,6 +338,7 @@ export default function FrontendAdminPage() {
                 type="password"
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="Enter manager password"
                 required
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-sm text-white focus:outline-none focus:border-purple-500"
               />
@@ -349,11 +351,6 @@ export default function FrontendAdminPage() {
             >
               {loginLoading ? 'Authenticating...' : 'Sign In as Manager'}
             </button>
-
-            <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center text-xs text-purple-300">
-              <span className="font-semibold">Pre-seeded Credentials:</span> <br />
-              Username: <code className="text-white font-mono">manager</code> &bull; Password: <code className="text-white font-mono">focuscup2026</code>
-            </div>
           </form>
 
           <div className="mt-6 pt-5 border-t border-[#2C3960] text-center">

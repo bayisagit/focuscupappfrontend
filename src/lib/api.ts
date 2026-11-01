@@ -167,6 +167,7 @@ export const api = {
   community: {
     getAnnouncements: () => fetchAPI<any>('/api/v1/community/announcements/'),
     getGallery: () => fetchAPI<any>('/api/v1/community/gallery/'),
+    getUploadQuota: () => fetchAPI<any>('/api/v1/community/gallery/upload/'),
     uploadPhoto: (formData: FormData) => fetchAPI<any>('/api/v1/community/gallery/upload/', {
       method: 'POST',
       body: formData,

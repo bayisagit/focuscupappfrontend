@@ -31,6 +31,7 @@ function NavbarContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -189,9 +190,9 @@ function NavbarContent() {
                     <button
                       onClick={() => {
                         setUserDropdownOpen(false);
-                        logout();
+                        setShowLogoutConfirm(true);
                       }}
-                      className="w-full text-left flex items-center px-4 py-2.5 text-xs text-rose-400 hover:bg-rose-500/10 border-t border-[#2C3960]/60 mt-1"
+                      className="w-full text-left flex items-center px-4 py-2.5 text-xs text-rose-400 hover:bg-rose-500/10 border-t border-[#2C3960]/60 mt-1 cursor-pointer"
                     >
                       <LogOut className="w-4 h-4 mr-2.5 text-rose-400" />
                       Sign Out
@@ -298,9 +299,9 @@ function NavbarContent() {
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    logout();
+                    setShowLogoutConfirm(true);
                   }}
-                  className="block w-full text-left px-3 py-2 text-sm text-rose-400 font-semibold"
+                  className="block w-full text-left px-3 py-2 text-sm text-rose-400 font-semibold cursor-pointer"
                 >
                   Sign Out
                 </button>
@@ -323,6 +324,42 @@ function NavbarContent() {
                 </Link>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Sign Out Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="card-gloss max-w-sm w-full p-6 rounded-3xl border border-rose-500/30 shadow-2xl relative space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mx-auto">
+              <LogOut className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-bold text-white">Sign Out Confirmation</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Are you sure you want to log out? Any unsaved edits will be lost, and you will need to sign back in with your credentials.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="py-2.5 px-4 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800/80 hover:bg-slate-700 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  logout();
+                }}
+                className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 shadow-lg shadow-rose-600/30 transition-all hover:scale-[1.02]"
+              >
+                Yes, Sign Out
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -14,6 +14,21 @@ export default function GalleryPage() {
   const [caption, setCaption] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [quota, setQuota] = useState<any>({
+    uploaded_count: 0,
+    max_allowed: 3,
+    is_manager: false,
+    can_upload: true,
+    remaining: 3,
+  });
+
+  const loadQuota = () => {
+    if (user) {
+      api.community.getUploadQuota()
+        .then((q) => setQuota(q))
+        .catch(() => {});
+    }
+  };
 
   const loadGallery = () => {
     api.community.getGallery()
@@ -32,8 +47,18 @@ export default function GalleryPage() {
     loadGallery();
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      loadQuota();
+    }
+  }, [user]);
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!quota.can_upload) {
+      alert('You have reached the maximum limit of 3 match photos.');
+      return;
+    }
     if (!file || !selectedAlbum) {
       alert('Please select an album and an image file.');
       return;
@@ -51,6 +76,7 @@ export default function GalleryPage() {
       setFile(null);
       setCaption('');
       loadGallery();
+      loadQuota();
     } catch (err: any) {
       alert(err.data?.error || 'Failed to upload photo.');
     } finally {
@@ -72,12 +98,27 @@ export default function GalleryPage() {
         </div>
 
         {user && (
-          <button
-            onClick={() => setUploadModalOpen(true)}
-            className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all self-start sm:self-auto"
-          >
-            <Plus className="w-4 h-4" /> Share Match Photo
-          </button>
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            {!quota.is_manager ? (
+              <span className={`text-[11px] font-bold px-3 py-1.5 rounded-xl border ${
+                quota.uploaded_count >= 3
+                  ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                  : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+              }`}>
+                Photo Quota: {quota.uploaded_count}/3 used ({quota.remaining} left)
+              </span>
+            ) : (
+              <span className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300">
+                Manager: Unlimited Uploads
+              </span>
+            )}
+            <button
+              onClick={() => setUploadModalOpen(true)}
+              className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all"
+            >
+              <Plus className="w-4 h-4" /> Share Match Photo
+            </button>
+          </div>
         )}
       </div>
 
@@ -153,7 +194,26 @@ export default function GalleryPage() {
             >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-base font-bold text-white mb-4">Share a Tournament Photo</h3>
+            <h3 className="text-base font-bold text-white mb-2">Share a Tournament Photo</h3>
+            
+            {/* Storage Limit Notice */}
+            <div className={`p-3 rounded-2xl mb-4 text-xs border ${
+              !quota.is_manager && quota.uploaded_count >= 3
+                ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                : 'bg-[#161D36] border-[#2C3960] text-slate-300'
+            }`}>
+              <p className="font-semibold mb-1 flex items-center justify-between">
+                <span>Storage Conservation Policy</span>
+                <span className="font-mono text-[10px] text-emerald-400">
+                  {quota.is_manager ? 'Unlimited (Manager)' : `${quota.uploaded_count}/3 Used`}
+                </span>
+              </p>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                {!quota.is_manager && quota.uploaded_count >= 3
+                  ? 'You have reached the maximum allowed limit of 3 match photos to preserve database storage. Tournament directors handle broad match coverage.'
+                  : 'To prevent database storage from filling up, each fellowship member can post up to 3 match photos. Tournament managers have unlimited uploads.'}
+              </p>
+            </div>
 
             <form onSubmit={handleUpload} className="space-y-4">
               <div>
@@ -161,7 +221,8 @@ export default function GalleryPage() {
                 <select
                   value={selectedAlbum || ''}
                   onChange={(e) => setSelectedAlbum(Number(e.target.value))}
-                  className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  disabled={!quota.can_upload}
+                  className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50"
                   required
                 >
                   {albums.map((a) => (
@@ -175,8 +236,9 @@ export default function GalleryPage() {
                 <input
                   type="file"
                   accept="image/*"
+                  disabled={!quota.can_upload}
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400"
+                  className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 disabled:opacity-50"
                   required
                 />
               </div>
@@ -186,9 +248,10 @@ export default function GalleryPage() {
                 <input
                   type="text"
                   value={caption}
+                  disabled={!quota.can_upload}
                   onChange={(e) => setCaption(e.target.value)}
                   placeholder="e.g. 2nd Year post-match prayer circle"
-                  className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50"
                 />
               </div>
 
@@ -198,14 +261,18 @@ export default function GalleryPage() {
                   onClick={() => setUploadModalOpen(false)}
                   className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800"
                 >
-                  Cancel
+                  Close
                 </button>
                 <button
                   type="submit"
-                  disabled={uploading}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+                  disabled={uploading || !quota.can_upload}
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {uploading ? 'Uploading...' : 'Upload Photo'}
+                  {uploading
+                    ? 'Uploading...'
+                    : !quota.can_upload
+                    ? 'Limit Reached (3/3)'
+                    : 'Upload Photo'}
                 </button>
               </div>
             </form>

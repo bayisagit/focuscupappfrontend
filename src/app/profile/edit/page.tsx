@@ -17,6 +17,7 @@ export default function EditProfilePage() {
   const [formData, setFormData] = useState({
     first_name: '',
     second_name: '',
+    fellowship_team: 'No Team',
     primary_position: '',
     secondary_position: '',
     preferred_jersey_number: '',
@@ -31,6 +32,7 @@ export default function EditProfilePage() {
       setFormData({
         first_name: p.first_name || '',
         second_name: p.second_name || '',
+        fellowship_team: p.fellowship_team || 'No Team',
         primary_position: p.primary_position || '',
         secondary_position: p.secondary_position || '',
         preferred_jersey_number: p.preferred_jersey_number?.toString() || '',
@@ -135,6 +137,23 @@ export default function EditProfilePage() {
                 placeholder="e.g. 10"
                 className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
               />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Fellowship Ministry Team</label>
+              <select
+                value={formData.fellowship_team}
+                onChange={(e) => setFormData({ ...formData, fellowship_team: e.target.value })}
+                className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+              >
+                {options?.fellowship_teams ? (
+                  options.fellowship_teams.map((t: any) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))
+                ) : (
+                  <option value="No Team">No Team</option>
+                )}
+              </select>
             </div>
           </div>
 

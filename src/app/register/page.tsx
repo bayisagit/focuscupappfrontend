@@ -26,7 +26,7 @@ export default function RegisterPage() {
     college: 'ENGINEERING',
     department: 'Software Engineering',
     academic_year: '2nd Year',
-    fellowship_team: 'Ebenezer',
+    fellowship_team: 'No Team',
     gender: 'MALE',
     primary_position: 'Midfielder',
     personal_chant: '',

@@ -34,13 +34,14 @@ export default function AboutPage() {
   ];
 
   const fellowshipTeams = [
-    { name: 'Ebenezer', desc: 'Worship, praise leading, and thanksgiving ministry.' },
-    { name: 'BS Team', desc: 'Bible Study facilitation and discipleship ministry.' },
-    { name: 'Lady', desc: 'Sisters fellowship, encouragement, and sisterly care.' },
-    { name: 'Elios', desc: 'Outreach, campus evangelism, and welcoming new students.' },
-    { name: 'Media', desc: 'Photography, tournament digital coverage, graphics, and audio.' },
-    { name: 'Nathanism', desc: 'Intercession, prayer coordination, and spiritual warfare.' },
-    { name: 'Action and Prayer', desc: 'Hands-on fellowship service, logistics, and fervent prayer.' },
+    { name: 'Ebenezer', desc: 'Voluntary services supporting the poor, helping those in need, and offering spiritual and practical advice.' },
+    { name: 'BS Team', desc: 'Bible Study facilitation and freshman coordinating & discipleship.' },
+    { name: 'Lady', desc: 'Creative arts ministry, drama, and artistic expression to serve God and minister to the fellowship.' },
+    { name: 'Elios', desc: 'Song and choir ministry, leading the fellowship in deep worship and praise.' },
+    { name: 'Media', desc: 'Photography, tournament digital coverage, graphics, audio engineering, photo editing, and stage instrument management.' },
+    { name: 'Nathanism', desc: 'Finance coordination, gathering fellowship collections, ushering, and serving member seating.' },
+    { name: 'Action and Prayer', desc: 'Missionary outreach, prayer ministry, intercession, and multifaceted fellowship service roles.' },
+    { name: 'No Team', desc: 'General fellowship members not currently active in a specific ministry team.' },
   ];
 
   return (
@@ -150,7 +151,7 @@ export default function AboutPage() {
           FELLOWSHIP MINISTRY TEAMS
         </h2>
         <p className="text-xs text-slate-400 mb-8">
-          The 7 ministry teams through which our fellowship serves the Lord and the university body
+          The fellowship ministry teams and service roles through which our members serve the Lord and the university body
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
