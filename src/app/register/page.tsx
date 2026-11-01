@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -96,8 +97,15 @@ export default function RegisterPage() {
     <div className="max-w-2xl mx-auto px-4 py-12 min-h-screen">
       <div className="card-gloss p-8 sm:p-10 rounded-3xl border border-[#2C3960] shadow-2xl">
         <div className="text-center space-y-2 mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-amber-500 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
-            <Trophy className="w-6 h-6 text-white" />
+          <div className="w-16 h-16 rounded-2xl bg-white p-1.5 flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/20 border-2 border-white/30 overflow-hidden">
+            <Image
+              src="/logo.png"
+              alt="AASTU Focus Logo"
+              width={56}
+              height={56}
+              priority
+              className="w-full h-full object-contain"
+            />
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
             Join Focus Fellowship &amp; Football Cup

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -61,8 +62,15 @@ function NavbarContent() {
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
           <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-amber-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-              <Trophy className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-lg shadow-emerald-500/20 border border-white/20 group-hover:scale-105 group-hover:border-emerald-400/50 transition-all overflow-hidden shrink-0">
+              <Image
+                src="/logo.png"
+                alt="AASTU Focus Fellowship Logo"
+                width={38}
+                height={38}
+                priority
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <span className="font-extrabold text-white text-base tracking-tight flex items-center gap-1.5">
@@ -235,7 +243,23 @@ function NavbarContent() {
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-[#0B132B] border-b border-[#2C3960] px-4 pt-2 pb-6 space-y-1">
+        <div className="md:hidden bg-[#0B132B] border-b border-[#2C3960] px-4 pt-3 pb-6 space-y-1">
+          <div className="flex items-center gap-3 px-3 py-2.5 mb-3 rounded-xl bg-[#1C2541]/80 border border-[#2C3960]">
+            <div className="w-8 h-8 rounded-lg bg-white p-0.5 flex items-center justify-center shrink-0 shadow-sm">
+              <Image
+                src="/logo.png"
+                alt="AASTU Focus Logo"
+                width={32}
+                height={32}
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white leading-none">AASTU Focus Fellowship</p>
+              <p className="text-[10px] text-emerald-400 font-semibold tracking-wide mt-0.5">Focus Football Cup</p>
+            </div>
+          </div>
+
           {navLinks.map((link) => {
             const active = pathname === link.href;
             return (

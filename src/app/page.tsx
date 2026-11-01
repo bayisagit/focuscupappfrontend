@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import {
   Trophy,
@@ -83,9 +84,23 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Column: Vision & Brand */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                {activeSeason?.name || 'Focus Football Cup 2026/27'}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  {activeSeason?.name || 'Focus Football Cup 2026/27'}
+                </div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-xs font-bold tracking-tight">
+                  <div className="w-5 h-5 rounded-full bg-white p-0.5 flex items-center justify-center shrink-0">
+                    <Image
+                      src="/logo.png"
+                      alt="AASTU Logo"
+                      width={18}
+                      height={18}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  AASTU Focus Fellowship
+                </div>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">

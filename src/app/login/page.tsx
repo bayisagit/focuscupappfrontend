@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Trophy, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
@@ -52,8 +53,15 @@ export default function LoginPage() {
       <div className="card-gloss max-w-md w-full p-8 rounded-3xl border border-[#2C3960] shadow-2xl relative">
         {/* Header */}
         <div className="text-center space-y-2 mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-amber-500 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
-            <Trophy className="w-6 h-6 text-white" />
+          <div className="w-16 h-16 rounded-2xl bg-white p-1.5 flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/20 border-2 border-white/30 overflow-hidden">
+            <Image
+              src="/logo.png"
+              alt="AASTU Focus Logo"
+              width={56}
+              height={56}
+              priority
+              className="w-full h-full object-contain"
+            />
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight">
             Welcome to Focus Cup

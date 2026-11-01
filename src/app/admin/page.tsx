@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -85,8 +86,10 @@ export default function FrontendAdminPage() {
     about_fellowship: '',
     verse_text: '',
     verse_reference: '',
-    telegram_url: '',
     facebook_url: '',
+    telegram_url: '',
+    tiktok_url: '',
+    instagram_url: '',
     youtube_url: '',
     contact_email: '',
     contact_phone: '',
@@ -293,8 +296,15 @@ export default function FrontendAdminPage() {
       <div className="max-w-md mx-auto px-4 py-16">
         <div className="card-gloss p-8 rounded-2xl shadow-2xl border border-purple-500/30">
           <div className="text-center mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-emerald-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/20">
-              <Lock className="w-7 h-7 text-white" />
+            <div className="w-16 h-16 rounded-2xl bg-white p-1.5 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-purple-500/20 border-2 border-purple-400/30 overflow-hidden">
+              <Image
+                src="/logo.png"
+                alt="AASTU Focus Logo"
+                width={56}
+                height={56}
+                priority
+                className="w-full h-full object-contain"
+              />
             </div>
             <h1 className="text-2xl font-black text-white tracking-tight">Frontend Admin Central</h1>
             <p className="text-xs text-slate-400 mt-1">
@@ -372,22 +382,34 @@ export default function FrontendAdminPage() {
       <div className="card-gloss p-6 sm:p-8 rounded-3xl border border-purple-500/30 mb-8 relative overflow-hidden">
         <div className="absolute -top-12 -right-12 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-purple-400" />
-                Tournament Director Portal
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Live System Active
-              </span>
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white p-1.5 flex items-center justify-center shadow-lg shadow-purple-500/20 border border-purple-400/30 overflow-hidden shrink-0 hidden sm:flex">
+              <Image
+                src="/logo.png"
+                alt="AASTU Focus Logo"
+                width={48}
+                height={48}
+                priority
+                className="w-full h-full object-contain"
+              />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Focus Football Cup &bull; <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-300 to-emerald-400">Admin Central</span>
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-              Full control center to manage matches, approve rosters, publish scores, update fellowship announcements, audit changes, and sync with the Jazzmin backend.
-            </p>
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-purple-400" />
+                  Tournament Director Portal
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Live System Active
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                Focus Football Cup &bull; <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-300 to-emerald-400">Admin Central</span>
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                Full control center to manage matches, approve rosters, publish scores, update fellowship announcements, audit changes, and sync with the Jazzmin backend.
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -1082,23 +1104,52 @@ export default function FrontendAdminPage() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-[11px] text-slate-400">Telegram Channel URL</label>
-                <input
-                  type="url"
-                  value={siteSettings.telegram_url || ''}
-                  onChange={(e) => setSiteSettings({ ...siteSettings, telegram_url: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] text-slate-400">Facebook URL</label>
-                <input
-                  type="url"
-                  value={siteSettings.facebook_url || ''}
-                  onChange={(e) => setSiteSettings({ ...siteSettings, facebook_url: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] text-slate-400">Facebook URL</label>
+                  <input
+                    type="url"
+                    value={siteSettings.facebook_url || ''}
+                    onChange={(e) => setSiteSettings({ ...siteSettings, facebook_url: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-slate-400">Telegram Channel URL</label>
+                  <input
+                    type="url"
+                    value={siteSettings.telegram_url || ''}
+                    onChange={(e) => setSiteSettings({ ...siteSettings, telegram_url: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-slate-400">TikTok Account URL</label>
+                  <input
+                    type="url"
+                    value={siteSettings.tiktok_url || ''}
+                    onChange={(e) => setSiteSettings({ ...siteSettings, tiktok_url: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-slate-400">Instagram Account URL</label>
+                  <input
+                    type="url"
+                    value={siteSettings.instagram_url || ''}
+                    onChange={(e) => setSiteSettings({ ...siteSettings, instagram_url: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] text-slate-400">YouTube Channel URL</label>
+                  <input
+                    type="url"
+                    value={siteSettings.youtube_url || ''}
+                    onChange={(e) => setSiteSettings({ ...siteSettings, youtube_url: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white"
+                  />
+                </div>
               </div>
               <button
                 type="submit"

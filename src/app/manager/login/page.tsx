@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Lock, User, AlertCircle, ArrowRight, ShieldAlert } from 'lucide-react';
@@ -41,8 +42,15 @@ export default function ManagerLoginPage() {
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="card-gloss max-w-md w-full p-8 rounded-3xl border border-purple-500/40 shadow-2xl relative">
         <div className="text-center space-y-2 mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center mx-auto shadow-lg shadow-purple-500/20">
-            <Lock className="w-6 h-6 text-white" />
+          <div className="w-16 h-16 rounded-2xl bg-white p-1.5 flex items-center justify-center mx-auto shadow-xl shadow-purple-500/20 border-2 border-purple-400/30 overflow-hidden">
+            <Image
+              src="/logo.png"
+              alt="AASTU Focus Logo"
+              width={56}
+              height={56}
+              priority
+              className="w-full h-full object-contain"
+            />
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight">
             Manager Administration Portal

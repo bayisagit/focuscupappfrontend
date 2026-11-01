@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MobileNav from "@/components/MobileNav";
+import AastuLogoLoader from "@/components/AastuLogoLoader";
 
 export const metadata: Metadata = {
   title: "AASTU Focus Fellowship – Focus Football Cup",
@@ -13,7 +14,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: "/icon.png",
-    apple: "/icon.png",
+    shortcut: "/icon-192.png",
+    apple: "/icon-512.png",
   },
 };
 
@@ -33,6 +35,7 @@ export default function RootLayout({
     <html lang="en" className="h-full dark">
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body className="min-h-full flex flex-col bg-[#0B132B] text-slate-100 antialiased selection:bg-emerald-500 selection:text-slate-950">
         <AuthProvider>
@@ -40,7 +43,7 @@ export default function RootLayout({
             <Navbar />
           </Suspense>
           <main className="flex-1">
-            <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-slate-400">Loading...</div>}>
+            <Suspense fallback={<AastuLogoLoader />}>
               {children}
             </Suspense>
           </main>

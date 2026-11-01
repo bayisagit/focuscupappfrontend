@@ -2,13 +2,38 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { api } from '@/lib/api';
-import { Trophy, Send, Mail, Phone, Heart } from 'lucide-react';
+import { Mail, Phone, Heart } from 'lucide-react';
 
 function FacebookIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+    </svg>
+  );
+}
+
+function TelegramIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.458c.535-.194 1.006.128.832.92z" />
+    </svg>
+  );
+}
+
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.98v7.62c-.03 2.05-.72 4.1-2.07 5.66-1.78 2.08-4.52 3.07-7.23 2.72-2.78-.36-5.24-2.24-6.3-4.83-1.07-2.61-.67-5.74 1.03-7.95 1.58-2.05 4.18-3.13 6.74-2.81.01 1.45.01 2.89.01 4.34-1.34-.23-2.77.16-3.7 1.05-.98.94-1.32 2.39-1.02 3.69.29 1.25 1.32 2.27 2.59 2.52 1.32.26 2.74-.23 3.51-1.32.48-.68.68-1.53.67-2.37V.02h-1.66z" />
+    </svg>
+  );
+}
+
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
     </svg>
   );
 }
@@ -29,10 +54,11 @@ export default function Footer() {
       'Focus Fellowship at Addis Ababa Science and Technology University (AASTU) is a Christ-centered university student community dedicated to spiritual growth, academic excellence, brotherly fellowship, and building lasting memories across academic batches.',
     verse_text: 'Behold, how good and how pleasant it is for brethren to dwell together in unity!',
     verse_reference: 'Psalm 133:1',
-    telegram_url: 'https://t.me/AASTUFocusFellowship',
-    facebook_url: 'https://facebook.com/AASTUFocusFellowship',
-    youtube_url: 'https://youtube.com/@AASTUFocusFellowship',
-    instagram_url: '',
+    facebook_url: 'https://web.facebook.com/fstufocus',
+    telegram_url: 'https://t.me/fstufocus',
+    tiktok_url: 'https://www.tiktok.com/@aastu_focus?lang=en',
+    instagram_url: 'https://www.instagram.com/aastufocus/',
+    youtube_url: 'https://www.youtube.com/@aastufocusofficial9025',
     contact_email: 'contact@aastufocus.org',
     contact_phone: '+251 900 000 000',
   });
@@ -50,8 +76,14 @@ export default function Footer() {
           {/* Brand & Vision */}
           <div className="space-y-4 lg:col-span-1">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-amber-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                <Trophy className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-lg shadow-emerald-500/20 border border-white/20 overflow-hidden shrink-0">
+                <Image
+                  src="/logo.png"
+                  alt="AASTU Focus Fellowship Logo"
+                  width={38}
+                  height={38}
+                  className="w-full h-full object-contain"
+                />
               </div>
               <span className="font-extrabold text-white text-base tracking-tight">
                 FOCUS <span className="text-emerald-400">FOOTBALL CUP</span>
@@ -151,27 +183,53 @@ export default function Footer() {
             <p className="text-xs text-slate-400 mb-4 leading-relaxed">
               &ldquo;{settings.tagline}&rdquo;
             </p>
-            <div className="flex items-center space-x-3 mb-6">
-              {settings.telegram_url && (
-                <a
-                  href={settings.telegram_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-9 h-9 rounded-lg bg-[#1C2541] border border-[#2C3960] flex items-center justify-center hover:bg-emerald-500 hover:text-slate-950 transition-all text-slate-300"
-                  aria-label="Telegram"
-                >
-                  <Send className="w-4 h-4" />
-                </a>
-              )}
+            <div className="flex flex-wrap items-center gap-2.5 mb-6">
               {settings.facebook_url && (
                 <a
                   href={settings.facebook_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-9 h-9 rounded-lg bg-[#1C2541] border border-[#2C3960] flex items-center justify-center hover:bg-emerald-500 hover:text-slate-950 transition-all text-slate-300"
+                  className="w-9 h-9 rounded-lg bg-[#1C2541] border border-[#2C3960] flex items-center justify-center hover:bg-[#1877F2] hover:border-[#1877F2] hover:text-white transition-all text-slate-300 shadow-sm"
                   aria-label="Facebook"
+                  title="AASTU Focus on Facebook"
                 >
                   <FacebookIcon className="w-4 h-4" />
+                </a>
+              )}
+              {settings.telegram_url && (
+                <a
+                  href={settings.telegram_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-lg bg-[#1C2541] border border-[#2C3960] flex items-center justify-center hover:bg-[#229ED9] hover:border-[#229ED9] hover:text-white transition-all text-slate-300 shadow-sm"
+                  aria-label="Telegram"
+                  title="AASTU Focus on Telegram"
+                >
+                  <TelegramIcon className="w-4 h-4" />
+                </a>
+              )}
+              {settings.tiktok_url && (
+                <a
+                  href={settings.tiktok_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-lg bg-[#1C2541] border border-[#2C3960] flex items-center justify-center hover:bg-black hover:border-pink-500 hover:text-pink-400 transition-all text-slate-300 shadow-sm"
+                  aria-label="TikTok"
+                  title="AASTU Focus on TikTok"
+                >
+                  <TikTokIcon className="w-4 h-4" />
+                </a>
+              )}
+              {settings.instagram_url && (
+                <a
+                  href={settings.instagram_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-lg bg-[#1C2541] border border-[#2C3960] flex items-center justify-center hover:bg-gradient-to-tr hover:from-amber-500 hover:via-pink-500 hover:to-purple-600 hover:text-white transition-all text-slate-300 shadow-sm"
+                  aria-label="Instagram"
+                  title="AASTU Focus on Instagram"
+                >
+                  <InstagramIcon className="w-4 h-4" />
                 </a>
               )}
               {settings.youtube_url && (
@@ -179,8 +237,9 @@ export default function Footer() {
                   href={settings.youtube_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-9 h-9 rounded-lg bg-[#1C2541] border border-[#2C3960] flex items-center justify-center hover:bg-emerald-500 hover:text-slate-950 transition-all text-slate-300"
+                  className="w-9 h-9 rounded-lg bg-[#1C2541] border border-[#2C3960] flex items-center justify-center hover:bg-[#FF0000] hover:border-[#FF0000] hover:text-white transition-all text-slate-300 shadow-sm"
                   aria-label="YouTube"
+                  title="AASTU Focus on YouTube"
                 >
                   <YoutubeIcon className="w-4 h-4" />
                 </a>

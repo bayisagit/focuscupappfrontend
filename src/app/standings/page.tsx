@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import { Trophy, Shield, Info, ArrowUpRight } from 'lucide-react';
 
@@ -67,8 +68,19 @@ export default function StandingsPage() {
             <tbody className="divide-y divide-[#2C3960]/60">
               {loading ? (
                 <tr>
-                  <td colSpan={11} className="py-12 text-center text-slate-400">
-                    Loading standings table...
+                  <td colSpan={11} className="py-16 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-lg border border-emerald-500/30 animate-pulse">
+                        <Image
+                          src="/logo.png"
+                          alt="AASTU Logo"
+                          width={38}
+                          height={38}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <p className="text-xs text-slate-400 font-medium">Loading official league standings...</p>
+                    </div>
                   </td>
                 </tr>
               ) : standings.length > 0 ? (
