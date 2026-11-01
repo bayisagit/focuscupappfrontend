@@ -14,7 +14,9 @@ import {
   ChevronDown,
   Sparkles,
   ArrowRight,
+  Maximize2,
 } from 'lucide-react';
+import ProfilePhotoLightbox, { LightboxProfile } from '@/components/ProfilePhotoLightbox';
 
 export default function MembersDirectoryPage() {
   const { user } = useAuth();
@@ -32,6 +34,10 @@ export default function MembersDirectoryPage() {
   const [sortBy, setSortBy] = useState('followers');
 
   const [followLoading, setFollowLoading] = useState<Record<number, boolean>>({});
+
+  // Fullscreen Profile Lightbox State
+  const [lightboxProfile, setLightboxProfile] = useState<LightboxProfile | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     api.members.getOptions()
@@ -231,20 +237,35 @@ export default function MembersDirectoryPage() {
               <div>
                 {/* Avatar & Batch Badge */}
                 <div className="flex items-start justify-between mb-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-2xl bg-emerald-800/40 border-2 border-emerald-400/40 flex items-center justify-center overflow-hidden shadow">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLightboxProfile(member);
+                      setLightboxOpen(true);
+                    }}
+                    className="relative group/avatar cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-400 rounded-2xl text-left"
+                    title="Click to view full photo"
+                  >
+                    <div className="w-16 h-16 rounded-2xl bg-emerald-800/40 border-2 border-emerald-400/40 flex items-center justify-center overflow-hidden shadow group-hover/avatar:border-emerald-300 transition-all relative">
                       {member.profile_picture ? (
-                        <img src={member.profile_picture} alt="" className="w-full h-full object-cover" />
+                        <img
+                          src={member.profile_picture}
+                          alt={member.full_name}
+                          className="w-full h-full object-cover group-hover/avatar:scale-110 transition-transform duration-300"
+                        />
                       ) : (
                         <Users className="w-7 h-7 text-emerald-300" />
                       )}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity rounded-2xl">
+                        <Maximize2 className="w-5 h-5 text-white drop-shadow" />
+                      </div>
                     </div>
                     {member.preferred_jersey_number && (
                       <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-amber-500 text-slate-950 font-black text-[11px] flex items-center justify-center shadow">
                         #{member.preferred_jersey_number}
                       </span>
                     )}
-                  </div>
+                  </button>
 
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-[#161D36] text-emerald-400 border border-[#2C3960]">
                     {member.batch_display || member.academic_year}
@@ -316,6 +337,13 @@ export default function MembersDirectoryPage() {
           </p>
         </div>
       )}
+
+      {/* Fullscreen Profile Photo Lightbox */}
+      <ProfilePhotoLightbox
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        profile={lightboxProfile}
+      />
     </div>
   );
 }

@@ -168,9 +168,9 @@ export const api = {
     getAnnouncements: () => fetchAPI<any>('/api/v1/community/announcements/'),
     getGallery: () => fetchAPI<any>('/api/v1/community/gallery/'),
     getUploadQuota: () => fetchAPI<any>('/api/v1/community/gallery/upload/'),
-    uploadPhoto: (formData: FormData) => fetchAPI<any>('/api/v1/community/gallery/upload/', {
+    uploadPhoto: (data: FormData | any) => fetchAPI<any>('/api/v1/community/gallery/upload/', {
       method: 'POST',
-      body: formData,
+      body: data instanceof FormData ? data : JSON.stringify(data),
     }),
     getNotifications: () => fetchAPI<any>('/api/v1/community/notifications/'),
     markNotificationsRead: () => fetchAPI<any>('/api/v1/community/notifications/', {

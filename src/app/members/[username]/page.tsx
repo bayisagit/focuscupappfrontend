@@ -17,11 +17,14 @@ import {
   ArrowRight,
   Flame,
   Check,
-  X,
-  Eye,
   CheckCircle2,
   ExternalLink,
+  Camera,
+  Maximize2,
+  Eye,
+  X,
 } from 'lucide-react';
+import ProfilePhotoLightbox from '@/components/ProfilePhotoLightbox';
 
 import { Suspense } from 'react';
 
@@ -35,6 +38,7 @@ function MemberProfileContent() {
   const [followersList, setFollowersList] = useState<any[]>([]);
   const [followingList, setFollowingList] = useState<any[]>([]);
   const [activeStatModal, setActiveStatModal] = useState<'appearances' | 'goals' | 'assists' | 'potm' | 'yellow_cards' | 'red_cards' | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     if (username) {
@@ -113,14 +117,27 @@ function MemberProfileContent() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           {/* Avatar & Core Bio */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
-            <div className="relative">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-emerald-800/40 border-4 border-emerald-400/40 overflow-hidden shadow-2xl flex items-center justify-center">
+            <div className="relative group/headerAvatar">
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(true)}
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-emerald-800/40 border-4 border-emerald-400/40 overflow-hidden shadow-2xl flex items-center justify-center cursor-pointer group-hover/headerAvatar:border-emerald-300 transition-all relative focus:outline-none text-left"
+                title="Click to view full photo"
+              >
                 {profile.profile_picture ? (
-                  <img src={profile.profile_picture} alt="" className="w-full h-full object-cover" />
+                  <img
+                    src={profile.profile_picture}
+                    alt={profile.full_name}
+                    className="w-full h-full object-cover group-hover/headerAvatar:scale-105 transition-transform duration-300"
+                  />
                 ) : (
                   <Users className="w-12 h-12 text-emerald-300" />
                 )}
-              </div>
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/headerAvatar:opacity-100 flex items-center justify-center transition-opacity rounded-3xl">
+                  <Maximize2 className="w-6 h-6 text-white drop-shadow" />
+                </div>
+              </button>
+
               {profile.preferred_jersey_number && (
                 <span className="absolute -bottom-2 -right-2 px-2.5 py-1 rounded-xl bg-amber-500 text-slate-950 font-black text-xs shadow-lg">
                   #{profile.preferred_jersey_number}
@@ -1013,6 +1030,13 @@ function MemberProfileContent() {
           </div>
         </div>
       )}
+
+      {/* Fullscreen Profile Photo Lightbox */}
+      <ProfilePhotoLightbox
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        profile={profile}
+      />
     </div>
   );
 }

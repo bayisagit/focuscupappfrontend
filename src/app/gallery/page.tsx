@@ -17,6 +17,8 @@ import {
 import { FORMER_GALLERY_PHOTOS, FormerPhoto } from '@/data/formerGallery';
 import FormerPhotoItem from '@/components/FormerPhotoItem';
 import GalleryLightbox from '@/components/GalleryLightbox';
+import TournamentPhotoLightbox from '@/components/TournamentPhotoLightbox';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 export default function GalleryPage() {
   const { user } = useAuth();
@@ -40,6 +42,10 @@ export default function GalleryPage() {
   const [formerCategory, setFormerCategory] = useState<string>('All');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentFormerIndex, setCurrentFormerIndex] = useState(0);
+
+  // Active Tournament Photos Lightbox State
+  const [tournamentLightboxOpen, setTournamentLightboxOpen] = useState(false);
+  const [currentTournamentIndex, setCurrentTournamentIndex] = useState(0);
 
   const loadQuota = () => {
     if (user) {
@@ -95,13 +101,25 @@ export default function GalleryPage() {
       return;
     }
     setUploading(true);
-    const formData = new FormData();
-    formData.append('album', selectedAlbum.toString());
-    formData.append('image', file);
-    if (caption) formData.append('caption', caption);
-
     try {
-      const res = await api.community.uploadPhoto(formData);
+      let payload: any;
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'bzr2e9rj';
+      if (cloudName) {
+        const cloudRes = await uploadToCloudinary(file, 'focus_fellowship/matches');
+        payload = {
+          album: Number(selectedAlbum),
+          image_url: cloudRes.secure_url,
+          caption: caption.trim(),
+        };
+      } else {
+        const formData = new FormData();
+        formData.append('album', selectedAlbum.toString());
+        formData.append('image', file);
+        if (caption) formData.append('caption', caption);
+        payload = formData;
+      }
+
+      const res = await api.community.uploadPhoto(payload);
       alert(res.message || 'Photo uploaded successfully!');
       setUploadModalOpen(false);
       setFile(null);
@@ -109,7 +127,7 @@ export default function GalleryPage() {
       loadGallery();
       loadQuota();
     } catch (err: any) {
-      alert(err.data?.error || 'Failed to upload photo.');
+      alert(err.data?.error || err.message || 'Failed to upload photo.');
     } finally {
       setUploading(false);
     }
@@ -211,28 +229,60 @@ export default function GalleryPage() {
                 ))}
               </div>
             ) : currentAlbumData && currentAlbumData.photos && currentAlbumData.photos.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {currentAlbumData.photos.map((photo: any) => (
-                  <div
-                    key={photo.id}
-                    className="card-gloss rounded-2xl overflow-hidden group relative aspect-square border border-[#2C3960]"
-                  >
-                    <img
-                      src={photo.image}
-                      alt={photo.caption || 'Match moment'}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
-                      {photo.caption && (
-                        <p className="text-xs font-semibold text-white truncate">{photo.caption}</p>
-                      )}
-                      <p className="text-[10px] text-emerald-400 font-medium">
-                        Photo by {photo.uploaded_by_name}
-                      </p>
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {currentAlbumData.photos.map((photo: any, index: number) => (
+                    <div
+                      key={photo.id || index}
+                      onClick={() => {
+                        setCurrentTournamentIndex(index);
+                        setTournamentLightboxOpen(true);
+                      }}
+                      className="card-gloss rounded-2xl overflow-hidden group relative aspect-square border border-[#2C3960]/80 hover:border-emerald-400/80 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/15 cursor-pointer"
+                    >
+                      <img
+                        src={photo.image}
+                        alt={photo.caption || 'Match moment'}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+
+                      {/* Top Badges overlay on hover */}
+                      <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-500 text-slate-950 shadow-sm">
+                          Match #{index + 1}
+                        </span>
+                        <span className="p-1.5 rounded-lg bg-slate-900/80 text-white backdrop-blur-sm border border-slate-700 shadow-md">
+                          <Maximize2 className="w-3.5 h-3.5 text-emerald-400" />
+                        </span>
+                      </div>
+
+                      {/* Bottom Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end pointer-events-none">
+                        {photo.caption && (
+                          <p className="text-xs font-semibold text-white truncate">{photo.caption}</p>
+                        )}
+                        <div className="flex items-center justify-between mt-1 text-[10px]">
+                          <span className="text-emerald-400 font-medium truncate max-w-[130px]">
+                            Photo by {photo.uploaded_by_name || 'Member'}
+                          </span>
+                          <span className="text-emerald-300 font-bold shrink-0">View &rarr;</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+
+                {/* Open Fullscreen Lightbox Button for Tournament Photos */}
+                <button
+                  onClick={() => {
+                    setCurrentTournamentIndex(0);
+                    setTournamentLightboxOpen(true);
+                  }}
+                  className="mt-5 w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Maximize2 className="w-4 h-4" /> Open Fullscreen Lightbox ({currentAlbumData.photos.length} Photo{currentAlbumData.photos.length === 1 ? '' : 's'})
+                </button>
+              </>
             ) : (
               <div className="card-gloss p-8 rounded-2xl text-center space-y-3 border border-dashed border-[#2C3960]">
                 <Camera className="w-10 h-10 text-slate-500 mx-auto" />
@@ -321,6 +371,16 @@ export default function GalleryPage() {
         isOpen={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
         onSelectIndex={(idx) => setCurrentFormerIndex(idx)}
+      />
+
+      {/* Active Tournament Match Photos Lightbox */}
+      <TournamentPhotoLightbox
+        photos={currentAlbumData?.photos || []}
+        currentIndex={currentTournamentIndex}
+        isOpen={tournamentLightboxOpen}
+        onClose={() => setTournamentLightboxOpen(false)}
+        onSelectIndex={(idx) => setCurrentTournamentIndex(idx)}
+        albumTitle={currentAlbumData?.title}
       />
 
       {/* Upload Photo Modal */}

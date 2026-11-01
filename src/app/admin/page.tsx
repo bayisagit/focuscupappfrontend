@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import {
   Trophy,
+  Shield,
   ShieldCheck,
   BarChart3,
   GraduationCap,
@@ -746,11 +747,11 @@ export default function FrontendAdminPage() {
 
                 <Link
                   href="/batches"
-                  target="_blank"
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-blue-400 hover:bg-[#161D36] transition-all"
-                  title="Batch Rosters"
+                  onClick={() => setMobileSidebarOpen(false)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-[#161D36] transition-all"
+                  title="Batch Squads"
                 >
-                  <ExternalLink className="w-4 h-4 shrink-0" />
+                  <Shield className="w-4 h-4 text-blue-400 shrink-0" />
                   {!sidebarCollapsed && <span>Batch Squads</span>}
                 </Link>
               </div>
