@@ -28,7 +28,7 @@ function MobileNavContent() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0B132B]/95 backdrop-blur-lg border-t border-[#2C3960] px-2 py-1.5 shadow-2xl">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[9999] bg-[#0B132B]/95 backdrop-blur-lg border-t border-[#2C3960] px-2 py-1.5 shadow-2xl pb-[max(0.375rem,env(safe-area-inset-bottom))]">
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon;

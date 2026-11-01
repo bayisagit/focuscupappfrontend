@@ -80,3 +80,27 @@
 .live-indicator {
   animation: live-pulse 1.8s infinite ease-in-out;
 }
+
+/* Completely suppress Netlify HUD / Badge floating iframe */
+#nl-badge-frame,
+#nl-hud-frame,
+iframe[id^="nl-"],
+iframe[title*="Netlify"],
+iframe[title*="Powered by Netlify"],
+iframe[src*="netlify"],
+[data-netlify-badge],
+netlify-drawer {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0px !important;
+  height: 0px !important;
+  max-width: 0px !important;
+  max-height: 0px !important;
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  z-index: -9999 !important;
+  clip-path: path("M0 0Z") !important;
+}

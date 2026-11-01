@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import MobileNav from "@/components/MobileNav";
 import AastuLogoLoader from "@/components/AastuLogoLoader";
 import MobileAppInstallBanner from "@/components/MobileAppInstallBanner";
+import RemoveNetlifyBadge from "@/components/RemoveNetlifyBadge";
 
 export const metadata: Metadata = {
   title: "AASTU Focus Cup Fellowship – Focus Football Cup",
@@ -64,6 +65,7 @@ export default function RootLayout({
             <MobileNav />
           </Suspense>
           <MobileAppInstallBanner />
+          <RemoveNetlifyBadge />
         </AuthProvider>
       </body>
     </html>
