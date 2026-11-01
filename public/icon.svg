@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="128" fill="#0B132B"/>
+  <circle cx="256" cy="256" r="210" stroke="#10B981" stroke-width="12" stroke-opacity="0.3"/>
+  <path d="M256 90 L320 220 L460 220 L350 300 L390 430 L256 350 L122 430 L162 300 L52 220 L192 220 Z" fill="url(#goldGrad)" />
+  <circle cx="256" cy="256" r="64" fill="#0B132B" stroke="#10B981" stroke-width="8"/>
+  <!-- Cross in center symbolizing Christ-centered fellowship -->
+  <path d="M256 220 V292 M236 244 H276" stroke="#10B981" stroke-width="8" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="goldGrad" x1="52" y1="90" x2="460" y2="430" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F59E0B"/>
+      <stop offset="0.5" stop-color="#D97706"/>
+      <stop offset="1" stop-color="#B45309"/>
+    </linearGradient>
+  </defs>
+</svg>

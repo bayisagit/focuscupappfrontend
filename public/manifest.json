@@ -1,0 +1,18 @@
+{
+  "name": "AASTU Focus Fellowship – Focus Football Cup",
+  "short_name": "Focus Cup",
+  "description": "Digital community and football tournament platform for AASTU Focus Fellowship",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B132B",
+  "theme_color": "#0B132B",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
