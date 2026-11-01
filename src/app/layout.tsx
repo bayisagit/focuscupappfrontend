@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MobileNav from "@/components/MobileNav";
 import AastuLogoLoader from "@/components/AastuLogoLoader";
+import MobileAppInstallBanner from "@/components/MobileAppInstallBanner";
 
 export const metadata: Metadata = {
   title: "AASTU Focus Cup Fellowship – Focus Football Cup",
@@ -42,6 +43,11 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Focus Cup" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="application-name" content="Focus Cup" />
       </head>
       <body className="min-h-full flex flex-col bg-[#0B132B] text-slate-100 antialiased selection:bg-emerald-500 selection:text-slate-950">
         <AuthProvider>
@@ -57,6 +63,7 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <MobileNav />
           </Suspense>
+          <MobileAppInstallBanner />
         </AuthProvider>
       </body>
     </html>
