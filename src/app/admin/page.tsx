@@ -26,12 +26,41 @@ import {
   ArrowRight,
   RefreshCw,
   Search,
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  Menu,
+  X,
+  Plus,
 } from 'lucide-react';
 
 export default function FrontendAdminPage() {
   const { user, login } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'matches' | 'players' | 'members' | 'content' | 'audit' | 'reports'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'matches' | 'create-fixture' | 'players' | 'members' | 'content' | 'audit' | 'reports'>('dashboard');
+
+  // Collapsible Sidebar States
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [matchOpsOpen, setMatchOpsOpen] = useState(true);
+  const [rosterOpsOpen, setRosterOpsOpen] = useState(true);
+  const [governanceOpen, setGovernanceOpen] = useState(false);
+
+  // Custom Fixture Creation State
+  const [batchTeams, setBatchTeams] = useState<any[]>([]);
+  const [customFixture, setCustomFixture] = useState({
+    home_team_id: '',
+    away_team_id: '',
+    stage_or_round_name: 'Grand Final',
+    round_number: 4,
+    match_date: new Date().toISOString().split('T')[0],
+    kick_off_time: '16:00',
+    venue: 'AASTU Main Football Field',
+    notes: '',
+  });
+  const [customFixtureLoading, setCustomFixtureLoading] = useState(false);
+  const [customFixtureSuccess, setCustomFixtureSuccess] = useState('');
+  const [customFixtureError, setCustomFixtureError] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -151,6 +180,22 @@ export default function FrontendAdminPage() {
       .catch((err: any) => console.error(err));
   };
 
+  const loadBatchTeams = () => {
+    api.competitions.getBatches()
+      .then((res: any) => {
+        const list = res.results || res || [];
+        setBatchTeams(list);
+        if (list.length >= 2 && !customFixture.home_team_id) {
+          setCustomFixture((prev) => ({
+            ...prev,
+            home_team_id: String(list[0].id),
+            away_team_id: String(list[1].id),
+          }));
+        }
+      })
+      .catch((err: any) => console.error(err));
+  };
+
   useEffect(() => {
     if (user?.is_manager) {
       loadDashboard();
@@ -159,6 +204,7 @@ export default function FrontendAdminPage() {
       loadMembers();
       loadAuditLogs();
       loadSettings();
+      loadBatchTeams();
     }
   }, [user]);
 
@@ -264,6 +310,38 @@ export default function FrontendAdminPage() {
       setGenMessage(err.data?.error || 'Failed to generate fixtures.');
     } finally {
       setGenLoading(false);
+    }
+  };
+
+  // Create Custom Fixture (Finals, Semi-finals, Special Matchdays)
+  const handleCreateCustomFixture = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCustomFixtureLoading(true);
+    setCustomFixtureSuccess('');
+    setCustomFixtureError('');
+
+    try {
+      const res = await api.manager.createFixture({
+        home_team_id: customFixture.home_team_id,
+        away_team_id: customFixture.away_team_id,
+        stage_or_round_name: customFixture.stage_or_round_name,
+        round_number: Number(customFixture.round_number) || 1,
+        match_date: customFixture.match_date,
+        kick_off_time: customFixture.kick_off_time,
+        venue: customFixture.venue,
+        notes: customFixture.notes,
+      });
+      setCustomFixtureSuccess(res.message || 'Custom fixture created successfully!');
+      loadMatches();
+      loadDashboard();
+      loadAuditLogs();
+      setTimeout(() => {
+        setActiveTab('matches');
+      }, 1800);
+    } catch (err: any) {
+      setCustomFixtureError(err.data?.error || 'Failed to create fixture. Please check all fields.');
+    } finally {
+      setCustomFixtureLoading(false);
     }
   };
 
@@ -374,115 +452,356 @@ export default function FrontendAdminPage() {
   const { kpis, members_by_batch } = dashData || {};
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
-      {/* Top Banner & Hub Controls */}
-      <div className="card-gloss p-6 sm:p-8 rounded-3xl border border-purple-500/30 mb-8 relative overflow-hidden">
-        <div className="absolute -top-12 -right-12 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white p-1.5 flex items-center justify-center shadow-lg shadow-purple-500/20 border border-purple-400/30 overflow-hidden shrink-0 hidden sm:flex">
-              <Image
-                src="/logo.png"
-                alt="AASTU Focus Logo"
-                width={48}
-                height={48}
-                priority
-                className="w-full h-full object-contain"
-              />
+    <div className="min-h-screen bg-[#070D1E] flex flex-col md:flex-row relative">
+      {/* Mobile Drawer Backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          onClick={() => setMobileSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 md:hidden"
+        />
+      )}
+
+      {/* Collapsible Sidebar */}
+      <aside
+        className={`fixed md:sticky top-0 h-screen z-50 bg-[#0B132B]/95 backdrop-blur-xl border-r border-[#2C3960] flex flex-col transition-all duration-300 ease-in-out shrink-0 ${
+          sidebarCollapsed ? 'md:w-20' : 'md:w-64'
+        } ${
+          mobileSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-[#2C3960]/80 flex items-center justify-between">
+          <div className={`flex items-center gap-3 overflow-hidden ${sidebarCollapsed ? 'hidden md:hidden' : 'flex'}`}>
+            <div className="w-9 h-9 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md">
+              <Image src="/logo.png" alt="Logo" width={32} height={32} className="w-full h-full object-contain" />
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-purple-400" />
-                  Tournament Director Portal
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  Live System Active
-                </span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                Focus Football Cup &bull; <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-300 to-emerald-400">Admin Central</span>
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-                Full control center to manage matches, approve rosters, publish scores, update fellowship announcements, audit changes, and sync with the Jazzmin backend.
-              </p>
+            <div className="truncate">
+              <p className="text-xs font-black text-white leading-tight">Focus Cup Admin</p>
+              <p className="text-[10px] text-purple-400 font-semibold tracking-wide">Command Center</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              href="http://localhost:8002/admin/"
-              target="_blank"
-              rel="noreferrer"
-              className="px-4 py-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition-all flex items-center gap-2"
-              title="Open Django Jazzmin Backend Administration"
-            >
-              <ExternalLink className="w-4 h-4 text-purple-400" />
-              Jazzmin Backend Admin
-            </a>
+          {/* Collapsed Logo view */}
+          {sidebarCollapsed && (
+            <div className="w-9 h-9 rounded-xl bg-white p-1 hidden md:flex items-center justify-center shrink-0 shadow-md mx-auto">
+              <Image src="/logo.png" alt="Logo" width={32} height={32} className="w-full h-full object-contain" />
+            </div>
+          )}
 
-            <a
-              href="http://localhost:8002/api/docs/"
-              target="_blank"
-              rel="noreferrer"
-              className="px-4 py-2.5 rounded-xl bg-[#161D36] hover:bg-[#1E2648] text-slate-300 border border-[#2C3960] text-xs font-semibold transition-all flex items-center gap-1.5"
-            >
-              <FileText className="w-4 h-4 text-emerald-400" />
-              Swagger API
-            </a>
-
+          {/* Toggle buttons */}
+          <div className="flex items-center">
             <button
-              onClick={handleGenerateFixtures}
-              disabled={genLoading}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-xs font-bold transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 cursor-pointer"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${genLoading ? 'animate-spin' : ''}`} />
-              Auto-Fixtures
+              {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => setMobileSidebarOpen(false)}
+              className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+            >
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {genMessage && (
-          <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-medium">
-            {genMessage}
-          </div>
-        )}
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-8 border-b border-[#2C3960]/60 scrollbar-none">
-        {[
-          { id: 'dashboard', label: 'Overview & KPIs', icon: Trophy },
-          { id: 'matches', label: 'Matches & Live Events', icon: Flame },
-          { id: 'players', label: 'Roster Approvals', icon: Users, badge: pendingPlayers.length },
-          { id: 'members', label: 'Member Directory', icon: Shield },
-          { id: 'content', label: 'Announcements & Content', icon: Sparkles },
-          { id: 'audit', label: 'Audit Trail', icon: History },
-          { id: 'reports', label: 'CSV Reports', icon: Download },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
+        {/* Sidebar Navigation Items */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-slate-800">
+          {/* Section: Overview */}
+          <div>
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                isActive
-                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20'
-                  : 'bg-[#161D36]/70 text-slate-400 hover:text-white hover:bg-[#1E2648]'
+              onClick={() => { setActiveTab('dashboard'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'dashboard'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-[#161D36]'
               }`}
+              title="Overview & Metrics"
             >
-              <Icon className="w-4 h-4" />
-              <span>{tab.label}</span>
-              {Boolean(tab.badge) && tab.badge! > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-slate-950 font-black">
-                  {tab.badge}
-                </span>
-              )}
+              <Trophy className="w-4 h-4 shrink-0 text-amber-400" />
+              {!sidebarCollapsed && <span>Overview &amp; Metrics</span>}
             </button>
-          );
-        })}
-      </div>
+          </div>
+
+          {/* Section: Match Operations (Dropdown) */}
+          <div className="space-y-1">
+            {!sidebarCollapsed ? (
+              <button
+                onClick={() => setMatchOpsOpen(!matchOpsOpen)}
+                className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider hover:text-slate-200 cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Flame className="w-3.5 h-3.5 text-emerald-400" /> Match Operations
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${matchOpsOpen ? 'rotate-180' : ''}`} />
+              </button>
+            ) : (
+              <div className="border-t border-[#2C3960]/60 my-2" />
+            )}
+
+            {(matchOpsOpen || sidebarCollapsed) && (
+              <div className={`space-y-1 ${!sidebarCollapsed ? 'pl-2 border-l border-[#2C3960]/60 ml-2' : ''}`}>
+                <button
+                  onClick={() => { setActiveTab('matches'); setMobileSidebarOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'matches'
+                      ? 'bg-purple-600/80 text-white font-bold'
+                      : 'text-slate-300 hover:text-white hover:bg-[#161D36]'
+                  }`}
+                  title="Matches & Live Events"
+                >
+                  <Flame className="w-4 h-4 text-emerald-400 shrink-0" />
+                  {!sidebarCollapsed && <span>Live Scores &amp; Events</span>}
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('create-fixture'); setMobileSidebarOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'create-fixture'
+                      ? 'bg-purple-600/80 text-white font-bold'
+                      : 'text-slate-300 hover:text-white hover:bg-[#161D36]'
+                  }`}
+                  title="Create Custom Fixture"
+                >
+                  <PlusCircle className="w-4 h-4 text-purple-400 shrink-0" />
+                  {!sidebarCollapsed && <span>Create Custom Fixture</span>}
+                </button>
+
+                <button
+                  onClick={handleGenerateFixtures}
+                  disabled={genLoading}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-[#161D36] transition-all cursor-pointer"
+                  title="Auto-Generate Round-Robin"
+                >
+                  <RefreshCw className={`w-4 h-4 text-blue-400 shrink-0 ${genLoading ? 'animate-spin' : ''}`} />
+                  {!sidebarCollapsed && <span>Auto-Gen Fixtures</span>}
+                </button>
+
+                <Link
+                  href="/fixtures"
+                  target="_blank"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-emerald-400 hover:bg-[#161D36] transition-all"
+                  title="Public Fixtures Page"
+                >
+                  <ExternalLink className="w-4 h-4 shrink-0" />
+                  {!sidebarCollapsed && <span>Public Fixtures</span>}
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Section: Roster & Members (Dropdown) */}
+          <div className="space-y-1">
+            {!sidebarCollapsed ? (
+              <button
+                onClick={() => setRosterOpsOpen(!rosterOpsOpen)}
+                className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider hover:text-slate-200 cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5 text-blue-400" /> Roster &amp; Members
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${rosterOpsOpen ? 'rotate-180' : ''}`} />
+              </button>
+            ) : (
+              <div className="border-t border-[#2C3960]/60 my-2" />
+            )}
+
+            {(rosterOpsOpen || sidebarCollapsed) && (
+              <div className={`space-y-1 ${!sidebarCollapsed ? 'pl-2 border-l border-[#2C3960]/60 ml-2' : ''}`}>
+                <button
+                  onClick={() => { setActiveTab('players'); setMobileSidebarOpen(false); }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'players'
+                      ? 'bg-purple-600/80 text-white font-bold'
+                      : 'text-slate-300 hover:text-white hover:bg-[#161D36]'
+                  }`}
+                  title="Roster Approvals"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className="w-4 h-4 text-blue-400 shrink-0" />
+                    {!sidebarCollapsed && <span>Roster Approvals</span>}
+                  </div>
+                  {pendingPlayers.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-slate-950 font-black">
+                      {pendingPlayers.length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('members'); setMobileSidebarOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'members'
+                      ? 'bg-purple-600/80 text-white font-bold'
+                      : 'text-slate-300 hover:text-white hover:bg-[#161D36]'
+                  }`}
+                  title="Member Directory"
+                >
+                  <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
+                  {!sidebarCollapsed && <span>Member Directory</span>}
+                </button>
+
+                <Link
+                  href="/batches"
+                  target="_blank"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-blue-400 hover:bg-[#161D36] transition-all"
+                  title="Batch Rosters"
+                >
+                  <ExternalLink className="w-4 h-4 shrink-0" />
+                  {!sidebarCollapsed && <span>Batch Squads</span>}
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Section: Administration & Reports (Dropdown) */}
+          <div className="space-y-1">
+            {!sidebarCollapsed ? (
+              <button
+                onClick={() => setGovernanceOpen(!governanceOpen)}
+                className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider hover:text-slate-200 cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Shield className="w-3.5 h-3.5 text-purple-400" /> Governance
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${governanceOpen ? 'rotate-180' : ''}`} />
+              </button>
+            ) : (
+              <div className="border-t border-[#2C3960]/60 my-2" />
+            )}
+
+            {(governanceOpen || sidebarCollapsed) && (
+              <div className={`space-y-1 ${!sidebarCollapsed ? 'pl-2 border-l border-[#2C3960]/60 ml-2' : ''}`}>
+                <button
+                  onClick={() => { setActiveTab('content'); setMobileSidebarOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'content'
+                      ? 'bg-purple-600/80 text-white font-bold'
+                      : 'text-slate-300 hover:text-white hover:bg-[#161D36]'
+                  }`}
+                  title="Announcements & Content"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                  {!sidebarCollapsed && <span>Announcements</span>}
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('audit'); setMobileSidebarOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'audit'
+                      ? 'bg-purple-600/80 text-white font-bold'
+                      : 'text-slate-300 hover:text-white hover:bg-[#161D36]'
+                  }`}
+                  title="Audit Trail"
+                >
+                  <History className="w-4 h-4 text-purple-400 shrink-0" />
+                  {!sidebarCollapsed && <span>Audit Trail</span>}
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('reports'); setMobileSidebarOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'reports'
+                      ? 'bg-purple-600/80 text-white font-bold'
+                      : 'text-slate-300 hover:text-white hover:bg-[#161D36]'
+                  }`}
+                  title="CSV Reports"
+                >
+                  <Download className="w-4 h-4 text-emerald-400 shrink-0" />
+                  {!sidebarCollapsed && <span>CSV Exports</span>}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar Footer (Backend Links) */}
+        <div className="p-3 border-t border-[#2C3960]/80 space-y-1 text-xs">
+          <a
+            href="http://localhost:8002/admin/"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-purple-300 hover:bg-purple-500/15 transition-all font-semibold"
+            title="Django Jazzmin Admin"
+          >
+            <ExternalLink className="w-4 h-4 shrink-0 text-purple-400" />
+            {!sidebarCollapsed && <span>Jazzmin Backend</span>}
+          </a>
+          <a
+            href="http://localhost:8002/api/docs/"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-[#161D36] transition-all font-semibold"
+            title="Swagger API Docs"
+          >
+            <FileText className="w-4 h-4 shrink-0 text-emerald-400" />
+            {!sidebarCollapsed && <span>Swagger API</span>}
+          </a>
+        </div>
+      </aside>
+
+      {/* Main Administrative Content Area */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Top Sticky Header */}
+        <header className="sticky top-0 z-30 bg-[#070D1E]/95 backdrop-blur-md border-b border-[#2C3960]/80 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="md:hidden p-2 rounded-xl bg-[#161D36] border border-[#2C3960] text-slate-300 hover:text-white"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-purple-400">
+                  Director Command Center
+                </span>
+                <span className="hidden sm:inline text-slate-600">&bull;</span>
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Live System Active
+                </span>
+              </div>
+              <h1 className="text-lg sm:text-xl font-black text-white tracking-tight capitalize">
+                {activeTab === 'dashboard' && 'Command Center Overview & KPIs'}
+                {activeTab === 'matches' && 'Live Match Scores & Incident Logging'}
+                {activeTab === 'create-fixture' && 'Create Custom Tournament Fixture'}
+                {activeTab === 'players' && 'Tournament Player Roster Approvals'}
+                {activeTab === 'members' && 'Fellowship Members Directory'}
+                {activeTab === 'content' && 'Announcements & Identity Configuration'}
+                {activeTab === 'audit' && 'Immutable Audit Trail & System Logs'}
+                {activeTab === 'reports' && 'Official Tournament CSV Data Exports'}
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('create-fixture')}
+              className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">New Fixture</span>
+            </button>
+            <button
+              onClick={handleGenerateFixtures}
+              disabled={genLoading}
+              className="px-3 py-1.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${genLoading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Auto-Gen</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Tab Body */}
+        <div className="p-4 sm:p-6 lg:p-8 flex-1">
+          {genMessage && (
+            <div className="mb-6 p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{genMessage}</span>
+            </div>
+          )}
 
       {/* ========================================================================= */}
       {/* TAB 1: OVERVIEW & KPIS */}
@@ -527,15 +846,27 @@ export default function FrontendAdminPage() {
                     Member Registration Distribution by Batch
                   </h3>
                   <div className="space-y-3">
-                    {members_by_batch &&
+                    {Array.isArray(members_by_batch) ? (
+                      members_by_batch.map((b: any, idx: number) => (
+                        <div key={b.batch || idx} className="flex items-center justify-between p-3 rounded-xl bg-[#161D36] border border-[#2C3960]">
+                          <span className="text-xs font-semibold text-slate-300">{String(b.batch || 'Batch').replace('_', ' ')}</span>
+                          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            {b.count} members
+                          </span>
+                        </div>
+                      ))
+                    ) : members_by_batch && typeof members_by_batch === 'object' ? (
                       Object.entries(members_by_batch).map(([batch, count]: any) => (
                         <div key={batch} className="flex items-center justify-between p-3 rounded-xl bg-[#161D36] border border-[#2C3960]">
                           <span className="text-xs font-semibold text-slate-300">{batch.replace('_', ' ')}</span>
                           <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            {count} members
+                            {typeof count === 'object' && count !== null ? count.count : count} members
                           </span>
                         </div>
-                      ))}
+                      ))
+                    ) : (
+                      <p className="text-xs text-slate-400">No batch distribution data.</p>
+                    )}
                   </div>
                 </div>
 
@@ -724,7 +1055,7 @@ export default function FrontendAdminPage() {
                             .filter((m) => m.competing_batch === selectedMatch.home_team.code)
                             .map((p) => (
                               <option key={p.id} value={p.id}>
-                                #{p.preferred_jersey_number || '-'} {p.full_name} ({p.primary_position || 'Player'})
+                                #{p.preferred_jersey_number || '-'} {p.full_name} ({p.department ? `${p.department} · ` : ''}{p.primary_position || 'Player'})
                               </option>
                             ))}
                         </optgroup>
@@ -733,7 +1064,36 @@ export default function FrontendAdminPage() {
                             .filter((m) => m.competing_batch === selectedMatch.away_team.code)
                             .map((p) => (
                               <option key={p.id} value={p.id}>
-                                #{p.preferred_jersey_number || '-'} {p.full_name} ({p.primary_position || 'Player'})
+                                #{p.preferred_jersey_number || '-'} {p.full_name} ({p.department ? `${p.department} · ` : ''}{p.primary_position || 'Player'})
+                              </option>
+                            ))}
+                        </optgroup>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Assister / Subbed Player (Optional)</label>
+                      <select
+                        value={eventData.related_player_id}
+                        onChange={(e) => setEventData({ ...eventData, related_player_id: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white"
+                      >
+                        <option value="">None / N/A</option>
+                        <optgroup label={selectedMatch.home_team.name}>
+                          {membersList
+                            .filter((m) => m.competing_batch === selectedMatch.home_team.code)
+                            .map((p) => (
+                              <option key={p.id} value={p.id}>
+                                #{p.preferred_jersey_number || '-'} {p.full_name} {p.department ? `(${p.department})` : ''}
+                              </option>
+                            ))}
+                        </optgroup>
+                        <optgroup label={selectedMatch.away_team.name}>
+                          {membersList
+                            .filter((m) => m.competing_batch === selectedMatch.away_team.code)
+                            .map((p) => (
+                              <option key={p.id} value={p.id}>
+                                #{p.preferred_jersey_number || '-'} {p.full_name} {p.department ? `(${p.department})` : ''}
                               </option>
                             ))}
                         </optgroup>
@@ -838,6 +1198,186 @@ export default function FrontendAdminPage() {
             ) : (
               <div className="py-20 text-center text-slate-400">Select a fixture to manage.</div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB: CREATE CUSTOM TOURNAMENT FIXTURE */}
+      {/* ========================================================================= */}
+      {activeTab === 'create-fixture' && (
+        <div className="max-w-3xl space-y-6">
+          <div className="card-gloss p-6 sm:p-8 rounded-3xl border border-purple-500/30 space-y-6">
+            <div className="flex items-center gap-3 border-b border-[#2C3960]/60 pb-5">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-600/30">
+                <Calendar className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-white tracking-tight">Create Custom Tournament Fixture</h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Schedule championship finals, semi-finals, round matches, or special exhibition matches.
+                </p>
+              </div>
+            </div>
+
+            {customFixtureSuccess && (
+              <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{customFixtureSuccess}</span>
+              </div>
+            )}
+
+            {customFixtureError && (
+              <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{customFixtureError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateCustomFixture} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Home Batch Team <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={customFixture.home_team_id}
+                    onChange={(e) => setCustomFixture({ ...customFixture, home_team_id: e.target.value })}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                  >
+                    <option value="">-- Select Home Batch --</option>
+                    {batchTeams.map((team) => (
+                      <option key={team.id} value={team.id} disabled={String(team.id) === String(customFixture.away_team_id)}>
+                        {team.name} ({team.nickname || team.batch_code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Away Batch Team <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={customFixture.away_team_id}
+                    onChange={(e) => setCustomFixture({ ...customFixture, away_team_id: e.target.value })}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                  >
+                    <option value="">-- Select Away Batch --</option>
+                    {batchTeams.map((team) => (
+                      <option key={team.id} value={team.id} disabled={String(team.id) === String(customFixture.home_team_id)}>
+                        {team.name} ({team.nickname || team.batch_code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Tournament Stage / Round Name <span className="text-rose-400">*</span>
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {['Grand Final', 'Semi-Final', '3rd Place Match', 'Quarter-Final', 'Group Stage Round', 'Special Exhibition'].map((stage) => (
+                    <button
+                      key={stage}
+                      type="button"
+                      onClick={() => setCustomFixture({ ...customFixture, stage_or_round_name: stage })}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                        customFixture.stage_or_round_name === stage
+                          ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
+                          : 'bg-[#161D36] text-slate-400 border-[#2C3960] hover:text-white'
+                      }`}
+                    >
+                      {stage}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  value={customFixture.stage_or_round_name}
+                  onChange={(e) => setCustomFixture({ ...customFixture, stage_or_round_name: e.target.value })}
+                  placeholder="e.g. Grand Final"
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Round Number</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={customFixture.round_number}
+                    onChange={(e) => setCustomFixture({ ...customFixture, round_number: Number(e.target.value) })}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Match Date <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={customFixture.match_date}
+                    onChange={(e) => setCustomFixture({ ...customFixture, match_date: e.target.value })}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Kick-off Time</label>
+                  <input
+                    type="time"
+                    value={customFixture.kick_off_time}
+                    onChange={(e) => setCustomFixture({ ...customFixture, kick_off_time: e.target.value })}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Venue Location</label>
+                <input
+                  type="text"
+                  value={customFixture.venue}
+                  onChange={(e) => setCustomFixture({ ...customFixture, venue: e.target.value })}
+                  placeholder="e.g. AASTU Main Football Field"
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Match Notes / Description (Optional)</label>
+                <input
+                  type="text"
+                  value={customFixture.notes}
+                  onChange={(e) => setCustomFixture({ ...customFixture, notes: e.target.value })}
+                  placeholder="e.g. Championship decider followed by awards ceremony"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={customFixtureLoading}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {customFixtureLoading ? 'Creating Fixture...' : 'Schedule & Create Fixture'}
+                  <PlusCircle className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -1272,6 +1812,9 @@ export default function FrontendAdminPage() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }
+

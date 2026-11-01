@@ -372,7 +372,7 @@ export default function ManagerMatchesPage() {
                       <option value="">Select registered batch player...</option>
                       {activeTeamPlayers.map((p) => (
                         <option key={p.member_id} value={p.member_id}>
-                          #{p.jersey_number} {p.full_name} ({p.position})
+                          #{p.jersey_number} {p.full_name} ({p.department ? `${p.department} · ` : ''}{p.position})
                         </option>
                       ))}
                     </select>
@@ -390,7 +390,7 @@ export default function ManagerMatchesPage() {
                       <option value="">None / N/A</option>
                       {activeTeamPlayers.map((p) => (
                         <option key={p.member_id} value={p.member_id}>
-                          #{p.jersey_number} {p.full_name}
+                          #{p.jersey_number} {p.full_name} {p.department ? `(${p.department})` : ''}
                         </option>
                       ))}
                     </select>

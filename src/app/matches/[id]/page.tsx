@@ -60,6 +60,14 @@ function MatchDetailContent() {
   const isCompleted = match.status === 'COMPLETED';
   const isLive = match.status === 'LIVE' || match.status === 'HALF_TIME';
 
+  const homeEvents = match.events?.filter((ev: any) =>
+    ev.team_batch === match.home_team.batch_code || ev.team === match.home_team.id
+  ) || [];
+
+  const awayEvents = match.events?.filter((ev: any) =>
+    ev.team_batch === match.away_team.batch_code || ev.team === match.away_team.id
+  ) || [];
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-screen">
       {/* 1. MATCH HEADER & SCOREBOARD */}
@@ -150,6 +158,78 @@ function MatchDetailContent() {
             </p>
           </div>
         </div>
+
+        {/* Compact Key Match Events (Screenshot & Telegram Share Card) */}
+        {(homeEvents.length > 0 || awayEvents.length > 0) && (
+          <div className="mt-6 pt-5 border-t border-[#2C3960]/60 space-y-2">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">
+              <span>Match Scoring &amp; Cards Summary</span>
+              <span className="text-emerald-400 font-mono">Telegram / Share Card</span>
+            </div>
+
+            {/* Row 1: Home Batch Events */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 p-2.5 rounded-xl bg-[#0B132B]/90 border border-emerald-500/20 text-xs">
+              <div className="flex items-center gap-2 shrink-0">
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: match.home_team.color_hex || '#10B981' }}
+                />
+                <span className="font-extrabold text-white text-[12px]">{match.home_team.name}:</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:text-right">
+                {homeEvents.length > 0 ? (
+                  homeEvents.map((ev: any) => (
+                    <span key={ev.id} className="inline-flex items-center gap-1 text-[11px] bg-slate-900/60 px-2 py-0.5 rounded-lg border border-slate-800 text-slate-200">
+                      {ev.event_type === 'GOAL' && <span>⚽</span>}
+                      {ev.event_type === 'OWN_GOAL' && <span>⚠️ (OG)</span>}
+                      {ev.event_type === 'YELLOW_CARD' && <span>🟨</span>}
+                      {ev.event_type === 'RED_CARD' && <span>🟥</span>}
+                      {ev.event_type === 'SUBSTITUTION' && <span>🔄</span>}
+                      <span className="font-bold text-white">{ev.player_name || 'Player'}</span>
+                      <span className="text-emerald-400 font-black">{ev.minute}&apos;</span>
+                      {ev.related_player_name && ev.event_type === 'GOAL' && (
+                        <span className="text-slate-400 text-[10px] font-medium">(Assist: {ev.related_player_name})</span>
+                      )}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-[11px] text-slate-500 italic">No events recorded</span>
+                )}
+              </div>
+            </div>
+
+            {/* Row 2: Away Batch Events */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 p-2.5 rounded-xl bg-[#0B132B]/90 border border-blue-500/20 text-xs">
+              <div className="flex items-center gap-2 shrink-0">
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: match.away_team.color_hex || '#3B82F6' }}
+                />
+                <span className="font-extrabold text-white text-[12px]">{match.away_team.name}:</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:text-right">
+                {awayEvents.length > 0 ? (
+                  awayEvents.map((ev: any) => (
+                    <span key={ev.id} className="inline-flex items-center gap-1 text-[11px] bg-slate-900/60 px-2 py-0.5 rounded-lg border border-slate-800 text-slate-200">
+                      {ev.event_type === 'GOAL' && <span>⚽</span>}
+                      {ev.event_type === 'OWN_GOAL' && <span>⚠️ (OG)</span>}
+                      {ev.event_type === 'YELLOW_CARD' && <span>🟨</span>}
+                      {ev.event_type === 'RED_CARD' && <span>🟥</span>}
+                      {ev.event_type === 'SUBSTITUTION' && <span>🔄</span>}
+                      <span className="font-bold text-white">{ev.player_name || 'Player'}</span>
+                      <span className="text-blue-400 font-black">{ev.minute}&apos;</span>
+                      {ev.related_player_name && ev.event_type === 'GOAL' && (
+                        <span className="text-slate-400 text-[10px] font-medium">(Assist: {ev.related_player_name})</span>
+                      )}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-[11px] text-slate-500 italic">No events recorded</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Player of the Match Banner */}
         {match.player_of_the_match_details && (

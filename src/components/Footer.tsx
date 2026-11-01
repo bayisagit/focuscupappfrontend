@@ -265,14 +265,11 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="mt-12 pt-6 border-t border-[#2C3960]/60 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
           <p>
-            &copy; 2026 AASTU Focus Fellowship. All rights reserved.
+            &copy; 2026 AASTU Focus Cup Fellowship. All rights reserved.
           </p>
           <div className="flex items-center space-x-6">
             <Link href="/about" className="hover:text-slate-400">
               Fellowship Teams
-            </Link>
-            <Link href="/admin" className="hover:text-purple-400 font-semibold">
-              Frontend &amp; Backend Admin
             </Link>
           </div>
         </div>

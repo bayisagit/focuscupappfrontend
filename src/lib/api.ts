@@ -212,6 +212,19 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ season_id: seasonId, start_date: startDate })
     }),
+    createFixture: (data: {
+      home_team_id: number | string;
+      away_team_id: number | string;
+      match_date: string;
+      kick_off_time?: string;
+      venue?: string;
+      round_number?: number | string;
+      stage_or_round_name?: string;
+      notes?: string;
+    }) => fetchAPI<any>('/api/v1/manager/fixtures/create/', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
     updateMatch: (matchId: number, data: any) => fetchAPI<any>(`/api/v1/manager/matches/${matchId}/update/`, {
       method: 'PATCH',
       body: JSON.stringify(data)

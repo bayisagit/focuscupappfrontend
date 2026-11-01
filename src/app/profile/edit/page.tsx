@@ -9,9 +9,10 @@ import Link from 'next/link';
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const { user, refreshUser } = useAuth();
+  const { user, loading: authLoading, refreshUser } = useAuth();
   const [options, setOptions] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [success, setSuccess] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -26,8 +27,62 @@ export default function EditProfilePage() {
   });
 
   useEffect(() => {
-    api.members.getOptions().then((opts) => setOptions(opts));
-    if (user?.profile) {
+    let active = true;
+
+    // Load available registration options (fellowship teams, football positions, etc.)
+    api.members.getOptions()
+      .then((opts) => {
+        if (active) setOptions(opts);
+      })
+      .catch((err) => console.error('Failed to load options', err));
+
+    // Fetch authoritative current profile directly from backend
+    api.auth.getMe()
+      .then((meData) => {
+        if (!active) return;
+        const p = meData?.profile;
+        if (p) {
+          setFormData({
+            first_name: p.first_name || '',
+            second_name: p.second_name || '',
+            fellowship_team: p.fellowship_team || 'No Team',
+            primary_position: p.primary_position || '',
+            secondary_position: p.secondary_position || '',
+            preferred_jersey_number: p.preferred_jersey_number != null ? String(p.preferred_jersey_number) : '',
+            personal_chant: p.personal_chant || '',
+            bio: p.bio || '',
+          });
+        }
+        setProfileLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to load getMe profile', err);
+        if (active) {
+          if (user?.profile) {
+            const p = user.profile;
+            setFormData({
+              first_name: p.first_name || '',
+              second_name: p.second_name || '',
+              fellowship_team: p.fellowship_team || 'No Team',
+              primary_position: p.primary_position || '',
+              secondary_position: p.secondary_position || '',
+              preferred_jersey_number: p.preferred_jersey_number != null ? String(p.preferred_jersey_number) : '',
+              personal_chant: p.personal_chant || '',
+              bio: p.bio || '',
+            });
+          }
+          setProfileLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Sync if user context loads later and form is still unpopulated
+  useEffect(() => {
+    if (user?.profile && !formData.first_name) {
       const p = user.profile;
       setFormData({
         first_name: p.first_name || '',
@@ -35,7 +90,7 @@ export default function EditProfilePage() {
         fellowship_team: p.fellowship_team || 'No Team',
         primary_position: p.primary_position || '',
         secondary_position: p.secondary_position || '',
-        preferred_jersey_number: p.preferred_jersey_number?.toString() || '',
+        preferred_jersey_number: p.preferred_jersey_number != null ? String(p.preferred_jersey_number) : '',
         personal_chant: p.personal_chant || '',
         bio: p.bio || '',
       });
@@ -49,13 +104,19 @@ export default function EditProfilePage() {
 
     try {
       await api.members.updateProfile({
-        ...formData,
+        first_name: formData.first_name.trim(),
+        second_name: formData.second_name.trim(),
+        fellowship_team: formData.fellowship_team,
+        primary_position: formData.primary_position || null,
+        secondary_position: formData.secondary_position || null,
         preferred_jersey_number: formData.preferred_jersey_number ? Number(formData.preferred_jersey_number) : null,
+        personal_chant: formData.personal_chant.trim(),
+        bio: formData.bio.trim(),
       });
       await refreshUser();
       setSuccess(true);
       setTimeout(() => {
-        router.push(`/members/${user?.username}`);
+        router.push(user?.username ? `/members/${user.username}` : '/members');
       }, 1200);
     } catch (err: any) {
       alert(err.data?.error || 'Failed to update profile.');
@@ -67,7 +128,10 @@ export default function EditProfilePage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-12 min-h-screen">
       <div className="mb-6">
-        <Link href={`/members/${user?.username}`} className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 font-semibold">
+        <Link
+          href={user?.username ? `/members/${user.username}` : '/members'}
+          className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 font-semibold"
+        >
           <ArrowLeft className="w-4 h-4" /> Back to My Profile
         </Link>
       </div>
@@ -88,115 +152,122 @@ export default function EditProfilePage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {profileLoading && !formData.first_name ? (
+          <div className="py-16 text-center space-y-3">
+            <div className="w-8 h-8 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mx-auto" />
+            <p className="text-xs text-slate-400">Loading your profile information...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">First Name</label>
+                <input
+                  type="text"
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Second Name</label>
+                <input
+                  type="text"
+                  value={formData.second_name}
+                  onChange={(e) => setFormData({ ...formData, second_name: e.target.value })}
+                  className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Primary Pitch Position</label>
+                <select
+                  value={formData.primary_position}
+                  onChange={(e) => setFormData({ ...formData, primary_position: e.target.value })}
+                  className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+                >
+                  <option value="">None / Community Member</option>
+                  {options?.football_positions?.map((p: any) => (
+                    <option key={p.value} value={p.value}>{p.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Preferred Jersey Number</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="99"
+                  value={formData.preferred_jersey_number}
+                  onChange={(e) => setFormData({ ...formData, preferred_jersey_number: e.target.value })}
+                  placeholder="e.g. 10"
+                  className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Fellowship Ministry Team</label>
+                <select
+                  value={formData.fellowship_team}
+                  onChange={(e) => setFormData({ ...formData, fellowship_team: e.target.value })}
+                  className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+                >
+                  {options?.fellowship_teams ? (
+                    options.fellowship_teams.map((t: any) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))
+                  ) : (
+                    <option value="No Team">No Team</option>
+                  )}
+                </select>
+              </div>
+            </div>
+
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">First Name</label>
+              <label className="text-xs font-semibold text-slate-300 block mb-1">
+                Personal Chant / Christian Sports Motto
+              </label>
               <input
                 type="text"
-                value={formData.first_name}
-                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                value={formData.personal_chant}
+                onChange={(e) => setFormData({ ...formData, personal_chant: e.target.value })}
+                placeholder="e.g. Jesus Is My Savior, Christ Above Everything"
                 className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
-                required
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Second Name</label>
-              <input
-                type="text"
-                value={formData.second_name}
-                onChange={(e) => setFormData({ ...formData, second_name: e.target.value })}
-                className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
-                required
+              <label className="text-xs font-semibold text-slate-300 block mb-1">Personal Biography</label>
+              <textarea
+                rows={4}
+                value={formData.bio}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                placeholder="Share a short introduction with fellowship brethren..."
+                className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl p-3 text-xs text-white focus:outline-none"
               />
             </div>
 
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Primary Pitch Position</label>
-              <select
-                value={formData.primary_position}
-                onChange={(e) => setFormData({ ...formData, primary_position: e.target.value })}
-                className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+            <div className="flex justify-end gap-3 pt-2">
+              <Link
+                href={user?.username ? `/members/${user.username}` : '/members'}
+                className="px-5 py-2.5 rounded-xl bg-slate-800 text-xs font-semibold text-slate-300 hover:text-white"
               >
-                <option value="">None / Community Member</option>
-                {options?.football_positions?.map((p: any) => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Preferred Jersey Number</label>
-              <input
-                type="number"
-                min="1"
-                max="99"
-                value={formData.preferred_jersey_number}
-                onChange={(e) => setFormData({ ...formData, preferred_jersey_number: e.target.value })}
-                placeholder="e.g. 10"
-                className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Fellowship Ministry Team</label>
-              <select
-                value={formData.fellowship_team}
-                onChange={(e) => setFormData({ ...formData, fellowship_team: e.target.value })}
-                className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 cursor-pointer"
               >
-                {options?.fellowship_teams ? (
-                  options.fellowship_teams.map((t: any) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))
-                ) : (
-                  <option value="No Team">No Team</option>
-                )}
-              </select>
+                {loading ? 'Saving Changes...' : 'Save Profile'}
+              </button>
             </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">
-              Personal Chant / Christian Sports Motto
-            </label>
-            <input
-              type="text"
-              value={formData.personal_chant}
-              onChange={(e) => setFormData({ ...formData, personal_chant: e.target.value })}
-              placeholder="e.g. Jesus Is My Savior, Christ Above Everything"
-              className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Personal Biography</label>
-            <textarea
-              rows={4}
-              value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              placeholder="Share a short introduction with fellowship brethren..."
-              className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl p-3 text-xs text-white focus:outline-none"
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Link
-              href={`/members/${user?.username}`}
-              className="px-5 py-2.5 rounded-xl bg-slate-800 text-xs font-semibold text-slate-300 hover:text-white"
-            >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20"
-            >
-              {loading ? 'Saving Changes...' : 'Save Profile'}
-            </button>
-          </div>
-        </form>
+          </form>
+        )}
       </div>
     </div>
   );

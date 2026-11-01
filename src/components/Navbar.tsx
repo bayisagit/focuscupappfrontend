@@ -78,7 +78,7 @@ function NavbarContent() {
                 FOCUS <span className="text-emerald-400">FOOTBALL CUP</span>
               </span>
               <span className="block text-[10px] text-slate-400 uppercase tracking-widest font-medium">
-                AASTU Focus Fellowship
+                AASTU Focus Cup Fellowship
               </span>
             </div>
           </Link>
@@ -256,7 +256,7 @@ function NavbarContent() {
               />
             </div>
             <div>
-              <p className="text-xs font-bold text-white leading-none">AASTU Focus Fellowship</p>
+              <p className="text-xs font-bold text-white leading-none">AASTU Focus Cup Fellowship</p>
               <p className="text-[10px] text-emerald-400 font-semibold tracking-wide mt-0.5">Focus Football Cup</p>
             </div>
           </div>
