@@ -37,6 +37,11 @@ import {
   X,
   Eye,
   EyeOff,
+  Edit,
+  Save,
+  Shirt,
+  UserCheck,
+  MapPin,
 } from 'lucide-react';
 
 const isPlayerInBatchTeam = (player: any, team: any) => {
@@ -123,6 +128,39 @@ export default function FrontendAdminPage() {
     minute: 45,
     description: '',
   });
+
+  // Match operations sub-tabs in Tab 2
+  const [matchSubTab, setMatchSubTab] = useState<'events' | 'squads'>('events');
+
+  // Edit Fixture State
+  const [showEditFixtureModal, setShowEditFixtureModal] = useState(false);
+  const [editFixtureData, setEditFixtureData] = useState({
+    id: 0,
+    home_team_id: '',
+    away_team_id: '',
+    stage_or_round_name: '',
+    round_number: 1,
+    match_date: '',
+    kick_off_time: '',
+    venue: '',
+    status: 'SCHEDULED',
+    notes: '',
+  });
+  const [editFixtureLoading, setEditFixtureLoading] = useState(false);
+  const [editFixtureError, setEditFixtureError] = useState('');
+  const [editFixtureSuccess, setEditFixtureSuccess] = useState('');
+
+  // Squad & Starting Line-ups Manager State
+  const [squadLoading, setSquadLoading] = useState(false);
+  const [squadSaving, setSquadSaving] = useState(false);
+  const [squadSuccessMsg, setSquadSuccessMsg] = useState('');
+  const [squadErrorMsg, setSquadErrorMsg] = useState('');
+  const [homeEligiblePlayers, setHomeEligiblePlayers] = useState<any[]>([]);
+  const [awayEligiblePlayers, setAwayEligiblePlayers] = useState<any[]>([]);
+  const [homeSquadList, setHomeSquadList] = useState<any[]>([]);
+  const [awaySquadList, setAwaySquadList] = useState<any[]>([]);
+  const [selectedHomeAddPlayer, setSelectedHomeAddPlayer] = useState('');
+  const [selectedAwayAddPlayer, setSelectedAwayAddPlayer] = useState('');
 
   // Players / Roster State
   const [pendingPlayers, setPendingPlayers] = useState<any[]>([]);
@@ -333,6 +371,263 @@ export default function FrontendAdminPage() {
         setAwayScore(detailed.away_score);
       }
     }).catch((err) => console.error(err));
+    loadMatchSquad(m.id);
+  };
+
+  // Fixture Editing Handlers
+  const openEditFixture = (m: any) => {
+    if (!m) return;
+    setEditFixtureError('');
+    setEditFixtureSuccess('');
+
+    let stage = '';
+    let noteText = m.match_report || '';
+    if (noteText.startsWith('[')) {
+      const closingIdx = noteText.indexOf(']');
+      if (closingIdx !== -1) {
+        stage = noteText.substring(1, closingIdx);
+        noteText = noteText.substring(closingIdx + 1).trim();
+      }
+    }
+
+    setEditFixtureData({
+      id: m.id,
+      home_team_id: String(m.home_team.id),
+      away_team_id: String(m.away_team.id),
+      stage_or_round_name: stage,
+      round_number: m.round_number || 1,
+      match_date: m.match_date || new Date().toISOString().split('T')[0],
+      kick_off_time: (m.kick_off_time || '16:00').slice(0, 5),
+      venue: m.venue || 'AASTU Main Football Field',
+      status: m.status || 'SCHEDULED',
+      notes: noteText,
+    });
+    setShowEditFixtureModal(true);
+  };
+
+  const handleSaveEditFixture = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFixtureData.id) return;
+    if (editFixtureData.home_team_id === editFixtureData.away_team_id) {
+      setEditFixtureError('Home team and away team cannot be the same batch.');
+      return;
+    }
+    setEditFixtureLoading(true);
+    setEditFixtureError('');
+    setEditFixtureSuccess('');
+
+    try {
+      const res = await api.manager.updateMatch(editFixtureData.id, {
+        home_team_id: Number(editFixtureData.home_team_id),
+        away_team_id: Number(editFixtureData.away_team_id),
+        round_number: Number(editFixtureData.round_number),
+        match_date: editFixtureData.match_date,
+        kick_off_time: editFixtureData.kick_off_time,
+        venue: editFixtureData.venue,
+        status: editFixtureData.status,
+        stage_or_round_name: editFixtureData.stage_or_round_name,
+        notes: editFixtureData.notes,
+      });
+
+      setEditFixtureSuccess(res.message || 'Fixture updated successfully!');
+      loadMatches();
+      loadDashboard();
+      loadAuditLogs();
+
+      api.matches.getDetail(editFixtureData.id).then((detailed: any) => {
+        if (detailed) {
+          setSelectedMatch(detailed);
+          setHomeScore(detailed.home_score);
+          setAwayScore(detailed.away_score);
+        }
+      });
+
+      setTimeout(() => {
+        setShowEditFixtureModal(false);
+        setEditFixtureSuccess('');
+      }, 1200);
+    } catch (err: any) {
+      setEditFixtureError(err.data?.error || err.message || 'Failed to update fixture.');
+    } finally {
+      setEditFixtureLoading(false);
+    }
+  };
+
+  // Squad / Lineup Handlers
+  const loadMatchSquad = async (matchId: number) => {
+    if (!matchId) return;
+    setSquadLoading(true);
+    setSquadSuccessMsg('');
+    setSquadErrorMsg('');
+    try {
+      const res = await api.manager.getMatchSquad(matchId);
+      setHomeEligiblePlayers(res.home_eligible_players || []);
+      setAwayEligiblePlayers(res.away_eligible_players || []);
+      setHomeSquadList(res.home_squad || []);
+      setAwaySquadList(res.away_squad || []);
+    } catch (err: any) {
+      console.error(err);
+      setSquadErrorMsg('Failed to load squad rosters for this match.');
+    } finally {
+      setSquadLoading(false);
+    }
+  };
+
+  const handleAddPlayerToSquad = (side: 'home' | 'away', player: any) => {
+    const isHome = side === 'home';
+    const currentList = isHome ? homeSquadList : awaySquadList;
+    const setList = isHome ? setHomeSquadList : setAwaySquadList;
+
+    if (currentList.some((p: any) => (p.player_id || p.id) === player.id)) {
+      return;
+    }
+
+    const isStarter = currentList.filter((p: any) => p.is_starter).length < 11;
+    const isGoalkeeper = (player.position || '').toLowerCase().includes('keeper');
+    const hasGk = currentList.some((p: any) => p.is_goalkeeper);
+
+    const newEntry = {
+      id: player.id,
+      player_id: player.id,
+      player_name: player.full_name,
+      player_username: player.username,
+      jersey_number: player.jersey_number || 99,
+      is_starter: isStarter,
+      is_goalkeeper: isGoalkeeper && !hasGk,
+      position: player.position || 'Player',
+      avatar_url: player.avatar_url,
+    };
+
+    setList([...currentList, newEntry]);
+  };
+
+  const handleRemovePlayerFromSquad = (side: 'home' | 'away', playerId: number) => {
+    const isHome = side === 'home';
+    const setList = isHome ? setHomeSquadList : setAwaySquadList;
+    setList((prev) => prev.filter((p: any) => (p.player_id || p.id) !== playerId));
+  };
+
+  const handleToggleStarter = (side: 'home' | 'away', playerId: number) => {
+    const isHome = side === 'home';
+    const setList = isHome ? setHomeSquadList : setAwaySquadList;
+    setList((prev) =>
+      prev.map((p: any) => {
+        if ((p.player_id || p.id) === playerId) {
+          return { ...p, is_starter: !p.is_starter };
+        }
+        return p;
+      })
+    );
+  };
+
+  const handleToggleGoalkeeper = (side: 'home' | 'away', playerId: number) => {
+    const isHome = side === 'home';
+    const setList = isHome ? setHomeSquadList : setAwaySquadList;
+    setList((prev) =>
+      prev.map((p: any) => {
+        const matches = (p.player_id || p.id) === playerId;
+        if (matches) {
+          const willBeGk = !p.is_goalkeeper;
+          return {
+            ...p,
+            is_goalkeeper: willBeGk,
+            is_starter: willBeGk ? true : p.is_starter,
+          };
+        }
+        return { ...p, is_goalkeeper: false };
+      })
+    );
+  };
+
+  const handleUpdateJerseyNumber = (side: 'home' | 'away', playerId: number, jersey: number | string) => {
+    const isHome = side === 'home';
+    const setList = isHome ? setHomeSquadList : setAwaySquadList;
+    setList((prev) =>
+      prev.map((p: any) => {
+        if ((p.player_id || p.id) === playerId) {
+          return { ...p, jersey_number: Number(jersey) || 0 };
+        }
+        return p;
+      })
+    );
+  };
+
+  const handleAutoPopulateSquad = (side: 'home' | 'away') => {
+    const isHome = side === 'home';
+    const eligible = isHome ? homeEligiblePlayers : awayEligiblePlayers;
+    const currentList = isHome ? homeSquadList : awaySquadList;
+    const setList = isHome ? setHomeSquadList : setAwaySquadList;
+
+    const existingIds = new Set(currentList.map((p: any) => p.player_id || p.id));
+    const toAdd = eligible.filter((p: any) => !existingIds.has(p.id));
+
+    if (toAdd.length === 0) return;
+
+    let startersCount = currentList.filter((p: any) => p.is_starter).length;
+    let hasGk = currentList.some((p: any) => p.is_goalkeeper);
+
+    const newEntries = toAdd.map((player: any) => {
+      const isGkCandidate = (player.position || '').toLowerCase().includes('keeper');
+      const isGk = isGkCandidate && !hasGk;
+      if (isGk) hasGk = true;
+
+      const shouldBeStarter = startersCount < 11;
+      if (shouldBeStarter) startersCount++;
+
+      return {
+        id: player.id,
+        player_id: player.id,
+        player_name: player.full_name,
+        player_username: player.username,
+        jersey_number: player.jersey_number || 99,
+        is_starter: isGk || shouldBeStarter,
+        is_goalkeeper: isGk,
+        position: player.position || 'Player',
+        avatar_url: player.avatar_url,
+      };
+    });
+
+    setList([...currentList, ...newEntries]);
+  };
+
+  const handleSaveSquads = async () => {
+    if (!selectedMatch) return;
+    setSquadSaving(true);
+    setSquadSuccessMsg('');
+    setSquadErrorMsg('');
+
+    try {
+      const payload = {
+        home_squad: homeSquadList.map((p: any) => ({
+          player_id: p.player_id || p.id,
+          jersey_number: Number(p.jersey_number) || 99,
+          is_starter: Boolean(p.is_starter),
+          is_goalkeeper: Boolean(p.is_goalkeeper),
+        })),
+        away_squad: awaySquadList.map((p: any) => ({
+          player_id: p.player_id || p.id,
+          jersey_number: Number(p.jersey_number) || 99,
+          is_starter: Boolean(p.is_starter),
+          is_goalkeeper: Boolean(p.is_goalkeeper),
+        })),
+      };
+
+      const res = await api.manager.saveMatchSquad(selectedMatch.id, payload);
+      setSquadSuccessMsg(res.message || 'Match squads and line-ups saved successfully!');
+      loadAuditLogs();
+
+      await loadMatchSquad(selectedMatch.id);
+
+      api.matches.getDetail(selectedMatch.id).then((detailed: any) => {
+        if (detailed) {
+          setSelectedMatch(detailed);
+        }
+      });
+    } catch (err: any) {
+      setSquadErrorMsg(err.data?.error || err.message || 'Failed to save match squads.');
+    } finally {
+      setSquadSaving(false);
+    }
   };
 
   const handleAddEvent = async (e: React.FormEvent) => {
@@ -1119,12 +1414,26 @@ export default function FrontendAdminPage() {
                       }`}
                     >
                       <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1.5">
-                        <span>Match #{m.id}</span>
-                        <span className={`px-2 py-0.5 rounded-full font-bold ${
-                          m.is_published ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-300'
-                        }`}>
-                          {m.is_published ? 'PUBLISHED' : m.status}
-                        </span>
+                        <span className="font-semibold text-slate-300">Match #{m.id}</span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectMatch(m);
+                              openEditFixture(m);
+                            }}
+                            className="p-1 rounded text-slate-400 hover:text-purple-300 hover:bg-purple-500/20 transition-colors"
+                            title="Edit Fixture Schedule & Details"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </button>
+                          <span className={`px-2 py-0.5 rounded-full font-bold ${
+                            m.is_published ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-300'
+                          }`}>
+                            {m.is_published ? 'PUBLISHED' : m.status}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between font-bold text-xs text-white">
                         <span>{m.home_team.name}</span>
@@ -1159,7 +1468,15 @@ export default function FrontendAdminPage() {
                     <p className="text-xs text-slate-400">{selectedMatch.match_date} &bull; {selectedMatch.venue}</p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openEditFixture(selectedMatch)}
+                      className="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow-purple-500/20"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      Edit Fixture
+                    </button>
                     {!selectedMatch.is_published ? (
                       <button
                         onClick={() => handlePublishMatch(selectedMatch.id)}
@@ -1180,7 +1497,42 @@ export default function FrontendAdminPage() {
                   </div>
                 </div>
 
-                {/* Live Event Recorder Form */}
+                {/* Sub-tab Navigation: Live Events vs Team Squads */}
+                <div className="flex items-center gap-2 border-b border-[#2C3960]/60 pb-3">
+                  <button
+                    type="button"
+                    onClick={() => setMatchSubTab('events')}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                      matchSubTab === 'events'
+                        ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                        : 'text-slate-400 hover:text-white hover:bg-[#161D36]'
+                    }`}
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    Live Events &amp; Incidents
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMatchSubTab('squads');
+                      if (selectedMatch) {
+                        loadMatchSquad(selectedMatch.id);
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                      matchSubTab === 'squads'
+                        ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                        : 'text-slate-400 hover:text-white hover:bg-[#161D36]'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    Team Squads &amp; Line-ups
+                  </button>
+                </div>
+
+                {matchSubTab === 'events' && (
+                  <div className="space-y-6">
+                    {/* Live Event Recorder Form */}
                 <div className="p-5 sm:p-6 rounded-2xl bg-[#161D36] border border-[#2C3960] space-y-4">
                   <div className="flex items-center justify-between border-b border-[#2C3960]/60 pb-3">
                     <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -1462,8 +1814,493 @@ export default function FrontendAdminPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
 
-                {/* Score Correction Modal */}
+            {/* ========================================================= */}
+            {/* SUBTAB 2: TEAM SQUADS & STARTING LINE-UPS */}
+            {/* ========================================================= */}
+            {matchSubTab === 'squads' && (
+              <div className="space-y-6">
+                {/* Top Squad Toolbar */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#161D36] to-[#1E2749] border border-purple-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Shirt className="w-4 h-4 text-purple-400" />
+                      <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                        Match Squads &amp; Starting 11 Selection
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      Designate 11 starters, select 1 goalkeeper, and assign jersey numbers. Line-ups appear immediately on the public Match Center.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => loadMatchSquad(selectedMatch.id)}
+                      disabled={squadLoading}
+                      className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                      title="Reload Squad Roster"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${squadLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveSquads}
+                      disabled={squadSaving || squadLoading}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/25 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {squadSaving ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>Saving Line-ups...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          <span>Save Official Line-ups</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Alerts */}
+                {squadSuccessMsg && (
+                  <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-lg">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 shrink-0 text-emerald-400" />
+                      <span className="font-semibold">{squadSuccessMsg}</span>
+                    </div>
+                    <Link
+                      href={`/matches/${selectedMatch.id}`}
+                      target="_blank"
+                      className="text-xs font-bold text-white hover:text-emerald-300 underline inline-flex items-center gap-1.5 shrink-0"
+                    >
+                      Open Public Match Center <ExternalLink className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                )}
+
+                {squadErrorMsg && (
+                  <div className="p-4 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+                    <span>{squadErrorMsg}</span>
+                  </div>
+                )}
+
+                {squadLoading ? (
+                  <div className="card-gloss p-12 rounded-2xl text-center space-y-3">
+                    <RefreshCw className="w-6 h-6 animate-spin text-purple-400 mx-auto" />
+                    <p className="text-xs text-slate-400">Loading squad rosters and eligible players...</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* ================================================= */}
+                    {/* HOME TEAM SQUAD COLUMN */}
+                    {/* ================================================= */}
+                    <div className="card-gloss p-5 sm:p-6 rounded-2xl border border-indigo-500/30 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#2C3960]/60 pb-3">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Home Batch</span>
+                          <h4 className="text-base font-black text-white">{selectedMatch.home_team.name}</h4>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {(() => {
+                            const starters = homeSquadList.filter((p: any) => p.is_starter).length;
+                            const gks = homeSquadList.filter((p: any) => p.is_goalkeeper).length;
+                            const subs = homeSquadList.filter((p: any) => !p.is_starter).length;
+
+                            return (
+                              <>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                  starters === 11
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                }`}>
+                                  {starters}/11 Starters
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                  gks === 1
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                    : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                }`}>
+                                  {gks === 1 ? '🧤 1 GK' : gks === 0 ? '⚠️ No GK' : '⚠️ Multi GK'}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-[#2C3960]">
+                                  {subs} Subs
+                                </span>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Quick Actions & Add Player */}
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleAutoPopulateSquad('home')}
+                          className="px-3 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          title="Auto-add all approved players from this batch"
+                        >
+                          <UserCheck className="w-3.5 h-3.5" />
+                          Auto-fill Approved Roster
+                        </button>
+
+                        <div className="flex-1 min-w-0">
+                          <select
+                            value={selectedHomeAddPlayer}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSelectedHomeAddPlayer(val);
+                              if (val) {
+                                const p = homeEligiblePlayers.find((x: any) => String(x.id) === val);
+                                if (p) handleAddPlayerToSquad('home', p);
+                                setSelectedHomeAddPlayer('');
+                              }
+                            }}
+                            className="w-full px-3 py-2 rounded-xl bg-[#0E162E] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                          >
+                            <option value="">+ Add Player from Batch Roster</option>
+                            {homeEligiblePlayers
+                              .filter((ep: any) => !homeSquadList.some((sp: any) => (sp.player_id || sp.id) === ep.id))
+                              .map((ep: any) => (
+                                <option key={ep.id} value={ep.id}>
+                                  {ep.full_name} ({ep.position || 'Player'}) #{ep.jersey_number || 'NA'}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Squad Players List */}
+                      <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                        {homeSquadList.length === 0 ? (
+                          <div className="p-8 text-center rounded-xl bg-[#0E162E]/60 border border-[#2C3960]/60 space-y-2">
+                            <Users className="w-6 h-6 text-slate-500 mx-auto" />
+                            <p className="text-xs text-slate-400">No players assigned to this match squad yet.</p>
+                            <button
+                              type="button"
+                              onClick={() => handleAutoPopulateSquad('home')}
+                              className="text-xs font-bold text-indigo-400 hover:underline cursor-pointer"
+                            >
+                              Auto-fill with all approved batch players &rarr;
+                            </button>
+                          </div>
+                        ) : (
+                          homeSquadList.map((p: any) => {
+                            const playerId = p.player_id || p.id;
+                            return (
+                              <div
+                                key={playerId}
+                                className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
+                                  p.is_starter
+                                    ? 'bg-[#161D36] border-emerald-500/30'
+                                    : 'bg-[#12182D]/80 border-[#2C3960]/60 opacity-85'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-bold text-indigo-300 overflow-hidden shrink-0">
+                                    {p.avatar_url ? (
+                                      <img src={p.avatar_url} alt={p.player_name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span>{(p.player_name || 'PL').slice(0, 2).toUpperCase()}</span>
+                                    )}
+                                  </div>
+
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold text-white truncate">{p.player_name}</p>
+                                    <p className="text-[10px] text-slate-400 truncate">
+                                      {p.position || 'Player'} {p.player_username ? `• @${p.player_username}` : ''}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Lineup Controls */}
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  {/* Jersey Input */}
+                                  <div className="flex items-center gap-0.5 bg-[#0B132B] px-1.5 py-0.5 rounded-lg border border-[#2C3960]" title="Match Jersey Number">
+                                    <span className="text-[10px] text-slate-400 font-bold">#</span>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      max="99"
+                                      value={p.jersey_number ?? 99}
+                                      onChange={(e) => handleUpdateJerseyNumber('home', playerId, e.target.value)}
+                                      className="w-7 bg-transparent text-center font-bold text-xs text-white focus:outline-none"
+                                    />
+                                  </div>
+
+                                  {/* Starter Toggle */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleStarter('home', playerId)}
+                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                      p.is_starter
+                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                        : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                                    }`}
+                                    title={p.is_starter ? 'Starting 11' : 'Substitute'}
+                                  >
+                                    {p.is_starter ? 'Starter' : 'Sub'}
+                                  </button>
+
+                                  {/* Goalkeeper Toggle */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleGoalkeeper('home', playerId)}
+                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                      p.is_goalkeeper
+                                        ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 font-black'
+                                        : 'bg-slate-800 text-slate-400 hover:text-amber-300'
+                                    }`}
+                                    title={p.is_goalkeeper ? 'Designated Goalkeeper' : 'Click to make Goalkeeper'}
+                                  >
+                                    {p.is_goalkeeper ? '🧤 GK' : 'GK'}
+                                  </button>
+
+                                  {/* Remove from Squad */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemovePlayerFromSquad('home', playerId)}
+                                    className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                    title="Remove from squad"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ================================================= */}
+                    {/* AWAY TEAM SQUAD COLUMN */}
+                    {/* ================================================= */}
+                    <div className="card-gloss p-5 sm:p-6 rounded-2xl border border-teal-500/30 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#2C3960]/60 pb-3">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400">Away Batch</span>
+                          <h4 className="text-base font-black text-white">{selectedMatch.away_team.name}</h4>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {(() => {
+                            const starters = awaySquadList.filter((p: any) => p.is_starter).length;
+                            const gks = awaySquadList.filter((p: any) => p.is_goalkeeper).length;
+                            const subs = awaySquadList.filter((p: any) => !p.is_starter).length;
+
+                            return (
+                              <>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                  starters === 11
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                }`}>
+                                  {starters}/11 Starters
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                  gks === 1
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                    : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                }`}>
+                                  {gks === 1 ? '🧤 1 GK' : gks === 0 ? '⚠️ No GK' : '⚠️ Multi GK'}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-[#2C3960]">
+                                  {subs} Subs
+                                </span>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Quick Actions & Add Player */}
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleAutoPopulateSquad('away')}
+                          className="px-3 py-2 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 border border-teal-500/30 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          title="Auto-add all approved players from this batch"
+                        >
+                          <UserCheck className="w-3.5 h-3.5" />
+                          Auto-fill Approved Roster
+                        </button>
+
+                        <div className="flex-1 min-w-0">
+                          <select
+                            value={selectedAwayAddPlayer}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSelectedAwayAddPlayer(val);
+                              if (val) {
+                                const p = awayEligiblePlayers.find((x: any) => String(x.id) === val);
+                                if (p) handleAddPlayerToSquad('away', p);
+                                setSelectedAwayAddPlayer('');
+                              }
+                            }}
+                            className="w-full px-3 py-2 rounded-xl bg-[#0E162E] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-teal-500 cursor-pointer"
+                          >
+                            <option value="">+ Add Player from Batch Roster</option>
+                            {awayEligiblePlayers
+                              .filter((ep: any) => !awaySquadList.some((sp: any) => (sp.player_id || sp.id) === ep.id))
+                              .map((ep: any) => (
+                                <option key={ep.id} value={ep.id}>
+                                  {ep.full_name} ({ep.position || 'Player'}) #{ep.jersey_number || 'NA'}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Squad Players List */}
+                      <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                        {awaySquadList.length === 0 ? (
+                          <div className="p-8 text-center rounded-xl bg-[#0E162E]/60 border border-[#2C3960]/60 space-y-2">
+                            <Users className="w-6 h-6 text-slate-500 mx-auto" />
+                            <p className="text-xs text-slate-400">No players assigned to this match squad yet.</p>
+                            <button
+                              type="button"
+                              onClick={() => handleAutoPopulateSquad('away')}
+                              className="text-xs font-bold text-teal-400 hover:underline cursor-pointer"
+                            >
+                              Auto-fill with all approved batch players &rarr;
+                            </button>
+                          </div>
+                        ) : (
+                          awaySquadList.map((p: any) => {
+                            const playerId = p.player_id || p.id;
+                            return (
+                              <div
+                                key={playerId}
+                                className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
+                                  p.is_starter
+                                    ? 'bg-[#161D36] border-emerald-500/30'
+                                    : 'bg-[#12182D]/80 border-[#2C3960]/60 opacity-85'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8 h-8 rounded-lg bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-xs font-bold text-teal-300 overflow-hidden shrink-0">
+                                    {p.avatar_url ? (
+                                      <img src={p.avatar_url} alt={p.player_name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span>{(p.player_name || 'PL').slice(0, 2).toUpperCase()}</span>
+                                    )}
+                                  </div>
+
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold text-white truncate">{p.player_name}</p>
+                                    <p className="text-[10px] text-slate-400 truncate">
+                                      {p.position || 'Player'} {p.player_username ? `• @${p.player_username}` : ''}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Lineup Controls */}
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  {/* Jersey Input */}
+                                  <div className="flex items-center gap-0.5 bg-[#0B132B] px-1.5 py-0.5 rounded-lg border border-[#2C3960]" title="Match Jersey Number">
+                                    <span className="text-[10px] text-slate-400 font-bold">#</span>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      max="99"
+                                      value={p.jersey_number ?? 99}
+                                      onChange={(e) => handleUpdateJerseyNumber('away', playerId, e.target.value)}
+                                      className="w-7 bg-transparent text-center font-bold text-xs text-white focus:outline-none"
+                                    />
+                                  </div>
+
+                                  {/* Starter Toggle */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleStarter('away', playerId)}
+                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                      p.is_starter
+                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                        : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                                    }`}
+                                    title={p.is_starter ? 'Starting 11' : 'Substitute'}
+                                  >
+                                    {p.is_starter ? 'Starter' : 'Sub'}
+                                  </button>
+
+                                  {/* Goalkeeper Toggle */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleGoalkeeper('away', playerId)}
+                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                      p.is_goalkeeper
+                                        ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 font-black'
+                                        : 'bg-slate-800 text-slate-400 hover:text-amber-300'
+                                    }`}
+                                    title={p.is_goalkeeper ? 'Designated Goalkeeper' : 'Click to make Goalkeeper'}
+                                  >
+                                    {p.is_goalkeeper ? '🧤 GK' : 'GK'}
+                                  </button>
+
+                                  {/* Remove from Squad */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemovePlayerFromSquad('away', playerId)}
+                                    className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                    title="Remove from squad"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bottom Save Bar */}
+                <div className="p-4 rounded-2xl bg-[#161D36] border border-[#2C3960] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+                  <div className="text-xs text-slate-400 flex flex-wrap items-center gap-2">
+                    <span>
+                      <strong className="text-white">{selectedMatch.home_team.name}:</strong>{' '}
+                      {homeSquadList.filter((p: any) => p.is_starter).length} Starters, {homeSquadList.filter((p: any) => !p.is_starter).length} Subs
+                    </span>
+                    <span>&bull;</span>
+                    <span>
+                      <strong className="text-white">{selectedMatch.away_team.name}:</strong>{' '}
+                      {awaySquadList.filter((p: any) => p.is_starter).length} Starters, {awaySquadList.filter((p: any) => !p.is_starter).length} Subs
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveSquads}
+                    disabled={squadSaving || squadLoading}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {squadSaving ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Saving Line-ups...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>Save Official Line-ups</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Score Correction Modal */}
                 {showCorrectionModal && (
                   <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-4">
                     <h4 className="text-sm font-bold text-amber-300 flex items-center gap-2">
@@ -2461,6 +3298,273 @@ export default function FrontendAdminPage() {
                 className="w-full sm:w-auto py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================================= */}
+      {/* EDIT FIXTURE MODAL (PORTAL TO DOCUMENT.BODY) */}
+      {/* ========================================================================= */}
+      {mounted && showEditFixtureModal && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[999999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5"
+          onClick={() => {
+            setShowEditFixtureModal(false);
+            setEditFixtureError('');
+            setEditFixtureSuccess('');
+          }}
+        >
+          <div
+            className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl border border-purple-500/40 bg-[#0E162E] text-white shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Fixed Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-[#2C3960]/60 shrink-0 flex items-center justify-between gap-3 bg-[#0E162E]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
+                  <Edit className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white">Edit Fixture Details</h3>
+                  <p className="text-xs text-slate-400">Match #{editFixtureData.id} &bull; Reschedule, update venue, status, or teams</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEditFixtureModal(false);
+                  setEditFixtureError('');
+                  setEditFixtureSuccess('');
+                }}
+                className="p-2 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleSaveEditFixture} id="edit-fixture-form" className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+              {editFixtureError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{editFixtureError}</span>
+                </div>
+              )}
+
+              {editFixtureSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  <span>{editFixtureSuccess}</span>
+                </div>
+              )}
+
+              {/* Competing Batch Teams */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Home Team <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={editFixtureData.home_team_id}
+                    onChange={(e) => setEditFixtureData((prev) => ({ ...prev, home_team_id: e.target.value }))}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                  >
+                    <option value="">Select Home Batch</option>
+                    {batchTeams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.batch_code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Away Team <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={editFixtureData.away_team_id}
+                    onChange={(e) => setEditFixtureData((prev) => ({ ...prev, away_team_id: e.target.value }))}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                  >
+                    <option value="">Select Away Batch</option>
+                    {batchTeams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.batch_code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Stage / Round Name & Round Number */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Stage / Round Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editFixtureData.stage_or_round_name}
+                    onChange={(e) => setEditFixtureData((prev) => ({ ...prev, stage_or_round_name: e.target.value }))}
+                    placeholder="e.g. Grand Final, Semi-Final, Round 1"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {['Grand Final', 'Semi-Final', '3rd Place Playoff', 'Round of 16', 'Group Match'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setEditFixtureData((prev) => ({ ...prev, stage_or_round_name: preset }))}
+                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300 hover:text-purple-300 hover:bg-slate-700 transition-colors cursor-pointer"
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Round Number
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={editFixtureData.round_number}
+                    onChange={(e) => setEditFixtureData((prev) => ({ ...prev, round_number: Number(e.target.value) || 1 }))}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Date & Time */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Match Date <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={editFixtureData.match_date}
+                    onChange={(e) => setEditFixtureData((prev) => ({ ...prev, match_date: e.target.value }))}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Kick-off Time <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={editFixtureData.kick_off_time}
+                    onChange={(e) => setEditFixtureData((prev) => ({ ...prev, kick_off_time: e.target.value }))}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Venue & Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Venue / Stadium Pitch <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editFixtureData.venue}
+                    onChange={(e) => setEditFixtureData((prev) => ({ ...prev, venue: e.target.value }))}
+                    placeholder="e.g. AASTU Main Football Field"
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {['AASTU Main Football Field', 'Pitch 1', 'Pitch 2', 'Indoor Sports Hall'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setEditFixtureData((prev) => ({ ...prev, venue: preset }))}
+                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300 hover:text-emerald-300 hover:bg-slate-700 transition-colors cursor-pointer"
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Match Status <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={editFixtureData.status}
+                    onChange={(e) => setEditFixtureData((prev) => ({ ...prev, status: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                  >
+                    <option value="SCHEDULED">Scheduled</option>
+                    <option value="LIVE">Live Match</option>
+                    <option value="FULL_TIME">Full Time / Concluded</option>
+                    <option value="POSTPONED">Postponed</option>
+                    <option value="CANCELLED">Cancelled</option>
+                    <option value="WALKOVER">Walkover</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Notes / Match Report */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  Match Notes / Announcement / Briefing
+                </label>
+                <textarea
+                  value={editFixtureData.notes}
+                  onChange={(e) => setEditFixtureData((prev) => ({ ...prev, notes: e.target.value }))}
+                  rows={2}
+                  placeholder="Official match instructions, broadcast notices, or referee details..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 resize-none"
+                />
+              </div>
+            </form>
+
+            {/* Fixed Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-[#2C3960]/60 shrink-0 flex items-center justify-end gap-3 bg-[#0E162E]">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEditFixtureModal(false);
+                  setEditFixtureError('');
+                  setEditFixtureSuccess('');
+                }}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs cursor-pointer transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="edit-fixture-form"
+                disabled={editFixtureLoading}
+                className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {editFixtureLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Saving Changes...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Save Fixture Changes</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

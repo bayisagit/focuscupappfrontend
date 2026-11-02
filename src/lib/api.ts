@@ -232,6 +232,12 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(data)
     }),
+    getMatchSquad: (matchId: number) => fetchAPI<any>(`/api/v1/manager/matches/${matchId}/squad/`),
+    saveMatchSquad: (matchId: number, data: { home_squad?: any[]; away_squad?: any[] }) =>
+      fetchAPI<any>(`/api/v1/manager/matches/${matchId}/squad/`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
     publishMatch: (matchId: number) => fetchAPI<any>(`/api/v1/manager/matches/${matchId}/publish/`, {
       method: 'POST'
     }),
