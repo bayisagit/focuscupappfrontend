@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '@/lib/api';
@@ -2282,18 +2283,18 @@ export default function FrontendAdminPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* FULL MEMBER & PLAYER REGISTRATION DETAILS MODAL (ROOT LEVEL) */}
+      {/* FULL MEMBER & PLAYER REGISTRATION DETAILS MODAL (PORTAL TO DOCUMENT.BODY) */}
       {/* ========================================================================= */}
-      {selectedPlayer && (
+      {mounted && selectedPlayer && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[99999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
+          className="fixed inset-0 z-[999999] bg-slate-950/85 backdrop-blur-md overflow-y-auto flex justify-center items-start sm:items-center p-4 sm:p-6 md:p-8 pt-16 sm:pt-20"
           onClick={() => {
             setSelectedPlayer(null);
             setReviewReason('');
           }}
         >
           <div
-            className="w-full max-w-xl rounded-3xl p-6 sm:p-7 border border-emerald-500/40 bg-[#0E162E] text-white shadow-2xl space-y-6 my-auto max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200 relative"
+            className="w-full max-w-xl rounded-3xl p-6 sm:p-7 border border-emerald-500/40 bg-[#0E162E] text-white shadow-2xl space-y-5 my-auto max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200 relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Close Button */}
@@ -2458,7 +2459,8 @@ export default function FrontendAdminPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
