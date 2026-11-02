@@ -34,6 +34,8 @@ import {
   ChevronLeft,
   Menu,
   X,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 const isPlayerInBatchTeam = (player: any, team: any) => {
@@ -96,6 +98,7 @@ export default function FrontendAdminPage() {
   // Login form state (if not logged in as manager)
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
@@ -526,14 +529,25 @@ export default function FrontendAdminPage() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">Password</label>
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="Enter manager password"
-                required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-sm text-white focus:outline-none focus:border-purple-500"
-              />
+              <div className="relative">
+                <input
+                  type={showLoginPassword ? 'text' : 'password'}
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Enter manager password"
+                  required
+                  className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-sm text-white focus:outline-none focus:border-purple-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-purple-400 transition-colors p-1 cursor-pointer"
+                  tabIndex={-1}
+                  aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button
