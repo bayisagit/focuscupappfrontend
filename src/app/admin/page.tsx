@@ -2287,149 +2287,154 @@ export default function FrontendAdminPage() {
       {/* ========================================================================= */}
       {mounted && selectedPlayer && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[999999] bg-slate-950/85 backdrop-blur-md overflow-y-auto flex justify-center items-start sm:items-center p-4 sm:p-6 md:p-8 pt-16 sm:pt-20"
+          className="fixed inset-0 z-[999999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5"
           onClick={() => {
             setSelectedPlayer(null);
             setReviewReason('');
           }}
         >
           <div
-            className="w-full max-w-xl rounded-3xl p-6 sm:p-7 border border-emerald-500/40 bg-[#0E162E] text-white shadow-2xl space-y-5 my-auto max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200 relative"
+            className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl border border-emerald-500/40 bg-[#0E162E] text-white shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Top Close Button */}
-            <button
-              onClick={() => {
-                setSelectedPlayer(null);
-                setReviewReason('');
-              }}
-              className="absolute top-5 right-5 p-2 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {/* Header: Photo, Name, Batch */}
-            <div className="flex items-center gap-4 border-b border-[#2C3960]/60 pb-5 pr-10">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-2 border-emerald-400/80 flex items-center justify-center overflow-hidden shrink-0 shadow-lg text-emerald-300 font-black text-xl">
-                {selectedPlayer.profile_picture_url || selectedPlayer.avatar_url ? (
-                  <img
-                    src={selectedPlayer.profile_picture_url || selectedPlayer.avatar_url}
-                    alt={selectedPlayer.full_name || selectedPlayer.member_name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span>
-                    {(selectedPlayer.full_name || selectedPlayer.member_name || selectedPlayer.username || 'FC')
-                      .slice(0, 2)
-                      .toUpperCase()}
-                  </span>
-                )}
-              </div>
-
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-black text-white truncate">
-                    {selectedPlayer.full_name || selectedPlayer.member_name || 'Fellowship Member'}
-                  </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                    {selectedPlayer.status || 'PENDING'}
-                  </span>
+            {/* Fixed Modal Header (Never scrolls away, always in view) */}
+            <div className="p-4 sm:p-5 border-b border-[#2C3960]/60 shrink-0 flex items-center justify-between gap-3 bg-[#0E162E]">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-2 border-emerald-400/80 flex items-center justify-center overflow-hidden shrink-0 shadow-lg text-emerald-300 font-black text-lg">
+                  {selectedPlayer.profile_picture_url || selectedPlayer.avatar_url ? (
+                    <img
+                      src={selectedPlayer.profile_picture_url || selectedPlayer.avatar_url}
+                      alt={selectedPlayer.full_name || selectedPlayer.member_name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {(selectedPlayer.full_name || selectedPlayer.member_name || selectedPlayer.username || 'FC')
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  @{selectedPlayer.username} {selectedPlayer.email ? `• ${selectedPlayer.email}` : ''}
-                </p>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    {selectedPlayer.batch_name || selectedPlayer.batch_code || 'Batch Squad'}
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                    {selectedPlayer.academic_year || 'Academic Year'}
-                  </span>
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-black text-white truncate">
+                      {selectedPlayer.full_name || selectedPlayer.member_name || 'Fellowship Member'}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0">
+                      {selectedPlayer.status || 'PENDING'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5 truncate">
+                    @{selectedPlayer.username} {selectedPlayer.email ? `• ${selectedPlayer.email}` : ''}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                    <span className="px-2.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      {selectedPlayer.batch_name || selectedPlayer.batch_code || 'Batch Squad'}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      {selectedPlayer.academic_year || 'Academic Year'}
+                    </span>
+                  </div>
                 </div>
               </div>
+
+              {/* Top Close Button */}
+              <button
+                onClick={() => {
+                  setSelectedPlayer(null);
+                  setReviewReason('');
+                }}
+                className="p-2 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Information Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-              <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-[#2C3960]">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                  Academic Department
-                </span>
-                <span className="text-white font-bold text-sm">
-                  {selectedPlayer.department || 'Not specified'}
-                </span>
-                {selectedPlayer.college && (
-                  <p className="text-[11px] text-slate-400 mt-0.5">{selectedPlayer.college}</p>
-                )}
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-[#2C3960]">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                  Academic Year &amp; Batch
-                </span>
-                <span className="text-white font-bold text-sm">
-                  {selectedPlayer.academic_year || 'Not specified'}
-                </span>
-                <p className="text-[11px] text-emerald-400 font-semibold mt-0.5">
-                  Competing for {selectedPlayer.batch_name || 'Batch Squad'}
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-[#2C3960]">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                  Pitch Role &amp; Squad Number
-                </span>
-                <div className="flex items-center justify-between">
+            {/* Scrollable Modal Body */}
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+              {/* Information Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-2xl bg-slate-900/80 border border-[#2C3960]">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    Academic Department
+                  </span>
                   <span className="text-white font-bold text-sm">
-                    {selectedPlayer.preferred_position || selectedPlayer.football_position || 'Position TBD'}
+                    {selectedPlayer.department || 'Not specified'}
                   </span>
-                  <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-black text-sm border border-amber-500/30">
-                    #{selectedPlayer.jersey_number || 'TBD'}
+                  {selectedPlayer.college && (
+                    <p className="text-[11px] text-slate-400 mt-0.5">{selectedPlayer.college}</p>
+                  )}
+                </div>
+
+                <div className="p-3 rounded-2xl bg-slate-900/80 border border-[#2C3960]">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    Academic Year &amp; Batch
                   </span>
+                  <span className="text-white font-bold text-sm">
+                    {selectedPlayer.academic_year || 'Not specified'}
+                  </span>
+                  <p className="text-[11px] text-emerald-400 font-semibold mt-0.5">
+                    Competing for {selectedPlayer.batch_name || 'Batch Squad'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-slate-900/80 border border-[#2C3960]">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    Pitch Role &amp; Squad Number
+                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white font-bold text-sm">
+                      {selectedPlayer.preferred_position || selectedPlayer.football_position || 'Position TBD'}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-black text-sm border border-amber-500/30">
+                      #{selectedPlayer.jersey_number || 'TBD'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-slate-900/80 border border-[#2C3960]">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    Fellowship Ministry / Team
+                  </span>
+                  <span className="text-white font-bold text-sm">
+                    {selectedPlayer.fellowship_team || 'General Fellowship'}
+                  </span>
+                  {selectedPlayer.gender && (
+                    <p className="text-[11px] text-slate-400 mt-0.5">Gender: {selectedPlayer.gender}</p>
+                  )}
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-[#2C3960]">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                  Fellowship Ministry / Team
-                </span>
-                <span className="text-white font-bold text-sm">
-                  {selectedPlayer.fellowship_team || 'General Fellowship'}
-                </span>
-                {selectedPlayer.gender && (
-                  <p className="text-[11px] text-slate-400 mt-0.5">Gender: {selectedPlayer.gender}</p>
-                )}
+              {/* Football Notes / Statement */}
+              {selectedPlayer.football_notes && (
+                <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-[#2C3960] space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                    Player Application Notes / Experience
+                  </span>
+                  <p className="text-xs text-slate-200 leading-relaxed italic">
+                    &ldquo;{selectedPlayer.football_notes}&rdquo;
+                  </p>
+                </div>
+              )}
+
+              {/* Rejection Reason Input (Optional when rejecting) */}
+              <div className="space-y-1.5 pt-1">
+                <label className="text-[11px] font-semibold text-slate-400 block">
+                  Rejection Reason / Feedback (Optional, sent to player if rejected):
+                </label>
+                <input
+                  type="text"
+                  value={reviewReason}
+                  onChange={(e) => setReviewReason(e.target.value)}
+                  placeholder="e.g. Duplicate jersey number, wrong academic year batch, etc."
+                  className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500/50"
+                />
               </div>
             </div>
 
-            {/* Football Notes / Statement */}
-            {selectedPlayer.football_notes && (
-              <div className="p-4 rounded-2xl bg-slate-900/80 border border-[#2C3960] space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Player Application Notes / Experience
-                </span>
-                <p className="text-xs text-slate-200 leading-relaxed italic">
-                  &ldquo;{selectedPlayer.football_notes}&rdquo;
-                </p>
-              </div>
-            )}
-
-            {/* Rejection Reason Input (Optional when rejecting) */}
-            <div className="space-y-1.5 pt-1">
-              <label className="text-[11px] font-semibold text-slate-400 block">
-                Rejection Reason / Feedback (Optional, sent to player if rejected):
-              </label>
-              <input
-                type="text"
-                value={reviewReason}
-                onChange={(e) => setReviewReason(e.target.value)}
-                placeholder="e.g. Duplicate jersey number, wrong academic year batch, etc."
-                className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500/50"
-              />
-            </div>
-
-            {/* Footer Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 border-t border-[#2C3960]/60">
+            {/* Fixed Modal Footer Action Buttons (Always visible at bottom) */}
+            <div className="p-3.5 sm:p-4 border-t border-[#2C3960]/60 bg-[#0B1226] shrink-0 flex flex-col sm:flex-row items-center gap-2.5">
               <button
                 onClick={() => handleReviewPlayer(selectedPlayer.id, 'APPROVED')}
                 disabled={playerActionLoading}
