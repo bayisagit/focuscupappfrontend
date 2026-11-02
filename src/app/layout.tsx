@@ -7,7 +7,6 @@ import Footer from "@/components/Footer";
 import MobileNav from "@/components/MobileNav";
 import AastuLogoLoader from "@/components/AastuLogoLoader";
 import MobileAppInstallBanner from "@/components/MobileAppInstallBanner";
-import RemoveNetlifyBadge from "@/components/RemoveNetlifyBadge";
 import ToastProvider from "@/components/ToastProvider";
 
 export const metadata: Metadata = {
@@ -64,9 +63,6 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-[#0B132B] text-slate-100 antialiased selection:bg-emerald-500 selection:text-slate-950">
-        {/* Invisible dummy targets that neutralize Netlify's injected HUD badge script from rendering */}
-        <div id="nl-badge-frame" style={{ display: 'none' }} aria-hidden="true" />
-        <div id="nl-hud-frame" style={{ display: 'none' }} aria-hidden="true" />
         <ToastProvider>
           <AuthProvider>
             <Suspense fallback={<div className="h-16 bg-[#0B132B] border-b border-[#2C3960]/60" />}>
@@ -82,7 +78,6 @@ export default function RootLayout({
               <MobileNav />
             </Suspense>
             <MobileAppInstallBanner />
-            <RemoveNetlifyBadge />
           </AuthProvider>
         </ToastProvider>
       </body>
