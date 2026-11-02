@@ -8,6 +8,7 @@ import MobileNav from "@/components/MobileNav";
 import AastuLogoLoader from "@/components/AastuLogoLoader";
 import MobileAppInstallBanner from "@/components/MobileAppInstallBanner";
 import RemoveNetlifyBadge from "@/components/RemoveNetlifyBadge";
+import ToastProvider from "@/components/ToastProvider";
 
 export const metadata: Metadata = {
   title: "AASTU Focus Cup Fellowship – Focus Football Cup",
@@ -66,22 +67,24 @@ export default function RootLayout({
         {/* Invisible dummy targets that neutralize Netlify's injected HUD badge script from rendering */}
         <div id="nl-badge-frame" style={{ display: 'none' }} aria-hidden="true" />
         <div id="nl-hud-frame" style={{ display: 'none' }} aria-hidden="true" />
-        <AuthProvider>
-          <Suspense fallback={<div className="h-16 bg-[#0B132B] border-b border-[#2C3960]/60" />}>
-            <Navbar />
-          </Suspense>
-          <main className="flex-1">
-            <Suspense fallback={<AastuLogoLoader />}>
-              {children}
+        <ToastProvider>
+          <AuthProvider>
+            <Suspense fallback={<div className="h-16 bg-[#0B132B] border-b border-[#2C3960]/60" />}>
+              <Navbar />
             </Suspense>
-          </main>
-          <Footer />
-          <Suspense fallback={null}>
-            <MobileNav />
-          </Suspense>
-          <MobileAppInstallBanner />
-          <RemoveNetlifyBadge />
-        </AuthProvider>
+            <main className="flex-1">
+              <Suspense fallback={<AastuLogoLoader />}>
+                {children}
+              </Suspense>
+            </main>
+            <Footer />
+            <Suspense fallback={null}>
+              <MobileNav />
+            </Suspense>
+            <MobileAppInstallBanner />
+            <RemoveNetlifyBadge />
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );
