@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Mail, Phone, Heart } from 'lucide-react';
 
@@ -46,7 +47,8 @@ function YoutubeIcon({ className }: { className?: string }) {
   );
 }
 
-export default function Footer() {
+function FooterContent() {
+  const pathname = usePathname();
   const [settings, setSettings] = useState<any>({
     site_title: 'AASTU Focus Fellowship – Focus Football Cup',
     tagline: 'Winning is a bonus; friendship, joy, and fellowship come first!',
@@ -69,6 +71,10 @@ export default function Footer() {
       .catch(() => {});
   }, []);
 
+  if (pathname === '/admin' || pathname?.startsWith('/admin/')) {
+    return null;
+  }
+
   return (
     <footer className="bg-[#070D1E] border-t border-[#2C3960] text-slate-300 pt-16 pb-24 md:pb-12 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -85,9 +91,14 @@ export default function Footer() {
                   className="w-full h-full object-contain"
                 />
               </div>
-              <span className="font-extrabold text-white text-base tracking-tight">
-                FOCUS <span className="text-emerald-400">FOOTBALL CUP</span>
-              </span>
+              <div className="flex flex-col justify-center min-w-0">
+                <div className="font-extrabold text-white text-base tracking-tight whitespace-nowrap leading-none flex items-center gap-1.5">
+                  <span>FOCUS</span> <span className="text-emerald-400">FOOTBALL CUP</span>
+                </div>
+                <span className="block text-[10px] text-slate-400 uppercase tracking-widest font-medium whitespace-nowrap leading-none mt-1">
+                  AASTU Focus Cup Fellowship
+                </span>
+              </div>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
               {settings.about_fellowship}
@@ -275,5 +286,13 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+  );
+}
+
+export default function Footer() {
+  return (
+    <Suspense fallback={null}>
+      <FooterContent />
+    </Suspense>
   );
 }

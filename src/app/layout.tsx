@@ -65,7 +65,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-[#0B132B] text-slate-100 antialiased selection:bg-emerald-500 selection:text-slate-950">
         <ToastProvider>
           <AuthProvider>
-            <Suspense fallback={<div className="h-16 bg-[#0B132B] border-b border-[#2C3960]/60" />}>
+            <Suspense fallback={null}>
               <Navbar />
             </Suspense>
             <main className="flex-1">

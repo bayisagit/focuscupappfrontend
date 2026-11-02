@@ -15,6 +15,10 @@ function MobileNavContent() {
     setMounted(true);
   }, []);
 
+  if (pathname === '/admin' || pathname?.startsWith('/admin/')) {
+    return null;
+  }
+
   const navItems = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Fixtures', href: '/fixtures', icon: Calendar },

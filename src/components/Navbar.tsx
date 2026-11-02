@@ -48,6 +48,11 @@ function NavbarContent() {
     }
   }, [user, pathname]);
 
+  // Hide the public navigation bar entirely on the dedicated admin command center
+  if (pathname === '/admin' || pathname?.startsWith('/admin/')) {
+    return null;
+  }
+
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Fixtures', href: '/fixtures' },
@@ -66,8 +71,8 @@ function NavbarContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-lg shadow-emerald-500/20 border border-white/20 group-hover:scale-105 group-hover:border-emerald-400/50 transition-all overflow-hidden shrink-0">
+          <Link href="/" className="flex items-center space-x-2.5 sm:space-x-3 group min-w-0 shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-lg shadow-emerald-500/20 border border-white/20 group-hover:scale-105 group-hover:border-emerald-400/50 transition-all overflow-hidden shrink-0">
               <Image
                 src="/logo.png"
                 alt="AASTU Focus Fellowship Logo"
@@ -77,11 +82,12 @@ function NavbarContent() {
                 className="w-full h-full object-contain"
               />
             </div>
-            <div>
-              <span className="font-extrabold text-white text-base tracking-tight flex items-center gap-1.5">
-                FOCUS <span className="text-emerald-400">FOOTBALL CUP</span>
-              </span>
-              <span className="block text-[10px] text-slate-400 uppercase tracking-widest font-medium">
+            <div className="flex flex-col justify-center min-w-0">
+              <div className="font-black text-white text-xs sm:text-sm md:text-base tracking-tight whitespace-nowrap leading-none flex items-center gap-1 sm:gap-1.5">
+                <span>FOCUS</span>
+                <span className="text-emerald-400">FOOTBALL CUP</span>
+              </div>
+              <span className="block text-[8px] sm:text-[10px] text-slate-400 uppercase tracking-wider sm:tracking-widest font-semibold whitespace-nowrap leading-none mt-1 truncate">
                 AASTU Focus Cup Fellowship
               </span>
             </div>
@@ -285,9 +291,9 @@ function NavbarContent() {
                 className="w-full h-full object-contain"
               />
             </div>
-            <div>
-              <p className="text-xs font-bold text-white leading-none">AASTU Focus Cup Fellowship</p>
-              <p className="text-[10px] text-emerald-400 font-semibold tracking-wide mt-0.5">Focus Football Cup</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-white leading-none whitespace-nowrap truncate">AASTU Focus Cup Fellowship</p>
+              <p className="text-[10px] text-emerald-400 font-semibold tracking-wide mt-1 leading-none whitespace-nowrap">Focus Football Cup</p>
             </div>
           </div>
 

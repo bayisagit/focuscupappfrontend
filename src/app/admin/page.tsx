@@ -28,6 +28,7 @@ import {
   Sparkles,
   Flame,
   ArrowRight,
+  ArrowLeft,
   RefreshCw,
   Search,
   ChevronDown,
@@ -855,14 +856,20 @@ export default function FrontendAdminPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-5 border-t border-[#2C3960] text-center">
+          <div className="mt-6 pt-5 border-t border-[#2C3960] flex items-center justify-between text-xs text-slate-400">
+            <Link
+              href="/"
+              className="hover:text-emerald-400 transition-colors inline-flex items-center gap-1.5"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Return to Website
+            </Link>
             <a
               href="http://localhost:8002/admin/"
               target="_blank"
               rel="noreferrer"
-              className="text-xs text-slate-400 hover:text-emerald-400 transition-colors inline-flex items-center gap-1.5"
+              className="hover:text-purple-400 transition-colors inline-flex items-center gap-1"
             >
-              Prefer backend Django Jazzmin Admin? <ExternalLink className="w-3.5 h-3.5" />
+              Jazzmin Admin <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
         </div>
@@ -887,14 +894,14 @@ export default function FrontendAdminPage() {
 
       {/* Collapsible Sidebar */}
       <aside
-        className={`fixed md:sticky top-0 h-screen z-50 bg-[#0B132B]/95 backdrop-blur-xl border-r border-[#2C3960] flex flex-col transition-all duration-300 ease-in-out shrink-0 ${
+        className={`fixed md:sticky top-0 h-screen z-40 bg-[#0B132B] border-r border-[#2C3960] flex flex-col overflow-hidden transition-all duration-300 ease-in-out shrink-0 ${
           sidebarCollapsed ? 'md:w-20' : 'md:w-64'
         } ${
           mobileSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0'
         }`}
       >
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-[#2C3960]/80 flex items-center justify-between">
+        <div className="p-4 border-b border-[#2C3960]/80 flex items-center justify-between shrink-0 bg-[#0B132B] z-10 sticky top-0">
           <div className={`flex items-center gap-3 overflow-hidden ${sidebarCollapsed ? 'hidden md:hidden' : 'flex'}`}>
             <div className="w-9 h-9 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md">
               <Image src="/logo.png" alt="Logo" width={32} height={32} className="w-full h-full object-contain" />
@@ -1130,7 +1137,15 @@ export default function FrontendAdminPage() {
         </div>
 
         {/* Sidebar Footer (Backend Links) */}
-        <div className="p-3 border-t border-[#2C3960]/80 space-y-1 text-xs">
+        <div className="p-3 border-t border-[#2C3960]/80 space-y-1 text-xs shrink-0 bg-[#0B132B]">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-emerald-400 hover:bg-emerald-500/15 transition-all font-semibold"
+            title="Return to Public Website"
+          >
+            <ArrowLeft className="w-4 h-4 shrink-0 text-emerald-400" />
+            {!sidebarCollapsed && <span>Public Website</span>}
+          </Link>
           <a
             href="http://localhost:8002/admin/"
             target="_blank"
@@ -1189,6 +1204,15 @@ export default function FrontendAdminPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              className="px-3 py-1.5 rounded-xl bg-[#161D36] border border-[#2C3960] hover:border-emerald-500/50 hover:text-emerald-400 text-slate-300 text-xs font-semibold transition-all flex items-center gap-1.5"
+              title="Return to Public Tournament Site"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">Public Site</span>
+            </Link>
+
             <button
               onClick={() => setActiveTab('create-fixture')}
               className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
