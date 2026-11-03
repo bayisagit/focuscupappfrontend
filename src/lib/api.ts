@@ -96,7 +96,10 @@ export const api = {
       return fetchAPI<any>(`/api/v1/members/${qs ? `?${qs}` : ''}`);
     },
     getOptions: () => fetchAPI<any>('/api/v1/members/options/'),
-    getDetail: (identifier: string) => fetchAPI<any>(`/api/v1/members/${identifier}/`),
+    getDetail: (identifier: string) => {
+      const clean = decodeURIComponent(identifier);
+      return fetchAPI<any>(`/api/v1/members/${encodeURIComponent(clean)}/`);
+    },
     toggleFollow: (memberId: number) => fetchAPI<any>(`/api/v1/members/${memberId}/follow/`, {
       method: 'POST'
     }),

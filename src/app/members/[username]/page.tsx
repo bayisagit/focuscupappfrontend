@@ -42,7 +42,9 @@ function MemberProfileContent() {
 
   useEffect(() => {
     if (username) {
-      api.members.getDetail(username as string)
+      const rawUser = Array.isArray(username) ? username[0] : username;
+      const cleanUser = decodeURIComponent(rawUser);
+      api.members.getDetail(cleanUser)
         .then((data) => setProfile(data))
         .catch((err) => console.error(err))
         .finally(() => setLoading(false));
