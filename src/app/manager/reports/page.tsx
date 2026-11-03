@@ -1,11 +1,26 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { Download, FileText, ArrowLeft, Users, Trophy, Shield } from 'lucide-react';
+import { Download, FileText, ArrowLeft, Users, Trophy, Shield, RefreshCw } from 'lucide-react';
 
 export default function ManagerReportsPage() {
+  const [exportingType, setExportingType] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDownload = async (type: 'members' | 'rosters' | 'matches' | 'standings') => {
+    try {
+      setError(null);
+      setExportingType(type);
+      await api.manager.downloadExport(type);
+    } catch (err: any) {
+      setError(err.message || 'Export download failed. Please verify manager permissions.');
+    } finally {
+      setExportingType(null);
+    }
+  };
+
   const exportItems = [
     {
       type: 'members' as const,
@@ -55,10 +70,16 @@ export default function ManagerReportsPage() {
         </p>
       </div>
 
+      {error && (
+        <div className="mb-6 p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs">
+          {error}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {exportItems.map((item) => {
           const Icon = item.icon;
-          const exportUrl = api.manager.getExportUrl(item.type);
+          const isExporting = exportingType === item.type;
 
           return (
             <div
@@ -78,13 +99,24 @@ export default function ManagerReportsPage() {
               </div>
 
               <div className="pt-2">
-                <a
-                  href={exportUrl}
-                  download
-                  className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all border border-[#2C3960]"
+                <button
+                  type="button"
+                  disabled={isExporting}
+                  onClick={() => handleDownload(item.type)}
+                  className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all border border-[#2C3960] cursor-pointer disabled:opacity-50"
                 >
-                  <Download className="w-4 h-4" /> Download CSV Report
-                </a>
+                  {isExporting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
+                      <span>Generating &amp; Downloading CSV...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>Download CSV Report</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           );

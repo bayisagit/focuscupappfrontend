@@ -261,7 +261,33 @@ export const api = {
         body: JSON.stringify({ event_id: eventId })
       }),
     getAuditLogs: () => fetchAPI<any>('/api/v1/manager/audit-logs/'),
-    getExportUrl: (dataType: 'members' | 'rosters' | 'matches' | 'standings') =>
-      `${API_BASE}/api/v1/manager/export/${dataType}/`,
+    getExportUrl: (dataType: 'members' | 'rosters' | 'matches' | 'standings') => {
+      const token = getAuthToken();
+      return `${API_BASE}/api/v1/manager/export/${dataType}/${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+    },
+    downloadExport: async (dataType: 'members' | 'rosters' | 'matches' | 'standings') => {
+      const token = getAuthToken();
+      const url = `${API_BASE}/api/v1/manager/export/${dataType}/`;
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        let msg = `Failed to export ${dataType} (Status ${res.status})`;
+        try {
+          const data = await res.json();
+          msg = data.error || data.detail || msg;
+        } catch (_) {}
+        throw new Error(msg);
+      }
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `focus_cup_${dataType}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    },
   }
 };

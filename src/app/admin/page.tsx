@@ -199,6 +199,20 @@ export default function FrontendAdminPage() {
   // Audit Logs State
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
+  // CSV Export State
+  const [exportingType, setExportingType] = useState<string | null>(null);
+
+  const handleExport = async (dataType: 'members' | 'rosters' | 'matches' | 'standings') => {
+    try {
+      setExportingType(dataType);
+      await api.manager.downloadExport(dataType);
+    } catch (err: any) {
+      alert(err.message || 'Export failed. Please ensure you are logged in as a tournament manager.');
+    } finally {
+      setExportingType(null);
+    }
+  };
+
   // Load Initial Admin Data
   const loadDashboard = () => {
     setDashLoading(true);
@@ -3110,45 +3124,77 @@ export default function FrontendAdminPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <a
-              href={api.manager.getExportUrl('members')}
-              download
-              className="p-5 rounded-2xl bg-[#161D36] border border-[#2C3960] hover:border-emerald-500 transition-all text-left block group cursor-pointer"
+            <button
+              type="button"
+              disabled={!!exportingType}
+              onClick={() => handleExport('members')}
+              className="p-5 rounded-2xl bg-[#161D36] border border-[#2C3960] hover:border-emerald-500 transition-all text-left block group cursor-pointer disabled:opacity-50"
             >
-              <Users className="w-7 h-7 text-emerald-400 mb-3 group-hover:scale-110 transition-transform" />
-              <h4 className="font-bold text-white text-sm">Members Directory CSV</h4>
+              <div className="flex items-center justify-between mb-3">
+                <Users className="w-7 h-7 text-emerald-400 group-hover:scale-110 transition-transform" />
+                {exportingType === 'members' && (
+                  <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin" />
+                )}
+              </div>
+              <h4 className="font-bold text-white text-sm">
+                {exportingType === 'members' ? 'Exporting CSV...' : 'Members Directory CSV'}
+              </h4>
               <p className="text-[11px] text-slate-400 mt-1">All registered fellowship members by college and batch.</p>
-            </a>
+            </button>
 
-            <a
-              href={api.manager.getExportUrl('rosters')}
-              download
-              className="p-5 rounded-2xl bg-[#161D36] border border-[#2C3960] hover:border-purple-500 transition-all text-left block group cursor-pointer"
+            <button
+              type="button"
+              disabled={!!exportingType}
+              onClick={() => handleExport('rosters')}
+              className="p-5 rounded-2xl bg-[#161D36] border border-[#2C3960] hover:border-purple-500 transition-all text-left block group cursor-pointer disabled:opacity-50"
             >
-              <GraduationCap className="w-7 h-7 text-purple-400 mb-3 group-hover:scale-110 transition-transform" />
-              <h4 className="font-bold text-white text-sm">Batch Squad Rosters CSV</h4>
+              <div className="flex items-center justify-between mb-3">
+                <GraduationCap className="w-7 h-7 text-purple-400 group-hover:scale-110 transition-transform" />
+                {exportingType === 'rosters' && (
+                  <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
+                )}
+              </div>
+              <h4 className="font-bold text-white text-sm">
+                {exportingType === 'rosters' ? 'Exporting CSV...' : 'Batch Squad Rosters CSV'}
+              </h4>
               <p className="text-[11px] text-slate-400 mt-1">Approved competition players, jersey numbers, and positions.</p>
-            </a>
+            </button>
 
-            <a
-              href={api.manager.getExportUrl('matches')}
-              download
-              className="p-5 rounded-2xl bg-[#161D36] border border-[#2C3960] hover:border-amber-500 transition-all text-left block group cursor-pointer"
+            <button
+              type="button"
+              disabled={!!exportingType}
+              onClick={() => handleExport('matches')}
+              className="p-5 rounded-2xl bg-[#161D36] border border-[#2C3960] hover:border-amber-500 transition-all text-left block group cursor-pointer disabled:opacity-50"
             >
-              <Calendar className="w-7 h-7 text-amber-400 mb-3 group-hover:scale-110 transition-transform" />
-              <h4 className="font-bold text-white text-sm">Fixtures &amp; Results CSV</h4>
+              <div className="flex items-center justify-between mb-3">
+                <Calendar className="w-7 h-7 text-amber-400 group-hover:scale-110 transition-transform" />
+                {exportingType === 'matches' && (
+                  <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />
+                )}
+              </div>
+              <h4 className="font-bold text-white text-sm">
+                {exportingType === 'matches' ? 'Exporting CSV...' : 'Fixtures & Results CSV'}
+              </h4>
               <p className="text-[11px] text-slate-400 mt-1">Full schedule, venues, final scorelines, and match status.</p>
-            </a>
+            </button>
 
-            <a
-              href={api.manager.getExportUrl('standings')}
-              download
-              className="p-5 rounded-2xl bg-[#161D36] border border-[#2C3960] hover:border-blue-500 transition-all text-left block group cursor-pointer"
+            <button
+              type="button"
+              disabled={!!exportingType}
+              onClick={() => handleExport('standings')}
+              className="p-5 rounded-2xl bg-[#161D36] border border-[#2C3960] hover:border-blue-500 transition-all text-left block group cursor-pointer disabled:opacity-50"
             >
-              <Trophy className="w-7 h-7 text-blue-400 mb-3 group-hover:scale-110 transition-transform" />
-              <h4 className="font-bold text-white text-sm">Official Standings CSV</h4>
+              <div className="flex items-center justify-between mb-3">
+                <Trophy className="w-7 h-7 text-blue-400 group-hover:scale-110 transition-transform" />
+                {exportingType === 'standings' && (
+                  <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" />
+                )}
+              </div>
+              <h4 className="font-bold text-white text-sm">
+                {exportingType === 'standings' ? 'Exporting CSV...' : 'Official Standings CSV'}
+              </h4>
               <p className="text-[11px] text-slate-400 mt-1">P, W, D, L, Goals, Goal Difference, and Points table.</p>
-            </a>
+            </button>
           </div>
         </div>
       )}
