@@ -101,10 +101,21 @@ export default function ManagerPlayersPage() {
                 registrations.map((reg) => (
                   <tr key={reg.id} className="hover:bg-[#232F54]/30">
                     <td className="py-3 px-4 font-bold text-white">
-                      <Link href={`/members/${reg.username}`} className="hover:text-emerald-400">
-                        {reg.full_name}
-                      </Link>
-                      <span className="block text-[10px] text-slate-400">{reg.department}</span>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-emerald-950/60 border border-emerald-500/30 overflow-hidden flex items-center justify-center shrink-0">
+                          {(reg.avatar_url || reg.profile_picture || reg.profile_picture_url) ? (
+                            <img src={reg.avatar_url || reg.profile_picture || reg.profile_picture_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[11px] font-bold text-emerald-400">{(reg.full_name || 'P')[0]}</span>
+                          )}
+                        </div>
+                        <div>
+                          <Link href={`/members/${reg.username}`} className="hover:text-emerald-400">
+                            {reg.full_name}
+                          </Link>
+                          <span className="block text-[10px] text-slate-400">{reg.department}</span>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-3 px-4 font-semibold text-emerald-400">
                       {reg.batch_name}

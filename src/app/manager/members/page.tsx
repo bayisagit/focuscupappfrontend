@@ -99,10 +99,21 @@ export default function ManagerMembersPage() {
                 members.map((m) => (
                   <tr key={m.id} className="hover:bg-[#232F54]/30">
                     <td className="py-3 px-4 font-bold text-white">
-                      <Link href={`/members/${m.username}`} className="hover:text-emerald-400">
-                        {m.full_name}
-                      </Link>
-                      <span className="block text-[10px] text-slate-400 font-mono">@{m.username}</span>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-emerald-950/60 border border-emerald-500/30 overflow-hidden flex items-center justify-center shrink-0">
+                          {(m.profile_picture || m.avatar_url || m.profile_picture_url) ? (
+                            <img src={m.profile_picture || m.avatar_url || m.profile_picture_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[11px] font-bold text-emerald-400">{(m.first_name || m.full_name || 'U')[0]}</span>
+                          )}
+                        </div>
+                        <div>
+                          <Link href={`/members/${m.username}`} className="hover:text-emerald-400">
+                            {m.full_name}
+                          </Link>
+                          <span className="block text-[10px] text-slate-400 font-mono">@{m.username}</span>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-slate-300 font-mono text-[11px]">{m.email}</td>
                     <td className="py-3 px-4 text-slate-300">

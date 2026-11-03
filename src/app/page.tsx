@@ -473,9 +473,14 @@ export default function HomePage() {
                         className="flex items-center justify-between p-2.5 rounded-xl bg-[#161D36]/70 border border-[#2C3960]/60"
                       >
                         <div className="flex items-center space-x-3">
-                          <span className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-300 font-black text-xs flex items-center justify-center">
+                          <span className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-300 font-black text-xs flex items-center justify-center shrink-0">
                             {scorer.rank}
                           </span>
+                          {(scorer.profile_picture || scorer.avatar_url || scorer.profile_picture_url) && (
+                            <div className="w-7 h-7 rounded-full overflow-hidden border border-emerald-400/40 shrink-0">
+                              <img src={scorer.profile_picture || scorer.avatar_url || scorer.profile_picture_url} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          )}
                           <div>
                             <Link href={`/members/${scorer.username}`} className="text-xs font-bold text-white hover:text-emerald-400">
                               {scorer.full_name}
@@ -517,9 +522,14 @@ export default function HomePage() {
                         className="flex items-center justify-between p-2.5 rounded-xl bg-[#161D36]/70 border border-[#2C3960]/60"
                       >
                         <div className="flex items-center space-x-3">
-                          <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-300 font-black text-xs flex items-center justify-center">
+                          <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-300 font-black text-xs flex items-center justify-center shrink-0">
                             {assister.rank}
                           </span>
+                          {(assister.profile_picture || assister.avatar_url || assister.profile_picture_url) && (
+                            <div className="w-7 h-7 rounded-full overflow-hidden border border-blue-400/40 shrink-0">
+                              <img src={assister.profile_picture || assister.avatar_url || assister.profile_picture_url} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          )}
                           <div>
                             <Link href={`/members/${assister.username}`} className="text-xs font-bold text-white hover:text-emerald-400">
                               {assister.full_name}
@@ -573,8 +583,8 @@ export default function HomePage() {
               className="card-gloss p-4 rounded-2xl text-center group hover:border-emerald-500/40 transition-all block"
             >
               <div className="w-16 h-16 mx-auto rounded-full bg-emerald-800/40 border-2 border-emerald-400/30 overflow-hidden mb-3 group-hover:scale-105 transition-transform flex items-center justify-center">
-                {member.profile_picture ? (
-                  <img src={member.profile_picture} alt="" className="w-full h-full object-cover" />
+                {member.profile_picture || member.avatar_url || member.profile_picture_url ? (
+                  <img src={member.profile_picture || member.avatar_url || member.profile_picture_url} alt={member.full_name} className="w-full h-full object-cover" />
                 ) : (
                   <Users className="w-6 h-6 text-emerald-300" />
                 )}

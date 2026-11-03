@@ -9,6 +9,8 @@ export interface LightboxProfile {
   username?: string;
   full_name: string;
   profile_picture?: string | null;
+  avatar_url?: string | null;
+  profile_picture_url?: string | null;
   department?: string;
   college_display?: string;
   academic_year?: string;
@@ -81,9 +83,9 @@ export default function ProfilePhotoLightbox({
 
         {/* Center: Image Display Area */}
         <div className="relative flex-1 min-h-[300px] max-h-[60vh] bg-slate-950 flex items-center justify-center p-4 overflow-hidden">
-          {profile.profile_picture ? (
+          {(profile.profile_picture || profile.avatar_url || profile.profile_picture_url) ? (
             <img
-              src={profile.profile_picture}
+              src={(profile.profile_picture || profile.avatar_url || profile.profile_picture_url) as string}
               alt={profile.full_name}
               className="max-h-[56vh] max-w-full w-auto object-contain rounded-2xl shadow-2xl border border-slate-800"
             />

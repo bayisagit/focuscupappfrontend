@@ -158,8 +158,8 @@ function NavbarContent() {
                   className="flex items-center space-x-2.5 p-1.5 pr-3 rounded-full bg-[#1C2541] border border-[#2C3960] hover:border-emerald-500/50 transition-all text-left"
                 >
                   <div className="w-8 h-8 rounded-full bg-emerald-700/50 flex items-center justify-center overflow-hidden border border-emerald-400/30">
-                    {user.profile?.profile_picture ? (
-                      <img src={user.profile.profile_picture} alt="" className="w-full h-full object-cover" />
+                    {(user.profile?.profile_picture || (user.profile as any)?.avatar_url || (user.profile as any)?.profile_picture_url) ? (
+                      <img src={user.profile?.profile_picture || (user.profile as any)?.avatar_url || (user.profile as any)?.profile_picture_url} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <UserIcon className="w-4 h-4 text-emerald-300" />
                     )}
@@ -259,10 +259,10 @@ function NavbarContent() {
             {mounted && user && (
               <Link
                 href={`/members/${user.username}`}
-                className="w-8 h-8 rounded-full bg-emerald-700/50 flex items-center justify-center border border-emerald-400/30"
+                className="w-8 h-8 rounded-full bg-emerald-700/50 flex items-center justify-center border border-emerald-400/30 overflow-hidden"
               >
-                {user.profile?.profile_picture ? (
-                  <img src={user.profile.profile_picture} alt="" className="w-full h-full object-cover rounded-full" />
+                {(user.profile?.profile_picture || (user.profile as any)?.avatar_url || (user.profile as any)?.profile_picture_url) ? (
+                  <img src={user.profile?.profile_picture || (user.profile as any)?.avatar_url || (user.profile as any)?.profile_picture_url} alt="" className="w-full h-full object-cover rounded-full" />
                 ) : (
                   <UserIcon className="w-4 h-4 text-emerald-300" />
                 )}

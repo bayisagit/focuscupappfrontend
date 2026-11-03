@@ -228,9 +228,19 @@ function MatchDetailContent() {
         {match.player_of_the_match_details && (
           <div className="mt-8 pt-4 border-t border-[#2C3960]/60 flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-400 shadow-md">
-                <Award className="w-6 h-6" />
-              </div>
+              {(match.player_of_the_match_details.profile_picture || match.player_of_the_match_details.avatar_url || match.player_of_the_match_details.profile_picture_url) ? (
+                <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-amber-400 shadow-md shrink-0">
+                  <img
+                    src={match.player_of_the_match_details.profile_picture || match.player_of_the_match_details.avatar_url || match.player_of_the_match_details.profile_picture_url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-400 shadow-md shrink-0">
+                  <Award className="w-6 h-6" />
+                </div>
+              )}
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 block">
                   Player of the Match Award
@@ -374,11 +384,16 @@ function MatchDetailContent() {
                     key={item.id}
                     className="flex items-center justify-between p-2.5 rounded-xl bg-[#161D36]/60 border border-[#2C3960]/50"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 font-black text-xs flex items-center justify-center">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 font-black text-xs flex items-center justify-center shrink-0">
                         #{item.jersey_number}
                       </span>
-                      <div>
+                      {item.player_photo && (
+                        <div className="w-7 h-7 rounded-full overflow-hidden border border-emerald-400/30 shrink-0">
+                          <img src={item.player_photo} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="min-w-0 truncate">
                         <Link
                           href={`/members/${item.player_username}`}
                           className="text-xs font-bold text-white hover:text-emerald-400 truncate block"
@@ -418,11 +433,16 @@ function MatchDetailContent() {
                     key={item.id}
                     className="flex items-center justify-between p-2.5 rounded-xl bg-[#161D36]/60 border border-[#2C3960]/50"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-300 font-black text-xs flex items-center justify-center">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-300 font-black text-xs flex items-center justify-center shrink-0">
                         #{item.jersey_number}
                       </span>
-                      <div>
+                      {item.player_photo && (
+                        <div className="w-7 h-7 rounded-full overflow-hidden border border-blue-400/30 shrink-0">
+                          <img src={item.player_photo} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="min-w-0 truncate">
                         <Link
                           href={`/members/${item.player_username}`}
                           className="text-xs font-bold text-white hover:text-blue-400 truncate block"

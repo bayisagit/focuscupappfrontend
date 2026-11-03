@@ -127,8 +127,8 @@ function BatchDetailContent() {
                 >
                   <div className="relative">
                     <div className="w-14 h-14 rounded-2xl bg-emerald-800/40 border-2 border-emerald-400/40 flex items-center justify-center overflow-hidden">
-                      {p.profile_picture ? (
-                        <img src={p.profile_picture} alt="" className="w-full h-full object-cover" />
+                      {p.profile_picture || p.avatar_url || p.profile_picture_url ? (
+                        <img src={p.profile_picture || p.avatar_url || p.profile_picture_url} alt={p.full_name} className="w-full h-full object-cover" />
                       ) : (
                         <Users className="w-6 h-6 text-emerald-300" />
                       )}

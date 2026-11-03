@@ -112,9 +112,14 @@ export default function StatisticsPage() {
                     <td className="py-3.5 px-4">
                       <Link
                         href={`/members/${s.username}`}
-                        className="font-bold text-white hover:text-emerald-400 flex items-center gap-2"
+                        className="font-bold text-white hover:text-emerald-400 flex items-center gap-2.5"
                       >
-                        {s.full_name}
+                        {(s.profile_picture || s.avatar_url || s.profile_picture_url) ? (
+                          <div className="w-7 h-7 rounded-full overflow-hidden border border-emerald-400/40 shrink-0">
+                            <img src={s.profile_picture || s.avatar_url || s.profile_picture_url} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ) : null}
+                        <span>{s.full_name}</span>
                         {s.jersey_number && (
                           <span className="text-[10px] text-amber-400">#{s.jersey_number}</span>
                         )}
@@ -164,9 +169,14 @@ export default function StatisticsPage() {
                     <td className="py-3.5 px-4">
                       <Link
                         href={`/members/${a.username}`}
-                        className="font-bold text-white hover:text-blue-400 flex items-center gap-2"
+                        className="font-bold text-white hover:text-blue-400 flex items-center gap-2.5"
                       >
-                        {a.full_name}
+                        {(a.profile_picture || a.avatar_url || a.profile_picture_url) ? (
+                          <div className="w-7 h-7 rounded-full overflow-hidden border border-blue-400/40 shrink-0">
+                            <img src={a.profile_picture || a.avatar_url || a.profile_picture_url} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ) : null}
+                        <span>{a.full_name}</span>
                       </Link>
                     </td>
                     <td className="py-3.5 px-4 text-blue-400 font-semibold">{a.batch}</td>
@@ -195,7 +205,11 @@ export default function StatisticsPage() {
           {followed.map((m) => (
             <div key={m.id} className="card-gloss p-5 rounded-2xl text-center group hover:border-emerald-500/40">
               <div className="w-16 h-16 rounded-full bg-emerald-800/40 border-2 border-emerald-400/40 mx-auto mb-3 flex items-center justify-center font-bold text-white overflow-hidden">
-                {m.profile_picture ? <img src={m.profile_picture} alt="" className="w-full h-full object-cover" /> : m.full_name[0]}
+                {(m.profile_picture || m.avatar_url || m.profile_picture_url) ? (
+                  <img src={m.profile_picture || m.avatar_url || m.profile_picture_url} alt={m.full_name} className="w-full h-full object-cover" />
+                ) : (
+                  <span>{m.full_name ? m.full_name[0] : 'U'}</span>
+                )}
               </div>
               <Link href={`/members/${m.username}`} className="text-sm font-bold text-white hover:text-emerald-400 block truncate">
                 {m.full_name}
@@ -230,9 +244,16 @@ export default function StatisticsPage() {
                 <h3 className="text-lg font-black text-white">{award.title}</h3>
 
                 {award.recipient_member && (
-                  <p className="text-xs font-bold text-emerald-400">
-                    Recipient: {award.recipient_member.full_name} ({award.recipient_member.batch})
-                  </p>
+                  <div className="flex items-center gap-2.5">
+                    {(award.recipient_member.profile_picture || award.recipient_member.avatar_url || award.recipient_member.profile_picture_url) && (
+                      <div className="w-8 h-8 rounded-full overflow-hidden border border-amber-400/50 shrink-0">
+                        <img src={award.recipient_member.profile_picture || award.recipient_member.avatar_url || award.recipient_member.profile_picture_url} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <p className="text-xs font-bold text-emerald-400">
+                      Recipient: {award.recipient_member.full_name} ({award.recipient_member.batch})
+                    </p>
+                  </div>
                 )}
 
                 {award.recipient_team && (

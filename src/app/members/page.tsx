@@ -247,9 +247,9 @@ export default function MembersDirectoryPage() {
                     title="Click to view full photo"
                   >
                     <div className="w-16 h-16 rounded-2xl bg-emerald-800/40 border-2 border-emerald-400/40 flex items-center justify-center overflow-hidden shadow group-hover/avatar:border-emerald-300 transition-all relative">
-                      {member.profile_picture ? (
+                      {(member.profile_picture || member.avatar_url || member.profile_picture_url) ? (
                         <img
-                          src={member.profile_picture}
+                          src={member.profile_picture || member.avatar_url || member.profile_picture_url}
                           alt={member.full_name}
                           className="w-full h-full object-cover group-hover/avatar:scale-110 transition-transform duration-300"
                         />

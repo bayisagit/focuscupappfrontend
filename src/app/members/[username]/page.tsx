@@ -124,9 +124,9 @@ function MemberProfileContent() {
                 className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-emerald-800/40 border-4 border-emerald-400/40 overflow-hidden shadow-2xl flex items-center justify-center cursor-pointer group-hover/headerAvatar:border-emerald-300 transition-all relative focus:outline-none text-left"
                 title="Click to view full photo"
               >
-                {profile.profile_picture ? (
+                {(profile.profile_picture || profile.avatar_url || profile.profile_picture_url) ? (
                   <img
-                    src={profile.profile_picture}
+                    src={profile.profile_picture || profile.avatar_url || profile.profile_picture_url}
                     alt={profile.full_name}
                     className="w-full h-full object-cover group-hover/headerAvatar:scale-105 transition-transform duration-300"
                   />
@@ -490,8 +490,12 @@ function MemberProfileContent() {
                 href={`/members/${f.username}`}
                 className="card-gloss p-4 rounded-xl flex items-center gap-3 hover:border-emerald-500/40"
               >
-                <div className="w-10 h-10 rounded-full bg-emerald-800/40 flex items-center justify-center font-bold text-white overflow-hidden">
-                  {f.profile_picture ? <img src={f.profile_picture} alt="" className="w-full h-full object-cover" /> : f.first_name[0]}
+                <div className="w-10 h-10 rounded-full bg-emerald-800/40 flex items-center justify-center font-bold text-white overflow-hidden shrink-0">
+                  {(f.profile_picture || f.avatar_url || f.profile_picture_url) ? (
+                    <img src={f.profile_picture || f.avatar_url || f.profile_picture_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{f.first_name ? f.first_name[0] : 'U'}</span>
+                  )}
                 </div>
                 <div className="truncate">
                   <p className="text-xs font-bold text-white truncate">{f.full_name}</p>
@@ -515,8 +519,12 @@ function MemberProfileContent() {
                 href={`/members/${f.username}`}
                 className="card-gloss p-4 rounded-xl flex items-center gap-3 hover:border-emerald-500/40"
               >
-                <div className="w-10 h-10 rounded-full bg-emerald-800/40 flex items-center justify-center font-bold text-white overflow-hidden">
-                  {f.profile_picture ? <img src={f.profile_picture} alt="" className="w-full h-full object-cover" /> : f.first_name[0]}
+                <div className="w-10 h-10 rounded-full bg-emerald-800/40 flex items-center justify-center font-bold text-white overflow-hidden shrink-0">
+                  {(f.profile_picture || f.avatar_url || f.profile_picture_url) ? (
+                    <img src={f.profile_picture || f.avatar_url || f.profile_picture_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{f.first_name ? f.first_name[0] : 'U'}</span>
+                  )}
                 </div>
                 <div className="truncate">
                   <p className="text-xs font-bold text-white truncate">{f.full_name}</p>
