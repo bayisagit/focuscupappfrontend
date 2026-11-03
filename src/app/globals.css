@@ -81,6 +81,20 @@
   animation: live-pulse 1.8s infinite ease-in-out;
 }
 
+/* Announcement Carousel Timer Animation */
+@keyframes carousel-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.animate-carousel-progress {
+  animation: carousel-progress linear forwards;
+}
+
 /* Completely suppress Netlify HUD / Badge floating iframe */
 #nl-badge-frame,
 #nl-hud-frame,

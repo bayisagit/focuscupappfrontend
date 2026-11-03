@@ -43,7 +43,11 @@ import {
   Shirt,
   UserCheck,
   MapPin,
+  Upload,
+  Trash2,
+  Image as ImageIconLucide,
 } from 'lucide-react';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 const isPlayerInBatchTeam = (player: any, team: any) => {
   if (!player || !team) return false;
@@ -180,11 +184,13 @@ export default function FrontendAdminPage() {
     content: '',
     category: 'TOURNAMENT',
     priority: 'NORMAL',
+    image_url: '',
     is_pinned: false,
   });
   const [announcementSuccess, setAnnouncementSuccess] = useState(false);
   const [announcementError, setAnnouncementError] = useState('');
   const [announcementLoading, setAnnouncementLoading] = useState(false);
+  const [announcementImageUploading, setAnnouncementImageUploading] = useState(false);
   const [siteSettings, setSiteSettings] = useState<any>({
     tagline: '',
     about_fellowship: '',
@@ -2926,6 +2932,7 @@ export default function FrontendAdminPage() {
                     category: 'TOURNAMENT',
                     priority: 'NORMAL',
                     is_pinned: false,
+                    image_url: '',
                   });
                   setTimeout(() => setAnnouncementSuccess(false), 4000);
                 } catch (err: any) {
@@ -2990,14 +2997,80 @@ export default function FrontendAdminPage() {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Graphic Design Flyer / Banner Upload */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-300 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <ImageIconLucide className="w-3.5 h-3.5 text-purple-400" />
+                    Graphic Design Flyer / Banner (Optional)
+                  </span>
+                  {announcementImageUploading && (
+                    <span className="text-[10px] text-purple-300 animate-pulse">Uploading to Cloudinary...</span>
+                  )}
+                </label>
+
+                {announcementForm.image_url ? (
+                  <div className="relative rounded-xl overflow-hidden border border-purple-500/40 bg-[#161D36] p-2 flex items-center gap-3">
+                    <img
+                      src={announcementForm.image_url}
+                      alt="Announcement Flyer Preview"
+                      className="w-16 h-16 object-cover rounded-lg border border-[#2C3960]"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-white truncate">Graphic flyer attached</p>
+                      <p className="text-[10px] text-slate-400 truncate">{announcementForm.image_url}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAnnouncementForm({ ...announcementForm, image_url: '' })}
+                      className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                      title="Remove image"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="border-2 border-dashed border-[#2C3960] hover:border-purple-500/60 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-[#161D36]/50">
+                    <Upload className="w-5 h-5 text-slate-400 mb-1" />
+                    <span className="text-xs text-slate-300 font-medium">Click to upload flyer / banner</span>
+                    <span className="text-[10px] text-slate-500 mt-0.5">PNG, JPG, WebP up to 10MB (Recommended 16:9 or 4:3)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={announcementImageUploading}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setAnnouncementImageUploading(true);
+                        try {
+                          const res = await uploadToCloudinary(file, 'focus_fellowship/announcements');
+                          setAnnouncementForm((prev) => ({ ...prev, image_url: res.secure_url }));
+                        } catch (err: any) {
+                          alert('Failed to upload image: ' + (err.message || 'Unknown error'));
+                        } finally {
+                          setAnnouncementImageUploading(false);
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div className="p-3 rounded-xl bg-purple-950/20 border border-purple-500/20 flex items-start gap-2.5">
                 <input
                   type="checkbox"
                   id="pin"
                   checked={announcementForm.is_pinned}
                   onChange={(e) => setAnnouncementForm({ ...announcementForm, is_pinned: e.target.checked })}
+                  className="mt-0.5 accent-purple-500"
                 />
-                <label htmlFor="pin" className="text-xs text-slate-300">Pin to top of public homepage</label>
+                <label htmlFor="pin" className="text-xs text-slate-300 cursor-pointer">
+                  <span className="font-semibold text-white block">Pin to top of public homepage</span>
+                  <span className="text-[11px] text-slate-400 block mt-0.5">
+                    Pinned announcements with graphic designs display in the top hero carousel, auto-transitioning right-to-left every 3–4 seconds.
+                  </span>
+                </label>
               </div>
 
               <button

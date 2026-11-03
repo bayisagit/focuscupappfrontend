@@ -3,31 +3,36 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { Calendar, MapPin, Clock, Filter, ChevronRight } from 'lucide-react';
+import { Calendar, MapPin, Clock, Filter, ChevronRight, RefreshCw, AlertCircle } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
 
 export default function FixturesPage() {
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedBatch, setSelectedBatch] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [batches, setBatches] = useState<any[]>([]);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [mRes, bRes] = await Promise.all([
-          api.matches.list(),
-          api.competitions.getBatches(),
-        ]);
-        setMatches(mRes.results || mRes || []);
-        setBatches(bRes.results || bRes || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [mRes, bRes] = await Promise.all([
+        api.matches.list(),
+        api.competitions.getBatches(),
+      ]);
+      setMatches(mRes.results || mRes || []);
+      setBatches(bRes.results || bRes || []);
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.data?.error || 'Unable to connect to tournament fixtures server. Please check your connection and retry.');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -205,6 +210,19 @@ export default function FixturesPage() {
               </div>
             );
           })}
+        </div>
+      ) : error ? (
+        <div className="text-center py-12 card-gloss rounded-2xl border border-red-500/30 bg-red-950/10">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-white mb-1">Failed to load fixtures</h3>
+          <p className="text-xs text-red-300 max-w-md mx-auto mb-4">{error}</p>
+          <button
+            onClick={loadData}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry Loading Fixtures
+          </button>
         </div>
       ) : (
         <div className="text-center py-16 card-gloss rounded-2xl">

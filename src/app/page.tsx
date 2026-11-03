@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
 import BatchPhotoLightbox, { BatchTeamData } from '@/components/BatchPhotoLightbox';
+import AnnouncementHeroCarousel from '@/components/AnnouncementHeroCarousel';
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
@@ -92,25 +93,8 @@ export default function HomePage() {
       {/* 1. HERO SECTION */}
       <section className="relative overflow-hidden pt-12 pb-20 border-b border-[#2C3960]/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Pinned Announcement Alert Banner */}
-          {announcements.find((a) => a.is_pinned) && (
-            <div className="mb-8 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 backdrop-blur-md shadow-lg shadow-amber-500/5">
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 text-[10px] font-black uppercase shrink-0">
-                  PINNED NOTICE
-                </span>
-                <p className="text-xs text-amber-200 font-semibold truncate">
-                  <strong className="text-white">{announcements.find((a) => a.is_pinned)?.title}</strong> — {announcements.find((a) => a.is_pinned)?.content}
-                </p>
-              </div>
-              <a
-                href="#announcements"
-                className="text-xs text-amber-400 hover:text-amber-300 font-bold shrink-0 flex items-center gap-1 self-end sm:self-auto"
-              >
-                Read Notice →
-              </a>
-            </div>
-          )}
+          {/* Pinned Announcement Graphic Showcase Carousel (Right-to-Left, 3.5s Auto-transition) */}
+          <AnnouncementHeroCarousel announcements={announcements} />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Column: Vision & Brand */}
@@ -689,6 +673,15 @@ export default function HomePage() {
                     </span>
                   </div>
                   <h3 className="text-sm font-bold text-white leading-snug">{item.title}</h3>
+                  {(item.photo_url || item.image_url) && (
+                    <div className="w-full aspect-[16/9] rounded-xl overflow-hidden border border-[#2C3960] bg-slate-950">
+                      <img
+                        src={item.photo_url || item.image_url}
+                        alt={item.title}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  )}
                   <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line line-clamp-4 hover:line-clamp-none transition-all">
                     {item.content}
                   </p>
