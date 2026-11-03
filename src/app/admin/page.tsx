@@ -178,9 +178,13 @@ export default function FrontendAdminPage() {
   const [announcementForm, setAnnouncementForm] = useState({
     title: '',
     content: '',
+    category: 'TOURNAMENT',
+    priority: 'NORMAL',
     is_pinned: false,
   });
   const [announcementSuccess, setAnnouncementSuccess] = useState(false);
+  const [announcementError, setAnnouncementError] = useState('');
+  const [announcementLoading, setAnnouncementLoading] = useState(false);
   const [siteSettings, setSiteSettings] = useState<any>({
     tagline: '',
     about_fellowship: '',
@@ -2900,14 +2904,37 @@ export default function FrontendAdminPage() {
             </h3>
             {announcementSuccess && (
               <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs">
-                Announcement published to public homepage!
+                ✓ Announcement published successfully to homepage and broadcasted to fellowship members!
+              </div>
+            )}
+            {announcementError && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+                {announcementError}
               </div>
             )}
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                setAnnouncementSuccess(true);
-                setTimeout(() => setAnnouncementSuccess(false), 3000);
+                setAnnouncementLoading(true);
+                setAnnouncementError('');
+                try {
+                  await api.community.createAnnouncement(announcementForm);
+                  setAnnouncementSuccess(true);
+                  setAnnouncementForm({
+                    title: '',
+                    content: '',
+                    category: 'TOURNAMENT',
+                    priority: 'NORMAL',
+                    is_pinned: false,
+                  });
+                  setTimeout(() => setAnnouncementSuccess(false), 4000);
+                } catch (err: any) {
+                  setAnnouncementError(
+                    err?.data?.error || err?.data?.detail || 'Failed to publish announcement. Please ensure you are logged in as tournament manager.'
+                  );
+                } finally {
+                  setAnnouncementLoading(false);
+                }
               }}
               className="space-y-4"
             >
@@ -2921,6 +2948,34 @@ export default function FrontendAdminPage() {
                   required
                   className="w-full px-3 py-2 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-300 mb-1">Category</label>
+                  <select
+                    value={announcementForm.category}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, category: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white"
+                  >
+                    <option value="TOURNAMENT">Tournament Notice</option>
+                    <option value="MATCH_DAY">Match Day Info</option>
+                    <option value="FELLOWSHIP">Fellowship Family</option>
+                    <option value="SPIRITUAL">Encouragement & Prayer</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-300 mb-1">Priority</label>
+                  <select
+                    value={announcementForm.priority}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, priority: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white"
+                  >
+                    <option value="NORMAL">Standard Notice</option>
+                    <option value="IMPORTANT">Important</option>
+                    <option value="URGENT">Urgent Alert</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -2947,9 +3002,10 @@ export default function FrontendAdminPage() {
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md cursor-pointer"
+                disabled={announcementLoading}
+                className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-xs shadow-md cursor-pointer transition-colors"
               >
-                Publish Announcement
+                {announcementLoading ? 'Publishing Announcement...' : 'Publish Announcement'}
               </button>
             </form>
           </div>

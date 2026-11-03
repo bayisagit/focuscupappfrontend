@@ -173,6 +173,10 @@ export const api = {
   // Community
   community: {
     getAnnouncements: () => fetchAPI<any>('/api/v1/community/announcements/'),
+    createAnnouncement: (data: any) => fetchAPI<any>('/api/v1/community/announcements/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
     getGallery: () => fetchAPI<any>('/api/v1/community/gallery/'),
     getUploadQuota: () => fetchAPI<any>('/api/v1/community/gallery/upload/'),
     uploadPhoto: (data: FormData | any) => fetchAPI<any>('/api/v1/community/gallery/upload/', {

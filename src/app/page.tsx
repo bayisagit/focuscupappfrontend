@@ -92,6 +92,26 @@ export default function HomePage() {
       {/* 1. HERO SECTION */}
       <section className="relative overflow-hidden pt-12 pb-20 border-b border-[#2C3960]/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Pinned Announcement Alert Banner */}
+          {announcements.find((a) => a.is_pinned) && (
+            <div className="mb-8 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 backdrop-blur-md shadow-lg shadow-amber-500/5">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 text-[10px] font-black uppercase shrink-0">
+                  PINNED NOTICE
+                </span>
+                <p className="text-xs text-amber-200 font-semibold truncate">
+                  <strong className="text-white">{announcements.find((a) => a.is_pinned)?.title}</strong> — {announcements.find((a) => a.is_pinned)?.content}
+                </p>
+              </div>
+              <a
+                href="#announcements"
+                className="text-xs text-amber-400 hover:text-amber-300 font-bold shrink-0 flex items-center gap-1 self-end sm:self-auto"
+              >
+                Read Notice →
+              </a>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Column: Vision & Brand */}
             <div className="lg:col-span-7 space-y-6">
@@ -633,26 +653,43 @@ export default function HomePage() {
 
       {/* 5. FELLOWSHIP ANNOUNCEMENTS */}
       {announcements.length > 0 && (
-        <section className="py-12 bg-[#080E21] border-t border-[#2C3960]/60">
+        <section id="announcements" className="py-12 bg-[#080E21] border-t border-[#2C3960]/60 scroll-mt-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-amber-400" />
-              FELLOWSHIP ANNOUNCEMENTS &amp; NOTICES
-            </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+              <h2 className="text-xl font-black text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-400" />
+                FELLOWSHIP ANNOUNCEMENTS &amp; NOTICES
+              </h2>
+              <span className="text-xs text-slate-400">
+                Official tournament updates, prayer requests &amp; family notices
+              </span>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {announcements.slice(0, 3).map((item) => (
-                <div key={item.id} className="card-gloss p-5 rounded-2xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-400">
-                      {item.category_display || item.category}
-                    </span>
-                    <span className="text-[10px] text-slate-400">
+              {announcements.map((item) => (
+                <div
+                  key={item.id}
+                  className={`card-gloss p-5 rounded-2xl space-y-3 transition-all ${
+                    item.is_pinned ? 'border-amber-500/50 bg-amber-500/[0.04] shadow-lg shadow-amber-500/5' : 'border-[#2C3960]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-400">
+                        {item.category_display || item.category}
+                      </span>
+                      {item.is_pinned && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                          PINNED
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-slate-400 shrink-0">
                       {item.created_at?.slice(0, 10)}
                     </span>
                   </div>
-                  <h3 className="text-sm font-bold text-white line-clamp-1">{item.title}</h3>
-                  <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
+                  <h3 className="text-sm font-bold text-white leading-snug">{item.title}</h3>
+                  <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line line-clamp-4 hover:line-clamp-none transition-all">
                     {item.content}
                   </p>
                 </div>
