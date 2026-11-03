@@ -3,12 +3,21 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { GraduationCap, ArrowRight } from 'lucide-react';
+import { GraduationCap, ArrowRight, Camera } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
+import BatchPhotoLightbox, { BatchTeamData } from '@/components/BatchPhotoLightbox';
 
 export default function BatchesIndexPage() {
   const [batches, setBatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBatchForPhoto, setSelectedBatchForPhoto] = useState<BatchTeamData | null>(null);
+
+  const handleBatchUpdated = (updated: BatchTeamData) => {
+    setBatches((prev) =>
+      prev.map((b) => (b.batch_code === updated.batch_code ? { ...b, ...updated } : b))
+    );
+    setSelectedBatchForPhoto(updated);
+  };
 
   useEffect(() => {
     api.competitions.getBatches()
@@ -53,7 +62,21 @@ export default function BatchesIndexPage() {
               </div>
 
               <div className="flex items-center gap-3 mb-3">
-                <TeamCrest team={b} size="md" />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedBatchForPhoto(b);
+                  }}
+                  className="relative group/photo shrink-0 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer transition-transform hover:scale-105 active:scale-95 shadow"
+                  title={`Click to open ${b.name} profile photo`}
+                >
+                  <TeamCrest team={b} size="md" />
+                  <span className="absolute inset-0 bg-black/40 opacity-0 group-hover/photo:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
+                    <Camera className="w-3.5 h-3.5 text-white drop-shadow" />
+                  </span>
+                </button>
                 <div>
                   <h2 className="text-xl font-extrabold text-white group-hover:text-emerald-400 transition-colors">
                     {b.name}
@@ -80,6 +103,14 @@ export default function BatchesIndexPage() {
           </Link>
         ))}
       </div>
+
+      {/* Fullscreen Batch Photo Lightbox */}
+      <BatchPhotoLightbox
+        isOpen={!!selectedBatchForPhoto}
+        onClose={() => setSelectedBatchForPhoto(null)}
+        batch={selectedBatchForPhoto}
+        onBatchUpdated={handleBatchUpdated}
+      />
     </div>
   );
 }

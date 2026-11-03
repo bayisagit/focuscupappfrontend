@@ -124,6 +124,10 @@ export const api = {
     },
     getBatches: () => fetchAPI<any>('/api/v1/competitions/batches/'),
     getBatchDetail: (batchCode: string) => fetchAPI<any>(`/api/v1/competitions/batches/${batchCode}/`),
+    updateBatch: (batchCode: string, data: any) => fetchAPI<any>(`/api/v1/competitions/batches/${batchCode}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
   },
 
   // Matches

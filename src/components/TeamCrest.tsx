@@ -4,32 +4,47 @@ import React from 'react';
 
 interface TeamData {
   id?: number | string;
-  name?: string;
-  batch_code?: string;
-  color_hex?: string;
-  logo?: string;
-  nickname?: string;
+  name?: string | null;
+  batch_code?: string | null;
+  color_hex?: string | null;
+  logo?: string | null;
+  logo_url?: string | null;
+  team_photo?: string | null;
+  team_photo_url?: string | null;
+  photo_url?: string | null;
+  nickname?: string | null;
 }
 
 interface TeamCrestProps {
   team?: TeamData | null;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  preferBadge?: boolean;
 }
 
-export default function TeamCrest({ team, size = 'md', className = '' }: TeamCrestProps) {
+export default function TeamCrest({ team, size = 'md', className = '', preferBadge = false }: TeamCrestProps) {
+  // Size variations
+  const sizeClasses = {
+    xs: 'w-6 h-6 rounded-md text-[9px]',
+    sm: 'w-8 h-8 rounded-lg text-[11px]',
+    md: 'w-10 h-10 rounded-xl text-xs',
+    lg: 'w-14 h-14 sm:w-16 sm:h-16 rounded-2xl text-lg',
+    xl: 'w-20 h-20 sm:w-24 sm:h-24 rounded-3xl text-2xl sm:text-3xl',
+  }[size];
+
   if (!team) {
     return (
-      <div className={`rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-xs ${className}`}>
+      <div className={`rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-xs ${sizeClasses} ${className}`}>
         FC
       </div>
     );
   }
 
-  if (team.logo) {
+  const photo = !preferBadge ? (team.photo_url || team.team_photo_url || team.team_photo || team.logo_url || team.logo) : null;
+  if (photo) {
     return (
-      <div className={`overflow-hidden shrink-0 ${className}`}>
-        <img src={team.logo} alt={team.name || 'Batch Crest'} className="w-full h-full object-contain" />
+      <div className={`relative shrink-0 overflow-hidden border border-white/20 shadow-lg ${sizeClasses} ${className}`}>
+        <img src={photo} alt={team.name || 'Batch Crest'} className="w-full h-full object-cover" />
       </div>
     );
   }
@@ -62,15 +77,6 @@ export default function TeamCrest({ team, size = 'md', className = '' }: TeamCre
   }
 
   const bgColor = team.color_hex || '#10B981';
-
-  // Size variations
-  const sizeClasses = {
-    xs: 'w-6 h-6 rounded-md text-[9px]',
-    sm: 'w-8 h-8 rounded-lg text-[11px]',
-    md: 'w-10 h-10 rounded-xl text-xs',
-    lg: 'w-14 h-14 sm:w-16 sm:h-16 rounded-2xl text-lg',
-    xl: 'w-20 h-20 sm:w-24 sm:h-24 rounded-3xl text-2xl sm:text-3xl',
-  }[size];
 
   const subSizeClasses = {
     xs: 'hidden',

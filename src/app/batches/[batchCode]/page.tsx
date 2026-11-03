@@ -14,15 +14,31 @@ import {
   ChevronRight,
   Flame,
   Award,
+  Camera,
+  Edit,
 } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
+import BatchPhotoLightbox, { BatchTeamData } from '@/components/BatchPhotoLightbox';
+import { useAuth } from '@/lib/auth-context';
 
 import { Suspense } from 'react';
 
 function BatchDetailContent() {
   const { batchCode } = useParams();
+  const { user } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isPhotoLightboxOpen, setIsPhotoLightboxOpen] = useState(false);
+
+  const handleBatchUpdated = (updated: BatchTeamData) => {
+    setData((prev: any) => ({
+      ...prev,
+      team: {
+        ...prev.team,
+        ...updated,
+      },
+    }));
+  };
 
   useEffect(() => {
     if (batchCode) {
@@ -64,7 +80,18 @@ function BatchDetailContent() {
       >
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <TeamCrest team={team} size="xl" className="rounded-2xl" />
+            <button
+              type="button"
+              onClick={() => setIsPhotoLightboxOpen(true)}
+              className="relative group/photo shrink-0 rounded-2xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer transform hover:scale-105 active:scale-95 transition-all shadow-xl"
+              title="Click to view full batch photo / sketch"
+            >
+              <TeamCrest team={team} size="xl" className="rounded-2xl" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/photo:opacity-100 flex flex-col items-center justify-center transition-opacity rounded-2xl text-white">
+                <Camera className="w-6 h-6 mb-1 drop-shadow" />
+                <span className="text-[10px] font-bold">View Photo</span>
+              </div>
+            </button>
             <div>
               <span
                 className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-slate-950 inline-block mb-1"
@@ -78,6 +105,17 @@ function BatchDetailContent() {
               <p className="text-xs font-semibold text-amber-400">
                 &ldquo;{team.nickname || team.motto}&rdquo;
               </p>
+
+              {user?.is_manager && (
+                <button
+                  type="button"
+                  onClick={() => setIsPhotoLightboxOpen(true)}
+                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  <span>Edit Batch Photo &amp; Info</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -240,6 +278,14 @@ function BatchDetailContent() {
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Batch Photo Lightbox */}
+      <BatchPhotoLightbox
+        isOpen={isPhotoLightboxOpen}
+        onClose={() => setIsPhotoLightboxOpen(false)}
+        batch={team}
+        onBatchUpdated={handleBatchUpdated}
+      />
     </div>
   );
 }

@@ -18,8 +18,10 @@ import {
   Heart,
   ArrowUpRight,
   Radio,
+  Camera,
 } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
+import BatchPhotoLightbox, { BatchTeamData } from '@/components/BatchPhotoLightbox';
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
@@ -32,6 +34,14 @@ export default function HomePage() {
   const [batches, setBatches] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>(null);
+  const [selectedBatchForPhoto, setSelectedBatchForPhoto] = useState<BatchTeamData | null>(null);
+
+  const handleBatchUpdated = (updated: BatchTeamData) => {
+    setBatches((prev) =>
+      prev.map((b) => (b.batch_code === updated.batch_code ? { ...b, ...updated } : b))
+    );
+    setSelectedBatchForPhoto(updated);
+  };
 
   useEffect(() => {
     async function loadHomeData() {
@@ -342,7 +352,21 @@ export default function HomePage() {
               </div>
 
               <div className="flex items-center gap-3 mb-2">
-                <TeamCrest team={batch} size="sm" />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedBatchForPhoto(batch);
+                  }}
+                  className="relative group/photo shrink-0 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer transition-transform hover:scale-105 active:scale-95 shadow"
+                  title={`Click to open ${batch.name} profile photo`}
+                >
+                  <TeamCrest team={batch} size="md" />
+                  <span className="absolute inset-0 bg-black/40 opacity-0 group-hover/photo:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
+                    <Camera className="w-4 h-4 text-white drop-shadow" />
+                  </span>
+                </button>
                 <div className="min-w-0">
                   <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors truncate">
                     {batch.name}
@@ -637,6 +661,14 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Batch Photo Lightbox Modal */}
+      <BatchPhotoLightbox
+        isOpen={!!selectedBatchForPhoto}
+        onClose={() => setSelectedBatchForPhoto(null)}
+        batch={selectedBatchForPhoto}
+        onBatchUpdated={handleBatchUpdated}
+      />
     </div>
   );
 }
