@@ -151,6 +151,26 @@ function NavbarContent() {
               </Link>
             )}
 
+            {/* Notification Bell Button */}
+            {mounted && user && (
+              <Link
+                href="/notifications"
+                className={`relative p-2 rounded-full border transition-all flex items-center justify-center cursor-pointer ${
+                  pathname === '/notifications'
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-md shadow-emerald-500/20'
+                    : 'bg-[#1C2541] text-slate-300 hover:text-white border-[#2C3960] hover:border-emerald-500/40'
+                }`}
+                title="Fellowship Notifications"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadNotifs > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-[#0B132B] animate-pulse shadow-sm">
+                    {unreadNotifs > 9 ? '9+' : unreadNotifs}
+                  </span>
+                )}
+              </Link>
+            )}
+
             {mounted && user ? (
               <div className="relative">
                 <button
@@ -190,6 +210,22 @@ function NavbarContent() {
                     >
                       <UserIcon className="w-4 h-4 mr-2.5 text-slate-400" />
                       View My Profile
+                    </Link>
+
+                    <Link
+                      href="/notifications"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center justify-between px-4 py-2.5 text-xs text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-400"
+                    >
+                      <div className="flex items-center">
+                        <Bell className="w-4 h-4 mr-2.5 text-slate-400" />
+                        Notifications
+                      </div>
+                      {unreadNotifs > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                          {unreadNotifs} new
+                        </span>
+                      )}
                     </Link>
 
                     <Link
@@ -257,16 +293,34 @@ function NavbarContent() {
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center space-x-2">
             {mounted && user && (
-              <Link
-                href={`/members/${user.username}`}
-                className="w-8 h-8 rounded-full bg-emerald-700/50 flex items-center justify-center border border-emerald-400/30 overflow-hidden"
-              >
-                {(user.profile?.profile_picture || (user.profile as any)?.avatar_url || (user.profile as any)?.profile_picture_url) ? (
-                  <img src={user.profile?.profile_picture || (user.profile as any)?.avatar_url || (user.profile as any)?.profile_picture_url} alt="" className="w-full h-full object-cover rounded-full" />
-                ) : (
-                  <UserIcon className="w-4 h-4 text-emerald-300" />
-                )}
-              </Link>
+              <>
+                <Link
+                  href="/notifications"
+                  className={`relative p-2 rounded-full border transition-all flex items-center justify-center ${
+                    pathname === '/notifications'
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
+                      : 'bg-[#1C2541] text-slate-300 border-[#2C3960]'
+                  }`}
+                  title="Notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadNotifs > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center border border-[#0B132B]">
+                      {unreadNotifs > 9 ? '9+' : unreadNotifs}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href={`/members/${user.username}`}
+                  className="w-8 h-8 rounded-full bg-emerald-700/50 flex items-center justify-center border border-emerald-400/30 overflow-hidden"
+                >
+                  {(user.profile?.profile_picture || (user.profile as any)?.avatar_url || (user.profile as any)?.profile_picture_url) ? (
+                    <img src={user.profile?.profile_picture || (user.profile as any)?.avatar_url || (user.profile as any)?.profile_picture_url} alt="" className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <UserIcon className="w-4 h-4 text-emerald-300" />
+                  )}
+                </Link>
+              </>
             )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -348,6 +402,21 @@ function NavbarContent() {
           <div className="pt-4 border-t border-[#2C3960] space-y-2">
             {mounted && user ? (
               <>
+                <Link
+                  href="/notifications"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:text-white"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Bell className="w-4 h-4 text-emerald-400" />
+                    <span>Notifications</span>
+                  </div>
+                  {unreadNotifs > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-xs font-black">
+                      {unreadNotifs} new
+                    </span>
+                  )}
+                </Link>
                 <Link
                   href="/profile/edit"
                   onClick={() => setMobileMenuOpen(false)}

@@ -3,14 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { Bell, Check, User, Heart, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import { Bell, Check, User, Heart, ArrowRight, Sparkles, LogIn } from 'lucide-react';
 
 export default function NotificationsPage() {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const loadNotifications = () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     api.community.getNotifications()
       .then((data) => {
         setNotifications(data.notifications || []);
@@ -22,7 +28,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     loadNotifications();
-  }, []);
+  }, [user]);
 
   const handleMarkAllRead = async () => {
     try {
@@ -91,10 +97,34 @@ export default function NotificationsPage() {
               )}
             </div>
           ))
+        ) : !user ? (
+          <div className="py-16 text-center text-slate-400 space-y-4 px-4">
+            <Bell className="w-12 h-12 text-slate-600 mx-auto" />
+            <div>
+              <p className="text-base font-bold text-white">Sign In to View Notifications</p>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                Fellowship match announcements, follow alerts, and official tournament notices will appear here once you log in.
+              </p>
+            </div>
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 text-xs font-bold shadow-lg shadow-emerald-500/20"
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In to Fellowship
+            </Link>
+          </div>
         ) : (
-          <div className="py-16 text-center text-slate-400 space-y-2">
-            <Bell className="w-10 h-10 text-slate-600 mx-auto" />
-            <p className="text-xs">You have no notifications yet.</p>
+          <div className="py-16 text-center text-slate-400 space-y-3 px-4">
+            <div className="w-12 h-12 rounded-full bg-[#1C2541] border border-[#2C3960] flex items-center justify-center mx-auto text-emerald-400">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">You&apos;re All Caught Up!</p>
+              <p className="text-xs text-slate-400 mt-1">
+                No new announcements or activity notifications at the moment.
+              </p>
+            </div>
           </div>
         )}
       </div>
