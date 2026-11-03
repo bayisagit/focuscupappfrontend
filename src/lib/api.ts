@@ -177,6 +177,13 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+    updateAnnouncement: (id: number | string, data: any) => fetchAPI<any>(`/api/v1/community/announcements/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+    deleteAnnouncement: (id: number | string) => fetchAPI<any>(`/api/v1/community/announcements/${id}/`, {
+      method: 'DELETE',
+    }),
     getGallery: () => fetchAPI<any>('/api/v1/community/gallery/'),
     getUploadQuota: () => fetchAPI<any>('/api/v1/community/gallery/upload/'),
     uploadPhoto: (data: FormData | any) => fetchAPI<any>('/api/v1/community/gallery/upload/', {

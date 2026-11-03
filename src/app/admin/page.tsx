@@ -45,6 +45,7 @@ import {
   MapPin,
   Upload,
   Trash2,
+  Pin,
   Image as ImageIconLucide,
 } from 'lucide-react';
 import { uploadToCloudinary } from '@/lib/cloudinary';
@@ -191,6 +192,9 @@ export default function FrontendAdminPage() {
   const [announcementError, setAnnouncementError] = useState('');
   const [announcementLoading, setAnnouncementLoading] = useState(false);
   const [announcementImageUploading, setAnnouncementImageUploading] = useState(false);
+  const [announcementsList, setAnnouncementsList] = useState<any[]>([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+  const [announcementActionId, setAnnouncementActionId] = useState<number | null>(null);
   const [siteSettings, setSiteSettings] = useState<any>({
     tagline: '',
     about_fellowship: '',
@@ -324,6 +328,68 @@ export default function FrontendAdminPage() {
       .catch((err: any) => console.error(err));
   };
 
+  const loadAnnouncements = () => {
+    setAnnouncementsLoading(true);
+    api.community.getAnnouncements()
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.results || [];
+        setAnnouncementsList(list);
+      })
+      .catch((err: any) => {
+        console.error(err);
+        setAnnouncementsList([]);
+      })
+      .finally(() => setAnnouncementsLoading(false));
+  };
+
+  const handleToggleAnnouncementPin = async (item: any) => {
+    try {
+      setAnnouncementActionId(item.id);
+      await api.community.updateAnnouncement(item.id, {
+        is_pinned: !item.is_pinned,
+      });
+      loadAnnouncements();
+    } catch (err: any) {
+      alert(err?.data?.error || err?.data?.detail || 'Failed to update announcement pin status.');
+    } finally {
+      setAnnouncementActionId(null);
+    }
+  };
+
+  const handleToggleAnnouncementSuspend = async (item: any) => {
+    const nextActive = item.is_active === false ? true : false;
+    const actionText = nextActive ? 'restore visibility for' : 'suspend (hide from public view)';
+    if (!confirm(`Are you sure you want to ${actionText} announcement: "${item.title}"?`)) {
+      return;
+    }
+    try {
+      setAnnouncementActionId(item.id);
+      await api.community.updateAnnouncement(item.id, {
+        is_active: nextActive,
+      });
+      loadAnnouncements();
+    } catch (err: any) {
+      alert(err?.data?.error || err?.data?.detail || 'Failed to update visibility status.');
+    } finally {
+      setAnnouncementActionId(null);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (item: any) => {
+    if (!confirm(`Permanently delete announcement: "${item.title}"?\n\nThis cannot be undone.`)) {
+      return;
+    }
+    try {
+      setAnnouncementActionId(item.id);
+      await api.community.deleteAnnouncement(item.id);
+      loadAnnouncements();
+    } catch (err: any) {
+      alert(err?.data?.error || err?.data?.detail || 'Failed to delete announcement.');
+    } finally {
+      setAnnouncementActionId(null);
+    }
+  };
+
   useEffect(() => {
     if (user?.is_manager) {
       loadDashboard();
@@ -333,6 +399,7 @@ export default function FrontendAdminPage() {
       loadAuditLogs();
       loadSettings();
       loadBatchTeams();
+      loadAnnouncements();
     }
   }, [user]);
 
@@ -2901,8 +2968,9 @@ export default function FrontendAdminPage() {
       {/* TAB 5: ANNOUNCEMENTS & CONTENT SETTINGS */}
       {/* ========================================================================= */}
       {activeTab === 'content' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Post Announcement */}
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Post Announcement */}
           <div className="card-gloss p-6 rounded-2xl space-y-4">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-purple-400" />
@@ -2926,6 +2994,7 @@ export default function FrontendAdminPage() {
                 try {
                   await api.community.createAnnouncement(announcementForm);
                   setAnnouncementSuccess(true);
+                  loadAnnouncements();
                   setAnnouncementForm({
                     title: '',
                     content: '',
@@ -3180,7 +3249,197 @@ export default function FrontendAdminPage() {
             </form>
           </div>
         </div>
-      )}
+
+        {/* Manage Published Announcements & Hero Notices */}
+        <div className="card-gloss p-6 sm:p-8 rounded-2xl space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2C3960]/60 pb-4">
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+                Manage Published Announcements &amp; Carousel Notices
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Suspend (hide) notices from public view, toggle pinned status for the top hero carousel, or permanently delete announcements.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/30">
+                {announcementsList.length} Total Notice{announcementsList.length === 1 ? '' : 's'}
+              </span>
+              <button
+                type="button"
+                onClick={loadAnnouncements}
+                disabled={announcementsLoading}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-purple-400 ${announcementsLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          {announcementsLoading && announcementsList.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400 animate-pulse">
+              Loading fellowship announcements...
+            </div>
+          ) : announcementsList.length === 0 ? (
+            <div className="py-12 text-center text-slate-400">
+              <Sparkles className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+              <p className="text-xs font-medium text-slate-300">No announcements published yet</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Use the form above to publish your first fellowship notice or graphic flyer.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-[#161D36] text-slate-400 uppercase text-[10px] tracking-wider border-b border-[#2C3960]">
+                  <tr>
+                    <th className="py-3 px-4">Flyer / Banner</th>
+                    <th className="py-3 px-4">Title &amp; Category</th>
+                    <th className="py-3 px-4">Hero Carousel Pin</th>
+                    <th className="py-3 px-4">Public Visibility</th>
+                    <th className="py-3 px-4">Published Date</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#2C3960]/50">
+                  {announcementsList.map((item) => {
+                    const isPendingAction = announcementActionId === item.id;
+                    const hasImage = Boolean(item.photo_url || item.image_url);
+                    const imageUrl = item.photo_url || item.image_url;
+                    const isSuspended = item.is_active === false;
+
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-800/20 transition-colors">
+                        {/* Flyer Thumbnail */}
+                        <td className="py-3 px-4">
+                          {hasImage ? (
+                            <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-purple-500/40 bg-slate-900 shadow-sm shrink-0">
+                              <img
+                                src={imageUrl}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-14 h-14 rounded-xl border border-dashed border-[#2C3960] bg-[#161D36] flex flex-col items-center justify-center text-slate-500 text-[9px] shrink-0 text-center p-1">
+                              <ImageIconLucide className="w-4 h-4 mb-0.5 opacity-60" />
+                              Text Notice
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Title, Category & Excerpt */}
+                        <td className="py-3 px-4 max-w-xs">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                              {item.category_display || item.category || 'NOTICE'}
+                            </span>
+                            {item.priority === 'URGENT' && (
+                              <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                Urgent
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-xs font-bold text-white leading-snug line-clamp-1">{item.title}</h4>
+                          <p className="text-[11px] text-slate-400 line-clamp-2 mt-0.5">{item.content}</p>
+                        </td>
+
+                        {/* Hero Pin Status */}
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          {item.is_pinned ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                              <Pin className="w-3 h-3 fill-purple-400" /> Pinned on Top Hero
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-800 text-slate-400">
+                              Not Pinned
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Public Visibility */}
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          {isSuspended ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              <EyeOff className="w-3 h-3" /> Suspended (Hidden)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              <Eye className="w-3 h-3" /> Publicly Visible
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Published Date */}
+                        <td className="py-3 px-4 text-[11px] text-slate-400 whitespace-nowrap">
+                          <div>{item.created_at ? item.created_at.slice(0, 10) : 'Recent'}</div>
+                          <span className="text-[10px] text-slate-500">{item.author_name || 'Manager'}</span>
+                        </td>
+
+                        {/* Action Buttons */}
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            {/* Pin / Unpin Button */}
+                            <button
+                              type="button"
+                              disabled={isPendingAction}
+                              onClick={() => handleToggleAnnouncementPin(item)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 ${
+                                item.is_pinned
+                                  ? 'bg-purple-950/50 hover:bg-purple-900/60 text-purple-300 border border-purple-500/40'
+                                  : 'bg-slate-800 hover:bg-purple-900/30 text-slate-300 hover:text-purple-200 border border-slate-700'
+                              }`}
+                              title={item.is_pinned ? 'Unpin from Top Hero Carousel' : 'Pin to Top Hero Carousel'}
+                            >
+                              <Pin className="w-3 h-3" />
+                              {item.is_pinned ? 'Unpin' : 'Pin to Top'}
+                            </button>
+
+                            {/* Suspend / Make Visible Button */}
+                            <button
+                              type="button"
+                              disabled={isPendingAction}
+                              onClick={() => handleToggleAnnouncementSuspend(item)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 ${
+                                isSuspended
+                                  ? 'bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/40'
+                                  : 'bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-500/40'
+                              }`}
+                              title={isSuspended ? 'Make visible to public' : 'Suspend / Hide from public'}
+                            >
+                              {isSuspended ? (
+                                <>
+                                  <Eye className="w-3 h-3" /> Make Visible
+                                </>
+                              ) : (
+                                <>
+                                  <EyeOff className="w-3 h-3" /> Suspend
+                                </>
+                              )}
+                            </button>
+
+                            {/* Delete Button */}
+                            <button
+                              type="button"
+                              disabled={isPendingAction}
+                              onClick={() => handleDeleteAnnouncement(item)}
+                              className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-colors cursor-pointer"
+                              title="Permanently Delete Announcement"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
 
       {/* ========================================================================= */}
       {/* TAB 6: AUDIT TRAIL */}

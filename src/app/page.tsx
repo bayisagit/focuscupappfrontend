@@ -636,7 +636,7 @@ export default function HomePage() {
       </section>
 
       {/* 5. FELLOWSHIP ANNOUNCEMENTS */}
-      {announcements.length > 0 && (
+      {announcements.filter((a) => a.is_active !== false).length > 0 && (
         <section id="announcements" className="py-12 bg-[#080E21] border-t border-[#2C3960]/60 scroll-mt-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
@@ -650,7 +650,7 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {announcements.map((item) => (
+              {announcements.filter((a) => a.is_active !== false).map((item) => (
                 <div
                   key={item.id}
                   className={`card-gloss p-5 rounded-2xl space-y-3 transition-all ${

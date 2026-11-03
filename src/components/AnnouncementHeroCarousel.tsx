@@ -25,6 +25,7 @@ export interface AnnouncementItem {
   image_url?: string;
   photo_url?: string;
   is_pinned: boolean;
+  is_active?: boolean;
   author_name?: string;
   created_at?: string;
 }
@@ -34,8 +35,10 @@ interface AnnouncementHeroCarouselProps {
 }
 
 export default function AnnouncementHeroCarousel({ announcements }: AnnouncementHeroCarouselProps) {
-  // Filter for pinned announcements first; fallback to announcements with images
-  const items = announcements.filter((a) => a.is_pinned || a.photo_url || a.image_url);
+  // Filter for active pinned announcements first; fallback to active announcements with images
+  const items = announcements.filter(
+    (a) => a.is_active !== false && (a.is_pinned || a.photo_url || a.image_url)
+  );
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
