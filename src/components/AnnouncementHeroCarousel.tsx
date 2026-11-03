@@ -302,3 +302,4 @@ export default function AnnouncementHeroCarousel({ announcements }: Announcement
     </>
   );
 }
+
