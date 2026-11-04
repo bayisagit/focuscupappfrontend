@@ -17,6 +17,7 @@ import {
   RefreshCw,
   Plus,
   Send,
+  Layers,
 } from 'lucide-react';
 
 export default function ManagerMatchesPage() {
@@ -186,6 +187,14 @@ export default function ManagerMatchesPage() {
           <p className="text-xs text-slate-400 mt-1">
             Manage match scores, record real-time goals, and publish official results
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/manager/graphics"
+            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow"
+          >
+            <Layers className="w-4 h-4" /> Graphics &amp; Posters Archive
+          </Link>
         </div>
       </div>
 

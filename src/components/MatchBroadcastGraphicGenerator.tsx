@@ -719,8 +719,35 @@ export default function MatchBroadcastGraphicGenerator({
       };
 
       const created = await api.community.createAnnouncement(announcementPayload);
+
+      // Save permanently to the Manager Match Graphics Archive for historical records
+      try {
+        await api.matches.createGraphic({
+          match_id: match.id,
+          graphic_type: operationalMode === 'FINAL' ? 'BROADCAST_FINAL' : 'BROADCAST_LIVE',
+          team_id: match.home_team.id,
+          opponent_team_id: match.away_team.id,
+          round_number: match.round_number || 1,
+          title: `${match.home_team.name} ${homeScoreState} - ${awayScoreState} ${match.away_team.name} (${
+            operationalMode === 'FINAL' ? 'Full Time' : 'Live Match'
+          })`,
+          image_url: imageUrl,
+          data_snapshot: {
+            mode: operationalMode,
+            home_score: homeScoreState,
+            away_score: awayScoreState,
+            home_goals: computedGoalScorers.home,
+            away_goals: computedGoalScorers.away,
+            potm: potmCandidate,
+            match_status: match.status,
+          },
+        });
+      } catch (archiveErr) {
+        console.warn('Could not save broadcast graphic to archive:', archiveErr);
+      }
+
       setFeedbackMsg({
-        text: '✓ Broadcast Graphic published to homepage hero carousel and pinned!',
+        text: '✓ Broadcast Graphic published to homepage carousel and saved to Graphics Archive!',
         type: 'success',
       });
       onPublished?.(created);

@@ -813,8 +813,49 @@ export default function LineupPosterGenerator({
       };
 
       const created = await api.community.createAnnouncement(announcementPayload);
+
+      // Save permanently to the Manager Match Graphics Archive for historical records
+      try {
+        await api.matches.createGraphic({
+          match_id: match.id,
+          graphic_type: 'LINEUP_POSTER',
+          team_id: currentTeam.id,
+          opponent_team_id: opponentTeam.id,
+          round_number: match.round_number || 1,
+          title: `Starting XI: ${currentTeam.name} vs ${opponentTeam.name}`,
+          image_url: imageUrl,
+          data_snapshot: {
+            poster_style: posterStyle,
+            formation: formationKey,
+            featured_player: featuredPlayer
+              ? {
+                  player_name: featuredPlayer.player_name,
+                  jersey_number: featuredPlayer.jersey_number,
+                  is_captain: featuredPlayer.is_captain,
+                  is_goalkeeper: featuredPlayer.is_goalkeeper,
+                }
+              : null,
+            starters: starters.slice(0, 11).map((s) => ({
+              player_name: s.player_name,
+              jersey_number: s.jersey_number,
+              is_captain: s.is_captain,
+              is_goalkeeper: s.is_goalkeeper,
+              position: s.position,
+            })),
+            substitutes: substitutes.map((s) => ({
+              player_name: s.player_name,
+              jersey_number: s.jersey_number,
+              is_captain: s.is_captain,
+              position: s.position,
+            })),
+          },
+        });
+      } catch (archiveErr) {
+        console.warn('Could not save to graphic archive:', archiveErr);
+      }
+
       setFeedbackMsg({
-        text: '✓ Starting Lineup Poster published to homepage hero carousel and broadcasted to members!',
+        text: '✓ Starting Lineup Poster published to homepage hero carousel and saved to Graphics Archive!',
         type: 'success',
       });
       onPublished?.(created);

@@ -210,6 +210,23 @@ export const api = {
     },
     getDetail: (id: number | string) => fetchAPI<any>(`/api/v1/matches/${id}/`),
     getLatestAndNext: () => fetchAPI<any>('/api/v1/matches/latest-and-next/'),
+    getGraphics: (params?: Record<string, string | number>) => {
+      const sp = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          if (v !== undefined && v !== null && v !== '') sp.append(k, String(v));
+        });
+      }
+      const qs = sp.toString();
+      return fetchAPI<any>(`/api/v1/matches/graphics/${qs ? `?${qs}` : ''}`);
+    },
+    createGraphic: (data: any) => fetchAPI<any>('/api/v1/matches/graphics/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    deleteGraphic: (id: number | string) => fetchAPI<any>(`/api/v1/matches/graphics/${id}/`, {
+      method: 'DELETE',
+    }),
   },
 
   // Statistics

@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Download,
   Lock,
+  Layers,
 } from 'lucide-react';
 
 export default function ManagerDashboardPage() {
@@ -86,6 +87,12 @@ export default function ManagerDashboardPage() {
             className="px-4 py-2 rounded-xl bg-[#1C2541] hover:bg-[#232F54] text-white border border-[#2C3960] font-bold text-xs flex items-center gap-1.5"
           >
             <Download className="w-4 h-4 text-blue-400" /> Export Reports
+          </Link>
+          <Link
+            href="/manager/graphics"
+            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow"
+          >
+            <Layers className="w-4 h-4 text-purple-200" /> Graphics &amp; Posters Archive
           </Link>
         </div>
       </div>

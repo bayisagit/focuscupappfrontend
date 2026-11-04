@@ -33,6 +33,7 @@ import {
   Search,
   ChevronDown,
   ChevronRight,
+  Layers,
   ChevronLeft,
   Menu,
   X,
@@ -1229,6 +1230,14 @@ export default function FrontendAdminPage() {
                   <Download className="w-4 h-4 text-emerald-400 shrink-0" />
                   {!sidebarCollapsed && <span>CSV Exports</span>}
                 </button>
+                <Link
+                  href="/manager/graphics"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-[#161D36] transition-all cursor-pointer"
+                  title="Matchday Graphics & Posters Archive"
+                >
+                  <Layers className="w-4 h-4 text-purple-400 shrink-0" />
+                  {!sidebarCollapsed && <span>Graphics Archive</span>}
+                </Link>
               </div>
             )}
           </div>
