@@ -17,9 +17,11 @@ import {
   AlertTriangle,
   FileText,
   User,
+  Camera,
 } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
 import { apiCache } from '@/lib/cache';
+import LineupPosterGenerator from '@/components/LineupPosterGenerator';
 
 import { Suspense } from 'react';
 
@@ -29,6 +31,7 @@ function MatchDetailContent() {
   const [match, setMatch] = useState<any>(() => cached || null);
   const [loading, setLoading] = useState<boolean>(() => !cached);
   const [activeTab, setActiveTab] = useState<'timeline' | 'lineups' | 'report'>('timeline');
+  const [posterOpen, setPosterOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (id) {
@@ -372,102 +375,135 @@ function MatchDetailContent() {
 
       {/* TAB CONTENT: LINEUPS */}
       {activeTab === 'lineups' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Home Squad */}
-          <div className="card-gloss p-5 rounded-2xl">
-            <h4 className="text-sm font-bold text-white mb-4 pb-2 border-b border-[#2C3960] flex items-center justify-between">
-              <span>{match.home_team.name} Squad</span>
-              <span className="text-xs text-emerald-400 font-medium">Home Roster</span>
-            </h4>
-            <div className="space-y-2">
-              {match.home_squad && match.home_squad.length > 0 ? (
-                match.home_squad.map((item: any) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#161D36]/60 border border-[#2C3960]/50"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 font-black text-xs flex items-center justify-center shrink-0">
-                        #{item.jersey_number}
-                      </span>
-                      {item.player_photo && (
-                        <div className="w-7 h-7 rounded-full overflow-hidden border border-emerald-400/30 shrink-0">
-                          <img src={item.player_photo} alt="" className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <div className="min-w-0 truncate">
-                        <Link
-                          href={`/members/${item.player_username}`}
-                          className="text-xs font-bold text-white hover:text-emerald-400 truncate block"
-                        >
-                          {item.player_name}
-                        </Link>
-                        <span className="text-[10px] text-slate-400">
-                          {item.position || 'Player'}
-                        </span>
-                      </div>
-                    </div>
-                    {item.is_goalkeeper ? (
-                      <span className="text-[9px] font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded">GK</span>
-                    ) : item.is_starter ? (
-                      <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">Starter</span>
-                    ) : (
-                      <span className="text-[9px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Sub</span>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-slate-400 py-6 text-center">No squad selections recorded yet.</p>
-              )}
-            </div>
-          </div>
+        <div className="space-y-6">
+          {/* Matchday Starting XI Poster Banner */}
+          {((match.home_squad && match.home_squad.length > 0) || (match.away_squad && match.away_squad.length > 0)) && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-900/40 via-indigo-900/30 to-[#161D36] border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-purple-300 shrink-0">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-white flex items-center gap-2">
+                    Official Matchday Starting XI Poster
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      LIVE
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-300">
+                    High-res Premier League style graphic with tactical pitch formations &amp; featured player spotlight.
+                  </p>
+                </div>
+              </div>
 
-          {/* Away Squad */}
-          <div className="card-gloss p-5 rounded-2xl">
-            <h4 className="text-sm font-bold text-white mb-4 pb-2 border-b border-[#2C3960] flex items-center justify-between">
-              <span>{match.away_team.name} Squad</span>
-              <span className="text-xs text-blue-400 font-medium">Away Roster</span>
-            </h4>
-            <div className="space-y-2">
-              {match.away_squad && match.away_squad.length > 0 ? (
-                match.away_squad.map((item: any) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#161D36]/60 border border-[#2C3960]/50"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-300 font-black text-xs flex items-center justify-center shrink-0">
-                        #{item.jersey_number}
-                      </span>
-                      {item.player_photo && (
-                        <div className="w-7 h-7 rounded-full overflow-hidden border border-blue-400/30 shrink-0">
-                          <img src={item.player_photo} alt="" className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <div className="min-w-0 truncate">
-                        <Link
-                          href={`/members/${item.player_username}`}
-                          className="text-xs font-bold text-white hover:text-blue-400 truncate block"
-                        >
-                          {item.player_name}
-                        </Link>
-                        <span className="text-[10px] text-slate-400">
-                          {item.position || 'Player'}
+              <button
+                type="button"
+                onClick={() => setPosterOpen(true)}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all shrink-0"
+              >
+                <Camera className="w-4 h-4 text-purple-200" />
+                <span>Open Lineup Poster Studio</span>
+              </button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Home Squad */}
+            <div className="card-gloss p-5 rounded-2xl">
+              <h4 className="text-sm font-bold text-white mb-4 pb-2 border-b border-[#2C3960] flex items-center justify-between">
+                <span>{match.home_team.name} Squad</span>
+                <span className="text-xs text-emerald-400 font-medium">Home Roster</span>
+              </h4>
+              <div className="space-y-2">
+                {match.home_squad && match.home_squad.length > 0 ? (
+                  match.home_squad.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-[#161D36]/60 border border-[#2C3960]/50"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 font-black text-xs flex items-center justify-center shrink-0">
+                          #{item.jersey_number}
                         </span>
+                        {item.player_photo && (
+                          <div className="w-7 h-7 rounded-full overflow-hidden border border-emerald-400/30 shrink-0">
+                            <img src={item.player_photo} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="min-w-0 truncate">
+                          <Link
+                            href={`/members/${item.player_username}`}
+                            className="text-xs font-bold text-white hover:text-emerald-400 truncate block"
+                          >
+                            {item.player_name}
+                          </Link>
+                          <span className="text-[10px] text-slate-400">
+                            {item.position || 'Player'}
+                          </span>
+                        </div>
                       </div>
+                      {item.is_goalkeeper ? (
+                        <span className="text-[9px] font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded">GK</span>
+                      ) : item.is_starter ? (
+                        <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">Starter</span>
+                      ) : (
+                        <span className="text-[9px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Sub</span>
+                      )}
                     </div>
-                    {item.is_goalkeeper ? (
-                      <span className="text-[9px] font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded">GK</span>
-                    ) : item.is_starter ? (
-                      <span className="text-[9px] font-bold text-blue-400 bg-blue-500/20 px-2 py-0.5 rounded">Starter</span>
-                    ) : (
-                      <span className="text-[9px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Sub</span>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-slate-400 py-6 text-center">No squad selections recorded yet.</p>
-              )}
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-400 py-6 text-center">No squad selections recorded yet.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Away Squad */}
+            <div className="card-gloss p-5 rounded-2xl">
+              <h4 className="text-sm font-bold text-white mb-4 pb-2 border-b border-[#2C3960] flex items-center justify-between">
+                <span>{match.away_team.name} Squad</span>
+                <span className="text-xs text-blue-400 font-medium">Away Roster</span>
+              </h4>
+              <div className="space-y-2">
+                {match.away_squad && match.away_squad.length > 0 ? (
+                  match.away_squad.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-[#161D36]/60 border border-[#2C3960]/50"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-300 font-black text-xs flex items-center justify-center shrink-0">
+                          #{item.jersey_number}
+                        </span>
+                        {item.player_photo && (
+                          <div className="w-7 h-7 rounded-full overflow-hidden border border-blue-400/30 shrink-0">
+                            <img src={item.player_photo} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="min-w-0 truncate">
+                          <Link
+                            href={`/members/${item.player_username}`}
+                            className="text-xs font-bold text-white hover:text-blue-400 truncate block"
+                          >
+                            {item.player_name}
+                          </Link>
+                          <span className="text-[10px] text-slate-400">
+                            {item.position || 'Player'}
+                          </span>
+                        </div>
+                      </div>
+                      {item.is_goalkeeper ? (
+                        <span className="text-[9px] font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded">GK</span>
+                      ) : item.is_starter ? (
+                        <span className="text-[9px] font-bold text-blue-400 bg-blue-500/20 px-2 py-0.5 rounded">Starter</span>
+                      ) : (
+                        <span className="text-[9px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Sub</span>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-400 py-6 text-center">No squad selections recorded yet.</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -496,6 +532,45 @@ function MatchDetailContent() {
             </p>
           </div>
         </div>
+      )}
+
+      {/* Lineup Poster Studio Modal */}
+      {match && (
+        <LineupPosterGenerator
+          match={{
+            id: match.id,
+            round_number: match.round_number,
+            match_date: match.match_date,
+            kick_off_time: match.kick_off_time,
+            venue: match.venue,
+            home_team: match.home_team,
+            away_team: match.away_team,
+          }}
+          homeSquad={(match.home_squad || []).map((item: any) => ({
+            id: item.id,
+            player_id: item.player || item.player_id || item.id,
+            player_name: item.player_name,
+            jersey_number: item.jersey_number,
+            is_starter: item.is_starter,
+            is_goalkeeper: item.is_goalkeeper,
+            is_captain: item.is_captain,
+            position: item.position,
+            avatar_url: item.player_photo || item.avatar_url || item.profile_picture || item.profile_picture_url,
+          }))}
+          awaySquad={(match.away_squad || []).map((item: any) => ({
+            id: item.id,
+            player_id: item.player || item.player_id || item.id,
+            player_name: item.player_name,
+            jersey_number: item.jersey_number,
+            is_starter: item.is_starter,
+            is_goalkeeper: item.is_goalkeeper,
+            is_captain: item.is_captain,
+            position: item.position,
+            avatar_url: item.player_photo || item.avatar_url || item.profile_picture || item.profile_picture_url,
+          }))}
+          isOpen={posterOpen}
+          onClose={() => setPosterOpen(false)}
+        />
       )}
     </div>
   );

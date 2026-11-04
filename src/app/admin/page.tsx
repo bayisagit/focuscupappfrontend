@@ -47,8 +47,10 @@ import {
   Trash2,
   Pin,
   Image as ImageIconLucide,
+  Camera,
 } from 'lucide-react';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import LineupPosterGenerator from '@/components/LineupPosterGenerator';
 
 const isPlayerInBatchTeam = (player: any, team: any) => {
   if (!player || !team) return false;
@@ -161,6 +163,7 @@ export default function FrontendAdminPage() {
   const [squadSaving, setSquadSaving] = useState(false);
   const [squadSuccessMsg, setSquadSuccessMsg] = useState('');
   const [squadErrorMsg, setSquadErrorMsg] = useState('');
+  const [lineupPosterOpen, setLineupPosterOpen] = useState(false);
   const [homeEligiblePlayers, setHomeEligiblePlayers] = useState<any[]>([]);
   const [awayEligiblePlayers, setAwayEligiblePlayers] = useState<any[]>([]);
   const [homeSquadList, setHomeSquadList] = useState<any[]>([]);
@@ -1951,7 +1954,16 @@ export default function FrontendAdminPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex flex-wrap items-center gap-3 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setLineupPosterOpen(true)}
+                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/25 flex items-center gap-2 cursor-pointer transition-all"
+                      title="Open Starting Lineup Poster Studio"
+                    >
+                      <Camera className="w-4 h-4 text-purple-200" />
+                      <span>Lineup Poster Studio</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => loadMatchSquad(selectedMatch.id)}
@@ -1984,18 +1996,28 @@ export default function FrontendAdminPage() {
 
                 {/* Alerts */}
                 {squadSuccessMsg && (
-                  <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-lg">
+                  <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 shrink-0 text-emerald-400" />
                       <span className="font-semibold">{squadSuccessMsg}</span>
                     </div>
-                    <Link
-                      href={`/matches/${selectedMatch.id}`}
-                      target="_blank"
-                      className="text-xs font-bold text-white hover:text-emerald-300 underline inline-flex items-center gap-1.5 shrink-0"
-                    >
-                      Open Public Match Center <ExternalLink className="w-3.5 h-3.5" />
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setLineupPosterOpen(true)}
+                        className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow flex items-center gap-1.5 cursor-pointer transition-all"
+                      >
+                        <Camera className="w-3.5 h-3.5 text-purple-200" />
+                        Generate Lineup Poster
+                      </button>
+                      <Link
+                        href={`/matches/${selectedMatch.id}`}
+                        target="_blank"
+                        className="text-xs font-bold text-white hover:text-emerald-300 underline inline-flex items-center gap-1.5 shrink-0"
+                      >
+                        Open Public Match Center <ExternalLink className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
                 )}
 
@@ -2393,25 +2415,51 @@ export default function FrontendAdminPage() {
                     </span>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleSaveSquads}
-                    disabled={squadSaving || squadLoading}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {squadSaving ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Saving Line-ups...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4" />
-                        <span>Save Official Line-ups</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setLineupPosterOpen(true)}
+                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      title="Open Starting Lineup Poster Studio"
+                    >
+                      <Camera className="w-4 h-4 text-purple-200" />
+                      <span>Lineup Poster Studio</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveSquads}
+                      disabled={squadSaving || squadLoading}
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {squadSaving ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>Saving Line-ups...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          <span>Save Official Line-ups</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Starting Lineup Poster Generator Modal */}
+                {selectedMatch && (
+                  <LineupPosterGenerator
+                    match={selectedMatch}
+                    homeSquad={homeSquadList}
+                    awaySquad={awaySquadList}
+                    isOpen={lineupPosterOpen}
+                    onClose={() => setLineupPosterOpen(false)}
+                    onPublished={() => {
+                      loadAnnouncements();
+                      setSquadSuccessMsg('✓ Official Starting Lineup poster published to homepage carousel and match feed!');
+                    }}
+                  />
+                )}
               </div>
             )}
 
