@@ -19,13 +19,15 @@ import {
   User,
 } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
+import { apiCache } from '@/lib/cache';
 
 import { Suspense } from 'react';
 
 function MatchDetailContent() {
   const { id } = useParams();
-  const [match, setMatch] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const cached = id ? apiCache.get<any>(`/api/v1/matches/${id}/`) : null;
+  const [match, setMatch] = useState<any>(() => cached || null);
+  const [loading, setLoading] = useState<boolean>(() => !cached);
   const [activeTab, setActiveTab] = useState<'timeline' | 'lineups' | 'report'>('timeline');
 
   useEffect(() => {

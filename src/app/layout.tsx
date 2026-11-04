@@ -5,7 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MobileNav from "@/components/MobileNav";
-import AastuLogoLoader from "@/components/AastuLogoLoader";
+import RouteLoadingIndicator from "@/components/RouteLoadingIndicator";
 import MobileAppInstallBanner from "@/components/MobileAppInstallBanner";
 import ToastProvider from "@/components/ToastProvider";
 
@@ -69,7 +69,7 @@ export default function RootLayout({
               <Navbar />
             </Suspense>
             <main className="flex-1">
-              <Suspense fallback={<AastuLogoLoader />}>
+              <Suspense fallback={<RouteLoadingIndicator />}>
                 {children}
               </Suspense>
             </main>

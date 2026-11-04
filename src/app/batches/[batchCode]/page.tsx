@@ -20,14 +20,16 @@ import {
 import TeamCrest from '@/components/TeamCrest';
 import BatchPhotoLightbox, { BatchTeamData } from '@/components/BatchPhotoLightbox';
 import { useAuth } from '@/lib/auth-context';
+import { apiCache } from '@/lib/cache';
 
 import { Suspense } from 'react';
 
 function BatchDetailContent() {
   const { batchCode } = useParams();
   const { user } = useAuth();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const cached = batchCode ? apiCache.get<any>(`/api/v1/competitions/batches/${batchCode}/`) : null;
+  const [data, setData] = useState<any>(() => cached || null);
+  const [loading, setLoading] = useState<boolean>(() => !cached);
   const [isPhotoLightboxOpen, setIsPhotoLightboxOpen] = useState(false);
 
   const handleBatchUpdated = (updated: BatchTeamData) => {

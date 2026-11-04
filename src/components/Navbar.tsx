@@ -101,6 +101,7 @@ function NavbarContent() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch={true}
                   className={`px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
                     active
                       ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'

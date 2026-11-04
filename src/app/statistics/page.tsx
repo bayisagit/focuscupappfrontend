@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { apiCache } from '@/lib/cache';
 import {
   Trophy,
   Flame,
@@ -15,12 +16,18 @@ import {
 } from 'lucide-react';
 
 export default function StatisticsPage() {
+  const cachedScorers = apiCache.get<any>('/api/v1/statistics/top-scorers/?limit=20');
+  const cachedAssists = apiCache.get<any>('/api/v1/statistics/top-assists/?limit=20');
+  const cachedFollowed = apiCache.get<any>('/api/v1/statistics/most-followed/?limit=20');
+  const cachedAwards = apiCache.get<any>('/api/v1/statistics/awards/');
+  const hasCache = Boolean(cachedScorers || cachedAssists);
+
   const [activeTab, setActiveTab] = useState<'scorers' | 'assists' | 'followed' | 'awards'>('scorers');
-  const [scorers, setScorers] = useState<any[]>([]);
-  const [assists, setAssists] = useState<any[]>([]);
-  const [followed, setMostFollowed] = useState<any[]>([]);
-  const [awards, setAwards] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [scorers, setScorers] = useState<any[]>(() => cachedScorers || []);
+  const [assists, setAssists] = useState<any[]>(() => cachedAssists || []);
+  const [followed, setMostFollowed] = useState<any[]>(() => cachedFollowed || []);
+  const [awards, setAwards] = useState<any[]>(() => cachedAwards || []);
+  const [loading, setLoading] = useState<boolean>(() => !hasCache);
 
   useEffect(() => {
     async function loadStats() {

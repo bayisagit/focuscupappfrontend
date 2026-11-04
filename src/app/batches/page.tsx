@@ -3,13 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { apiCache } from '@/lib/cache';
 import { GraduationCap, ArrowRight, Camera } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
 import BatchPhotoLightbox, { BatchTeamData } from '@/components/BatchPhotoLightbox';
 
 export default function BatchesIndexPage() {
-  const [batches, setBatches] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = apiCache.get<any>('/api/v1/competitions/batches/');
+  const [batches, setBatches] = useState<any[]>(() => cached?.results || cached || []);
+  const [loading, setLoading] = useState<boolean>(() => !cached);
   const [selectedBatchForPhoto, setSelectedBatchForPhoto] = useState<BatchTeamData | null>(null);
 
   const handleBatchUpdated = (updated: BatchTeamData) => {
@@ -19,11 +21,16 @@ export default function BatchesIndexPage() {
     setSelectedBatchForPhoto(updated);
   };
 
-  useEffect(() => {
+  const loadBatches = (force = false) => {
+    if (force || batches.length === 0) setLoading(true);
     api.competitions.getBatches()
       .then((data) => setBatches(data.results || data || []))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadBatches();
   }, []);
 
   return (

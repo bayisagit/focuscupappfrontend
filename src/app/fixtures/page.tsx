@@ -3,30 +3,38 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { apiCache } from '@/lib/cache';
 import { Calendar, MapPin, Clock, Filter, ChevronRight, RefreshCw, AlertCircle } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
 
 export default function FixturesPage() {
-  const [matches, setMatches] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedMatches = apiCache.get<any>('/api/v1/matches/');
+  const cachedBatches = apiCache.get<any>('/api/v1/competitions/batches/');
+
+  const [matches, setMatches] = useState<any[]>(() => cachedMatches?.results || cachedMatches || []);
+  const [batches, setBatches] = useState<any[]>(() => cachedBatches?.results || cachedBatches || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedMatches);
   const [error, setError] = useState<string | null>(null);
   const [selectedBatch, setSelectedBatch] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [batches, setBatches] = useState<any[]>([]);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (force = false) => {
+    if (force || matches.length === 0) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const [mRes, bRes] = await Promise.all([
-        api.matches.list(),
+        api.matches.list(force ? { forceRefresh: 'true' } : undefined),
         api.competitions.getBatches(),
       ]);
       setMatches(mRes.results || mRes || []);
       setBatches(bRes.results || bRes || []);
     } catch (err: any) {
       console.error(err);
-      setError(err?.data?.error || 'Unable to connect to tournament fixtures server. Please check your connection and retry.');
+      if (matches.length === 0) {
+        setError(err?.data?.error || 'Unable to connect to tournament fixtures server. Please check your connection and retry.');
+      }
     } finally {
       setLoading(false);
     }
@@ -217,7 +225,7 @@ export default function FixturesPage() {
           <h3 className="text-base font-bold text-white mb-1">Failed to load fixtures</h3>
           <p className="text-xs text-red-300 max-w-md mx-auto mb-4">{error}</p>
           <button
-            onClick={loadData}
+            onClick={() => loadData(true)}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-colors"
           >
             <RefreshCw className="w-4 h-4" />

@@ -23,18 +23,31 @@ import {
 import TeamCrest from '@/components/TeamCrest';
 import BatchPhotoLightbox, { BatchTeamData } from '@/components/BatchPhotoLightbox';
 import AnnouncementHeroCarousel from '@/components/AnnouncementHeroCarousel';
+import { apiCache } from '@/lib/cache';
 
 export default function HomePage() {
-  const [loading, setLoading] = useState(true);
-  const [activeSeason, setActiveSeason] = useState<any>(null);
-  const [latestAndNext, setLatestAndNext] = useState<any>({ latest_result: null, next_upcoming: null });
-  const [standings, setStandings] = useState<any[]>([]);
-  const [topScorers, setTopScorers] = useState<any[]>([]);
-  const [topAssists, setTopAssists] = useState<any[]>([]);
-  const [mostFollowed, setMostFollowed] = useState<any[]>([]);
-  const [batches, setBatches] = useState<any[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [summary, setSummary] = useState<any>(null);
+  const cachedSeason = apiCache.get<any>('/api/v1/competitions/seasons/active/');
+  const cachedMatches = apiCache.get<any>('/api/v1/matches/latest-and-next/');
+  const cachedStandings = apiCache.get<any>('/api/v1/competitions/standings/');
+  const cachedScorers = apiCache.get<any>('/api/v1/statistics/top-scorers/?limit=5');
+  const cachedAssists = apiCache.get<any>('/api/v1/statistics/top-assists/?limit=5');
+  const cachedFollowed = apiCache.get<any>('/api/v1/statistics/most-followed/?limit=6');
+  const cachedBatches = apiCache.get<any>('/api/v1/competitions/batches/');
+  const cachedAnnouncements = apiCache.get<any>('/api/v1/community/announcements/');
+  const cachedSummary = apiCache.get<any>('/api/v1/statistics/summary/');
+
+  const hasAnyHomeCache = Boolean(cachedStandings || cachedBatches || cachedMatches);
+
+  const [loading, setLoading] = useState<boolean>(() => !hasAnyHomeCache);
+  const [activeSeason, setActiveSeason] = useState<any>(() => cachedSeason || null);
+  const [latestAndNext, setLatestAndNext] = useState<any>(() => cachedMatches || { latest_result: null, next_upcoming: null });
+  const [standings, setStandings] = useState<any[]>(() => cachedStandings?.standings || []);
+  const [topScorers, setTopScorers] = useState<any[]>(() => cachedScorers || []);
+  const [topAssists, setTopAssists] = useState<any[]>(() => cachedAssists || []);
+  const [mostFollowed, setMostFollowed] = useState<any[]>(() => cachedFollowed || []);
+  const [batches, setBatches] = useState<any[]>(() => cachedBatches?.results || cachedBatches || []);
+  const [announcements, setAnnouncements] = useState<any[]>(() => cachedAnnouncements?.results || cachedAnnouncements || []);
+  const [summary, setSummary] = useState<any>(() => cachedSummary || null);
   const [selectedBatchForPhoto, setSelectedBatchForPhoto] = useState<BatchTeamData | null>(null);
 
   const handleBatchUpdated = (updated: BatchTeamData) => {

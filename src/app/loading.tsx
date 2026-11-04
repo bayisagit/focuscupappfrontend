@@ -1,12 +1,6 @@
 import React from 'react';
-import AastuLogoLoader from '@/components/AastuLogoLoader';
+import RouteLoadingIndicator from '@/components/RouteLoadingIndicator';
 
 export default function Loading() {
-  return (
-    <AastuLogoLoader
-      message="Loading Focus Football Cup..."
-      subMessage="Winning is a bonus; friendship, joy, and fellowship come first!"
-      fullScreen
-    />
-  );
+  return <RouteLoadingIndicator />;
 }

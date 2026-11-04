@@ -3,6 +3,8 @@
  * Centralized client for communication with Django REST Framework backend.
  */
 
+import { apiCache, DEFAULT_STALE_TIME, DEFAULT_CACHE_TIME } from './cache';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002';
 
 export function getAuthToken(): string | null {
@@ -21,9 +23,72 @@ export function clearAuthTokens() {
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('user_cache');
+  apiCache.clear();
 }
 
-async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+export interface FetchAPIOptions extends RequestInit {
+  forceRefresh?: boolean;
+  skipCache?: boolean;
+  staleTime?: number;
+  cacheTime?: number;
+}
+
+async function fetchAPI<T>(endpoint: string, options: FetchAPIOptions = {}): Promise<T> {
+  const method = (options.method || 'GET').toUpperCase();
+  const isGet = method === 'GET';
+  const cacheKey = endpoint;
+
+  // Stale-While-Revalidate Caching for GET requests
+  if (isGet && !options.skipCache && !options.forceRefresh) {
+    const cached = apiCache.get<T>(cacheKey);
+    if (cached !== null) {
+      // If stale, trigger background revalidation without blocking caller
+      if (apiCache.isStale(cacheKey)) {
+        apiCache.dedupe(cacheKey, async () => {
+          try {
+            const fresh = await executeNetworkFetch<T>(endpoint, options);
+            apiCache.set(cacheKey, fresh, options.staleTime, options.cacheTime);
+            return fresh;
+          } catch (err) {
+            // Ignore background revalidation network errors; keep stale cache
+            return cached;
+          }
+        }).catch(() => {});
+      }
+      return cached;
+    }
+  }
+
+  // Network fetch (with request deduplication for concurrent identical GET requests)
+  const fetchPromise = () => executeNetworkFetch<T>(endpoint, options);
+  const result = isGet
+    ? await apiCache.dedupe(cacheKey, fetchPromise)
+    : await fetchPromise();
+
+  // Cache successful GET responses
+  if (isGet && !options.skipCache && result !== null && result !== undefined) {
+    apiCache.set(cacheKey, result, options.staleTime, options.cacheTime);
+  }
+
+  // Invalidate related cache domains on mutating actions
+  if (!isGet) {
+    if (endpoint.includes('/matches') || endpoint.includes('/fixtures')) {
+      apiCache.invalidateMatches();
+    } else if (endpoint.includes('/announcements') || endpoint.includes('/notifications')) {
+      apiCache.invalidateAnnouncements();
+    } else if (endpoint.includes('/members') || endpoint.includes('/player')) {
+      apiCache.invalidateMembers();
+    } else if (endpoint.includes('/settings')) {
+      apiCache.invalidate('/settings');
+    } else {
+      apiCache.invalidate(endpoint.split('?')[0]);
+    }
+  }
+
+  return result;
+}
+
+async function executeNetworkFetch<T>(endpoint: string, options: FetchAPIOptions = {}): Promise<T> {
   const token = getAuthToken();
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string> || {}),

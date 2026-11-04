@@ -25,14 +25,18 @@ import {
   X,
 } from 'lucide-react';
 import ProfilePhotoLightbox from '@/components/ProfilePhotoLightbox';
+import { apiCache } from '@/lib/cache';
 
 import { Suspense } from 'react';
 
 function MemberProfileContent() {
   const { username } = useParams();
+  const rawUser = username ? (Array.isArray(username) ? username[0] : username) : '';
+  const cleanUser = rawUser ? decodeURIComponent(rawUser) : '';
+  const cached = cleanUser ? apiCache.get<any>(`/api/v1/members/${encodeURIComponent(cleanUser)}/`) : null;
   const { user: currentUser } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(() => cached || null);
+  const [loading, setLoading] = useState<boolean>(() => !cached);
   const [followLoading, setFollowLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'stats' | 'followers' | 'following'>('stats');
   const [followersList, setFollowersList] = useState<any[]>([]);

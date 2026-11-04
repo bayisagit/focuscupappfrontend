@@ -3,18 +3,25 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { apiCache } from '@/lib/cache';
 import { Trophy, Calendar, MapPin, ChevronRight, Award } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
 
 export default function ResultsPage() {
-  const [results, setResults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = apiCache.get<any>('/api/v1/matches/?category=results');
+  const [results, setResults] = useState<any[]>(() => cached?.results || cached || []);
+  const [loading, setLoading] = useState<boolean>(() => !cached);
 
-  useEffect(() => {
+  const loadResults = (force = false) => {
+    if (force || results.length === 0) setLoading(true);
     api.matches.list({ category: 'results' })
       .then((data) => setResults(data.results || data || []))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadResults();
   }, []);
 
   return (

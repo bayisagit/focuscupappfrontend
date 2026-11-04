@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { apiCache } from '@/lib/cache';
 import { useAuth } from '@/lib/auth-context';
 import {
   Users,
@@ -20,9 +21,12 @@ import ProfilePhotoLightbox, { LightboxProfile } from '@/components/ProfilePhoto
 
 export default function MembersDirectoryPage() {
   const { user } = useAuth();
-  const [members, setMembers] = useState<any[]>([]);
-  const [options, setOptions] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const cachedMembers = apiCache.get<any>('/api/v1/members/?sort_by=followers') || apiCache.get<any>('/api/v1/members/');
+  const cachedOptions = apiCache.get<any>('/api/v1/members/options/');
+
+  const [members, setMembers] = useState<any[]>(() => cachedMembers?.results || cachedMembers || []);
+  const [options, setOptions] = useState<any>(() => cachedOptions || null);
+  const [loading, setLoading] = useState<boolean>(() => !cachedMembers);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -40,13 +44,17 @@ export default function MembersDirectoryPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
-    api.members.getOptions()
-      .then((opts) => setOptions(opts))
-      .catch((err) => console.error(err));
-  }, []);
+    if (!options) {
+      api.members.getOptions()
+        .then((opts) => setOptions(opts))
+        .catch((err) => console.error(err));
+    }
+  }, [options]);
 
   useEffect(() => {
-    setLoading(true);
+    if (members.length === 0) {
+      setLoading(true);
+    }
     const params: Record<string, string> = {};
     if (search) params.search = search;
     if (selectedBatch) params.batch = selectedBatch;

@@ -19,11 +19,13 @@ import FormerPhotoItem from '@/components/FormerPhotoItem';
 import GalleryLightbox from '@/components/GalleryLightbox';
 import TournamentPhotoLightbox from '@/components/TournamentPhotoLightbox';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { apiCache } from '@/lib/cache';
 
 export default function GalleryPage() {
   const { user } = useAuth();
-  const [albums, setAlbums] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedAlbums = apiCache.get<any>('/api/v1/community/gallery/');
+  const [albums, setAlbums] = useState<any[]>(() => cachedAlbums || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedAlbums);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<number | null>(null);
   const [caption, setCaption] = useState('');

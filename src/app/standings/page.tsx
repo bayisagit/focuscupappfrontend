@@ -4,15 +4,18 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '@/lib/api';
+import { apiCache } from '@/lib/cache';
 import { Trophy, Info, ArrowUpRight } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
 
 export default function StandingsPage() {
-  const [standings, setStandings] = useState<any[]>([]);
-  const [seasonName, setSeasonName] = useState<string>('Focus Football Cup');
-  const [loading, setLoading] = useState(true);
+  const cached = apiCache.get<any>('/api/v1/competitions/standings/');
+  const [standings, setStandings] = useState<any[]>(() => cached?.standings || []);
+  const [seasonName, setSeasonName] = useState<string>(() => cached?.season_name || 'Focus Football Cup');
+  const [loading, setLoading] = useState<boolean>(() => !cached);
 
-  useEffect(() => {
+  const loadStandings = (force = false) => {
+    if (force || standings.length === 0) setLoading(true);
     api.competitions.getStandings()
       .then((data) => {
         setStandings(data.standings || []);
@@ -20,6 +23,10 @@ export default function StandingsPage() {
       })
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadStandings();
   }, []);
 
   return (
