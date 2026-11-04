@@ -453,11 +453,14 @@ export default function LineupPosterGenerator({
     ctx.stroke();
     ctx.restore();
 
-    // 8. TOP RIGHT FIXTURE HEADER & CRESTS
+    // 8. TOP RIGHT FIXTURE HEADER (BATCH PROFILE & BATCH NAME)
     ctx.save();
-    const rightCenterX = 770;
+    const rightCenterX = 780;
+    const headerY = 110;
+    const badgeRadius = 46;
+    const badgeX = 620;
 
-    // Load and draw Team and Opponent logos if present
+    // Load team photo/logo
     const teamLogoUrl = currentTeam.photo_url || currentTeam.logo_url;
     const oppLogoUrl = opponentTeam.photo_url || opponentTeam.logo_url;
 
@@ -467,44 +470,93 @@ export default function LineupPosterGenerator({
       [tLogo, oLogo] = await Promise.all([loadImage(teamLogoUrl || ''), loadImage(oppLogoUrl || '')]);
     }
 
-    const crestY = 120;
+    // 8a. Draw circular batch profile
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 4;
+
+    ctx.beginPath();
+    ctx.arc(badgeX, headerY, badgeRadius, 0, Math.PI * 2);
+    ctx.fillStyle = teamColor;
+    ctx.fill();
+
     if (tLogo) {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(rightCenterX - 65, crestY, 40, 0, Math.PI * 2);
+      ctx.arc(badgeX, headerY, badgeRadius, 0, Math.PI * 2);
       ctx.clip();
-      ctx.drawImage(tLogo, rightCenterX - 105, crestY - 40, 80, 80);
+      ctx.drawImage(tLogo, badgeX - badgeRadius, headerY - badgeRadius, badgeRadius * 2, badgeRadius * 2);
       ctx.restore();
-      ctx.beginPath();
-      ctx.arc(rightCenterX - 65, crestY, 40, 0, Math.PI * 2);
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.stroke();
-    }
-    if (oLogo) {
+    } else {
       ctx.save();
-      ctx.beginPath();
-      ctx.arc(rightCenterX + 65, crestY, 40, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.drawImage(oLogo, rightCenterX + 25, crestY - 40, 80, 80);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const initials = (currentTeam.batch_code || currentTeam.name || 'BAT').slice(0, 3).toUpperCase();
+      ctx.fillText(initials, badgeX, headerY);
       ctx.restore();
-      ctx.beginPath();
-      ctx.arc(rightCenterX + 65, crestY, 40, 0, Math.PI * 2);
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.stroke();
     }
 
-    // Fixture Date & Kick-off pill
+    // White rim around the batch profile circle
+    ctx.beginPath();
+    ctx.arc(badgeX, headerY, badgeRadius, 0, Math.PI * 2);
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.stroke();
+    ctx.restore();
+
+    // 8b. Add the batch name / batch year at the right side of the batch profile photo
+    const textStartX = badgeX + badgeRadius + 18;
+    const teamNameUpper = (currentTeam.name || 'BATCH TEAM').toUpperCase();
+
+    // Auto-fit font size for batch name
+    let titleFontSize = 32;
+    ctx.font = `900 ${titleFontSize}px sans-serif`;
+    while (ctx.measureText(teamNameUpper).width > 350 && titleFontSize > 20) {
+      titleFontSize -= 2;
+      ctx.font = `900 ${titleFontSize}px sans-serif`;
+    }
+
+    ctx.save();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'left';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    ctx.fillText(teamNameUpper, textStartX, headerY - 6);
+
+    // Sub-title: Matchup vs opponent
+    if (opponentTeam?.name) {
+      const oppText = `VS ${opponentTeam.name.toUpperCase()}`;
+      ctx.font = '800 16px sans-serif';
+      ctx.fillStyle = '#FCD34D'; // Gold accent
+      ctx.shadowBlur = 4;
+      ctx.fillText(oppText, textStartX, headerY + 24);
+    } else {
+      ctx.font = '800 15px sans-serif';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.fillText('OFFICIAL SQUAD', textStartX, headerY + 24);
+    }
+    ctx.restore();
+
+    // 8c. Fixture Date & Kick-off pill
+    const pillY = 185;
+    const pillW = 360;
+    const pillH = 42;
+    const pillX = 780 - pillW / 2;
+
     ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
     ctx.beginPath();
-    ctx.roundRect(rightCenterX - 180, 185, 360, 42, 21);
+    ctx.roundRect(pillX, pillY, pillW, pillH, pillH / 2);
     ctx.fill();
 
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '800 17px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`${matchDateFormatted} • ${kickOffFormatted}`, rightCenterX, 212);
+    ctx.fillText(`${matchDateFormatted} • ${kickOffFormatted}`, pillX + pillW / 2, pillY + 26);
     ctx.restore();
 
     // 9. STARTING XI PRESENTATION (MATCHDAY LIST vs TACTICAL PITCH)
@@ -1101,15 +1153,25 @@ export default function LineupPosterGenerator({
                   clipPath: 'polygon(12% 0, 100% 0, 100% 100%, 0% 100%)',
                 }}
               >
-                {/* Header: Crests & Match Info */}
-                <div className="text-center space-y-1 pt-1 pl-2">
-                  <div className="flex items-center justify-center gap-2">
+                {/* Header: Batch Profile & Batch Name */}
+                <div className="pt-1 pl-3 pr-1 space-y-1">
+                  <div className="flex items-center gap-2">
                     <TeamCrest team={currentTeam} size="xs" />
-                    <span className="text-[9px] font-black text-white">VS</span>
-                    <TeamCrest team={opponentTeam} size="xs" />
+                    <div className="text-left overflow-hidden min-w-0">
+                      <p className="text-[11px] font-black text-white leading-tight uppercase tracking-tight truncate drop-shadow">
+                        {currentTeam.name}
+                      </p>
+                      {opponentTeam?.name && (
+                        <p className="text-[8px] font-extrabold text-amber-300 leading-tight truncate">
+                          VS {opponentTeam.name.toUpperCase()}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div className="inline-block px-2 py-0.5 rounded-full bg-black/40 text-white font-extrabold text-[8px] tracking-wide">
-                    {matchDateFormatted.slice(0, 10)} • {kickOffFormatted}
+                  <div className="text-center">
+                    <div className="inline-block px-2 py-0.5 rounded-full bg-black/40 text-white font-extrabold text-[8px] tracking-wide">
+                      {matchDateFormatted.slice(0, 10)} • {kickOffFormatted}
+                    </div>
                   </div>
                 </div>
 
