@@ -21,13 +21,20 @@ import TournamentPhotoLightbox from '@/components/TournamentPhotoLightbox';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { apiCache } from '@/lib/cache';
 
+function normalizeAlbums(data: any): any[] {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.results)) return data.results;
+  return [];
+}
+
 export default function GalleryPage() {
   const { user } = useAuth();
   const cachedAlbums = apiCache.get<any>('/api/v1/community/gallery/');
-  const [albums, setAlbums] = useState<any[]>(() => cachedAlbums || []);
-  const [loading, setLoading] = useState<boolean>(() => !cachedAlbums);
+  const initialAlbums = normalizeAlbums(cachedAlbums);
+  const [albums, setAlbums] = useState<any[]>(initialAlbums);
+  const [loading, setLoading] = useState<boolean>(() => initialAlbums.length === 0);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [selectedAlbum, setSelectedAlbum] = useState<number | null>(null);
+  const [selectedAlbum, setSelectedAlbum] = useState<number | null>(() => (initialAlbums.length > 0 ? initialAlbums[0].id : null));
   const [caption, setCaption] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -57,16 +64,19 @@ export default function GalleryPage() {
     }
   };
 
-  const loadGallery = () => {
-    api.community.getGallery()
+  const loadGallery = (force = false) => {
+    if (force) {
+      apiCache.invalidate('/api/v1/community/gallery/');
+    }
+    api.community.getGallery({ forceRefresh: force })
       .then((data) => {
-        const list = data.results || data || [];
+        const list = normalizeAlbums(data);
         setAlbums(list);
-        if (list.length > 0 && !selectedAlbum) {
-          setSelectedAlbum(list[0].id);
+        if (list.length > 0) {
+          setSelectedAlbum((prev) => (prev && list.some((a) => a.id === prev) ? prev : list[0].id));
         }
       })
-      .catch((err) => console.error(err))
+      .catch((err) => console.error('Failed to load gallery:', err))
       .finally(() => setLoading(false));
   };
 
@@ -85,7 +95,7 @@ export default function GalleryPage() {
     fetch('/api/former-gallery')
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data.photos) && data.photos.length > 0) {
+        if (Array.isArray(data?.photos) && data.photos.length > 0) {
           setFormerPhotos(data.photos);
         }
       })
@@ -122,11 +132,12 @@ export default function GalleryPage() {
       }
 
       const res = await api.community.uploadPhoto(payload);
-      alert(res.message || 'Photo uploaded successfully!');
+      alert(res?.message || 'Photo uploaded successfully!');
       setUploadModalOpen(false);
       setFile(null);
       setCaption('');
-      loadGallery();
+      apiCache.invalidate('/api/v1/community/gallery/');
+      loadGallery(true);
       loadQuota();
     } catch (err: any) {
       alert(err.data?.error || err.message || 'Failed to upload photo.');
@@ -135,7 +146,9 @@ export default function GalleryPage() {
     }
   };
 
-  const currentAlbumData = albums.find((a) => a.id === selectedAlbum) || albums[0];
+  const safeAlbums = Array.isArray(albums) ? albums : [];
+  const currentAlbumData = safeAlbums.find((a) => a?.id === selectedAlbum) || safeAlbums[0] || null;
+  const currentPhotos: any[] = Array.isArray(currentAlbumData?.photos) ? currentAlbumData.photos : [];
 
   const filteredFormerPhotos = formerCategory === 'All'
     ? formerPhotos
@@ -204,9 +217,9 @@ export default function GalleryPage() {
                 </p>
               </div>
 
-              {albums.length > 1 && (
+              {safeAlbums.length > 1 && (
                 <div className="flex items-center gap-2 flex-wrap">
-                  {albums.map((alb) => (
+                  {safeAlbums.map((alb) => (
                     <button
                       key={alb.id}
                       onClick={() => setSelectedAlbum(alb.id)}
@@ -230,48 +243,61 @@ export default function GalleryPage() {
                   <div key={i} className="aspect-square rounded-2xl bg-[#1C2541]/40 animate-pulse" />
                 ))}
               </div>
-            ) : currentAlbumData && currentAlbumData.photos && currentAlbumData.photos.length > 0 ? (
+            ) : currentPhotos.length > 0 ? (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {currentAlbumData.photos.map((photo: any, index: number) => (
-                    <div
-                      key={photo.id || index}
-                      onClick={() => {
-                        setCurrentTournamentIndex(index);
-                        setTournamentLightboxOpen(true);
-                      }}
-                      className="card-gloss rounded-2xl overflow-hidden group relative aspect-square border border-[#2C3960]/80 hover:border-emerald-400/80 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/15 cursor-pointer"
-                    >
-                      <img
-                        src={photo.image}
-                        alt={photo.caption || 'Match moment'}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-
-                      {/* Top Badges overlay on hover */}
-                      <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-500 text-slate-950 shadow-sm">
-                          Match #{index + 1}
-                        </span>
-                        <span className="p-1.5 rounded-lg bg-slate-900/80 text-white backdrop-blur-sm border border-slate-700 shadow-md">
-                          <Maximize2 className="w-3.5 h-3.5 text-emerald-400" />
-                        </span>
-                      </div>
-
-                      {/* Bottom Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end pointer-events-none">
-                        {photo.caption && (
-                          <p className="text-xs font-semibold text-white truncate">{photo.caption}</p>
+                  {currentPhotos.map((photo: any, index: number) => {
+                    const imgSrc = photo?.image || photo?.image_url || photo?.photo_url || '';
+                    return (
+                      <div
+                        key={photo?.id || index}
+                        onClick={() => {
+                          setCurrentTournamentIndex(index);
+                          setTournamentLightboxOpen(true);
+                        }}
+                        className="card-gloss rounded-2xl overflow-hidden group relative aspect-square border border-[#2C3960]/80 hover:border-emerald-400/80 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/15 cursor-pointer"
+                      >
+                        {imgSrc ? (
+                          <img
+                            src={imgSrc}
+                            alt={photo?.caption || 'Match moment'}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.opacity = '0.5';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-[#161D36] flex flex-col items-center justify-center p-3 text-slate-400">
+                            <Camera className="w-8 h-8 text-emerald-400 mb-1" />
+                            <span className="text-[10px]">Photo #{index + 1}</span>
+                          </div>
                         )}
-                        <div className="flex items-center justify-between mt-1 text-[10px]">
-                          <span className="text-emerald-400 font-medium truncate max-w-[130px]">
-                            Photo by {photo.uploaded_by_name || 'Member'}
+
+                        {/* Top Badges overlay on hover */}
+                        <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                          <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-500 text-slate-950 shadow-sm">
+                            Match #{index + 1}
                           </span>
-                          <span className="text-emerald-300 font-bold shrink-0">View &rarr;</span>
+                          <span className="p-1.5 rounded-lg bg-slate-900/80 text-white backdrop-blur-sm border border-slate-700 shadow-md">
+                            <Maximize2 className="w-3.5 h-3.5 text-emerald-400" />
+                          </span>
+                        </div>
+
+                        {/* Bottom Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end pointer-events-none">
+                          {photo?.caption && (
+                            <p className="text-xs font-semibold text-white truncate">{photo.caption}</p>
+                          )}
+                          <div className="flex items-center justify-between mt-1 text-[10px]">
+                            <span className="text-emerald-400 font-medium truncate max-w-[130px]">
+                              Photo by {photo?.uploaded_by_name || 'Member'}
+                            </span>
+                            <span className="text-emerald-300 font-bold shrink-0">View &rarr;</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Open Fullscreen Lightbox Button for Tournament Photos */}
@@ -282,7 +308,7 @@ export default function GalleryPage() {
                   }}
                   className="mt-5 w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Maximize2 className="w-4 h-4" /> Open Fullscreen Lightbox ({currentAlbumData.photos.length} Photo{currentAlbumData.photos.length === 1 ? '' : 's'})
+                  <Maximize2 className="w-4 h-4" /> Open Fullscreen Lightbox ({currentPhotos.length} Photo{currentPhotos.length === 1 ? '' : 's'})
                 </button>
               </>
             ) : (
@@ -377,12 +403,12 @@ export default function GalleryPage() {
 
       {/* Active Tournament Match Photos Lightbox */}
       <TournamentPhotoLightbox
-        photos={currentAlbumData?.photos || []}
+        photos={currentPhotos}
         currentIndex={currentTournamentIndex}
         isOpen={tournamentLightboxOpen}
         onClose={() => setTournamentLightboxOpen(false)}
         onSelectIndex={(idx) => setCurrentTournamentIndex(idx)}
-        albumTitle={currentAlbumData?.title}
+        albumTitle={currentAlbumData?.title || 'Focus Cup Tournament Highlights'}
       />
 
       {/* Upload Photo Modal */}
@@ -426,7 +452,7 @@ export default function GalleryPage() {
                   className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50"
                   required
                 >
-                  {albums.map((a) => (
+                  {safeAlbums.map((a) => (
                     <option key={a.id} value={a.id}>{a.title}</option>
                   ))}
                 </select>

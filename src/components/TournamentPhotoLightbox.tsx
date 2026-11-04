@@ -196,11 +196,18 @@ export default function TournamentPhotoLightbox({
                   <span className="text-slate-600">&bull;</span>
                   <span className="text-[10px] text-slate-400 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
-                    {new Date(currentPhoto.created_at).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
+                    {(() => {
+                      try {
+                        const d = new Date(currentPhoto.created_at);
+                        return isNaN(d.getTime()) ? null : d.toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        });
+                      } catch {
+                        return null;
+                      }
+                    })()}
                   </span>
                 </>
               )}

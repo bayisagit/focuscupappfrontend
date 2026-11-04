@@ -76,6 +76,9 @@ async function fetchAPI<T>(endpoint: string, options: FetchAPIOptions = {}): Pro
       apiCache.invalidateMatches();
     } else if (endpoint.includes('/announcements') || endpoint.includes('/notifications')) {
       apiCache.invalidateAnnouncements();
+    } else if (endpoint.includes('/gallery')) {
+      apiCache.invalidate('/api/v1/community/gallery/');
+      apiCache.invalidate('/api/v1/community/gallery/upload/');
     } else if (endpoint.includes('/members') || endpoint.includes('/player')) {
       apiCache.invalidateMembers();
     } else if (endpoint.includes('/settings')) {
@@ -270,7 +273,7 @@ export const api = {
     deleteAnnouncement: (id: number | string) => fetchAPI<any>(`/api/v1/community/announcements/${id}/`, {
       method: 'DELETE',
     }),
-    getGallery: () => fetchAPI<any>('/api/v1/community/gallery/'),
+    getGallery: (options?: FetchAPIOptions) => fetchAPI<any>('/api/v1/community/gallery/', options),
     getUploadQuota: () => fetchAPI<any>('/api/v1/community/gallery/upload/'),
     uploadPhoto: (data: FormData | any) => fetchAPI<any>('/api/v1/community/gallery/upload/', {
       method: 'POST',
