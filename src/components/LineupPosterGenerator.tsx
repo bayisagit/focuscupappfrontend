@@ -39,6 +39,25 @@ export interface SquadPlayerItem {
   profile_picture_url?: string;
 }
 
+/**
+ * Formats a player's full name according to Ethiopian tournament convention:
+ * First name + Father's first capital letter initial (e.g. "Solomon Tesfaye" -> "SOLOMON T.").
+ */
+export function formatPlayerDisplayName(fullName: string, uppercase: boolean = true): string {
+  if (!fullName) return 'PLAYER';
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'PLAYER';
+
+  const firstName = uppercase ? parts[0].toUpperCase() : parts[0];
+  if (parts.length === 1) {
+    return firstName;
+  }
+
+  const fatherName = parts[1];
+  const fatherInitial = fatherName[0]?.toUpperCase() || '';
+  return fatherInitial ? `${firstName} ${fatherInitial}.` : firstName;
+}
+
 export interface LineupPosterMatch {
   id: number | string;
   round_number?: number | string;
@@ -501,13 +520,7 @@ export default function LineupPosterGenerator({
         const isCaptain = player.is_captain;
         const isGk = player.is_goalkeeper;
 
-        const nameParts = (player.player_name || 'PLAYER').trim().split(/\s+/);
-        let shortName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
-        if (nameParts.length > 2) {
-          shortName = `${nameParts[0][0]}. ${nameParts[nameParts.length - 1]}`;
-        }
-        shortName = shortName.toUpperCase();
-
+        const formattedName = formatPlayerDisplayName(player.player_name, true);
         const number = String(player.jersey_number || idx + 1);
 
         ctx.font = '900 46px sans-serif';
@@ -518,7 +531,7 @@ export default function LineupPosterGenerator({
         ctx.shadowOffsetX = 2;
         ctx.shadowOffsetY = 2;
 
-        const displayName = isCaptain ? `© ${shortName}` : isGk ? `🧤 ${shortName}` : shortName;
+        const displayName = isCaptain ? `© ${formattedName}` : isGk ? `🧤 ${formattedName}` : formattedName;
         ctx.fillText(displayName, 950, y);
 
         ctx.font = '900 46px sans-serif';
@@ -609,9 +622,8 @@ export default function LineupPosterGenerator({
         ctx.restore();
 
         ctx.save();
-        const nameParts = (player.player_name || '').trim().split(/\s+/);
-        const surname = (nameParts[nameParts.length - 1] || 'Player').toUpperCase();
-        const labelText = player.is_captain ? `© ${surname}` : surname;
+        const formattedName = formatPlayerDisplayName(player.player_name, true);
+        const labelText = player.is_captain ? `© ${formattedName}` : formattedName;
 
         ctx.font = '800 13px sans-serif';
         const labelWidth = ctx.measureText(labelText).width + 12;
@@ -639,10 +651,11 @@ export default function LineupPosterGenerator({
     ctx.textAlign = 'center';
     ctx.fillText('Subs', rightCenterX, subsY);
 
-    // Substitutes names comma-separated
+    // Substitutes names formatted as First Name + Father Initial (e.g. BEREKET W. 14)
     const subNames = substitutes.map((p) => {
-      const parts = p.player_name.trim().split(/\s+/);
-      return parts[parts.length - 1].toUpperCase();
+      const formatted = formatPlayerDisplayName(p.player_name, true);
+      const num = p.jersey_number ? ` ${p.jersey_number}` : '';
+      return `${formatted}${num}`;
     });
 
     const subsText = subNames.length > 0 ? subNames.join(', ') : 'NONE REPORTED';
@@ -1104,15 +1117,14 @@ export default function LineupPosterGenerator({
                 {posterStyle === 'matchday' ? (
                   <div className="my-auto space-y-1 pl-3 text-right">
                     {starters.slice(0, 11).map((p, idx) => {
-                      const nameParts = p.player_name.trim().split(/\s+/);
-                      const surname = nameParts[nameParts.length - 1].toUpperCase();
+                      const formattedName = formatPlayerDisplayName(p.player_name, true);
                       const num = p.jersey_number || idx + 1;
                       return (
                         <div key={idx} className="flex items-center justify-end gap-1.5 leading-none">
                           <span className="text-white font-black text-[13px] tracking-tight truncate drop-shadow-md">
                             {p.is_captain && <span className="text-amber-300 mr-0.5">©</span>}
                             {p.is_goalkeeper && <span className="mr-0.5 text-[10px]">🧤</span>}
-                            {surname}
+                            {formattedName}
                           </span>
                           <span className="text-white font-black text-[13px] w-5 text-left">{num}</span>
                         </div>
@@ -1139,8 +1151,8 @@ export default function LineupPosterGenerator({
                           <div className="w-4 h-4 rounded-full bg-white text-slate-950 font-black text-[8px] flex items-center justify-center shadow">
                             {p.jersey_number || i + 1}
                           </div>
-                          <span className="text-[7px] font-bold text-white bg-black/70 px-1 rounded truncate max-w-[40px]">
-                            {p.player_name.split(' ')[0]}
+                          <span className="text-[7px] font-bold text-white bg-black/70 px-1 rounded truncate max-w-[50px]">
+                            {formatPlayerDisplayName(p.player_name, true)}
                           </span>
                         </div>
                       );
@@ -1152,7 +1164,7 @@ export default function LineupPosterGenerator({
                 <div className="text-center pt-1 border-t border-white/20 pl-2">
                   <span className="text-[11px] font-serif italic font-bold text-white block">Subs</span>
                   <p className="text-[8px] font-bold text-white/90 line-clamp-2 uppercase">
-                    {substitutes.map((s) => s.player_name.split(' ').pop()).join(', ') || 'NONE REPORTED'}
+                    {substitutes.map((s) => `${formatPlayerDisplayName(s.player_name, true)}${s.jersey_number ? ` ${s.jersey_number}` : ''}`).join(', ') || 'NONE REPORTED'}
                   </p>
                 </div>
               </div>

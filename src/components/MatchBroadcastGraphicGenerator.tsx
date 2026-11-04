@@ -24,6 +24,7 @@ import {
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { api } from '@/lib/api';
 import TeamCrest from '@/components/TeamCrest';
+import { formatPlayerDisplayName } from '@/components/LineupPosterGenerator';
 
 export interface MatchBroadcastData {
   id: number | string;
@@ -123,7 +124,7 @@ export default function MatchBroadcastGraphicGenerator({
 
     sortedEvents.forEach((evt) => {
       if (evt.event_type === 'GOAL') {
-        const pName = (evt.player_name || 'Player').split(' ').pop() || 'Player';
+        const pName = formatPlayerDisplayName(evt.player_name || 'Player', false);
         const formatted = `${pName} ${evt.minute}'`;
         if (Number(evt.team_id) === Number(match.home_team.id)) {
           homeGoals.push(formatted);
@@ -131,7 +132,7 @@ export default function MatchBroadcastGraphicGenerator({
           awayGoals.push(formatted);
         }
       } else if (evt.event_type === 'OWN_GOAL') {
-        const pName = (evt.player_name || 'Player').split(' ').pop() || 'Player';
+        const pName = formatPlayerDisplayName(evt.player_name || 'Player', false);
         const formatted = `${pName} (OG) ${evt.minute}'`;
         // Own goal credits to opposing team
         if (Number(evt.team_id) === Number(match.home_team.id)) {
