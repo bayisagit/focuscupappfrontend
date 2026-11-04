@@ -51,6 +51,7 @@ import {
 } from 'lucide-react';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import LineupPosterGenerator from '@/components/LineupPosterGenerator';
+import MatchBroadcastGraphicGenerator from '@/components/MatchBroadcastGraphicGenerator';
 
 const isPlayerInBatchTeam = (player: any, team: any) => {
   if (!player || !team) return false;
@@ -164,6 +165,7 @@ export default function FrontendAdminPage() {
   const [squadSuccessMsg, setSquadSuccessMsg] = useState('');
   const [squadErrorMsg, setSquadErrorMsg] = useState('');
   const [lineupPosterOpen, setLineupPosterOpen] = useState(false);
+  const [broadcastGraphicOpen, setBroadcastGraphicOpen] = useState(false);
   const [homeEligiblePlayers, setHomeEligiblePlayers] = useState<any[]>([]);
   const [awayEligiblePlayers, setAwayEligiblePlayers] = useState<any[]>([]);
   const [homeSquadList, setHomeSquadList] = useState<any[]>([]);
@@ -752,6 +754,7 @@ export default function FrontendAdminPage() {
         setSelectedMatch(detailed);
         setHomeScore(detailed.home_score);
         setAwayScore(detailed.away_score);
+        setBroadcastGraphicOpen(true);
       });
     } catch (err: any) {
       alert(err.data?.error || 'Failed to add match event.');
@@ -770,6 +773,7 @@ export default function FrontendAdminPage() {
         setSelectedMatch(detailed);
         setHomeScore(detailed.home_score);
         setAwayScore(detailed.away_score);
+        setBroadcastGraphicOpen(true);
       });
     } catch (err: any) {
       alert(err.data?.error || 'Failed to delete event.');
@@ -1864,9 +1868,20 @@ export default function FrontendAdminPage() {
                       <History className="w-4 h-4 text-purple-400" />
                       Chronological Match Events ({Array.isArray(selectedMatch.events) ? selectedMatch.events.length : 0})
                     </h3>
-                    <span className="text-[11px] text-slate-400">
-                      Score: <strong className="text-white">{selectedMatch.home_team.name} {selectedMatch.home_score} - {selectedMatch.away_score} {selectedMatch.away_team.name}</strong>
-                    </span>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setBroadcastGraphicOpen(true)}
+                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-md shadow-emerald-500/20 flex items-center gap-1.5 cursor-pointer transition-all"
+                        title="Open Premier League Match Broadcast Graphic Studio"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>Broadcast Graphic Studio</span>
+                      </button>
+                      <span className="text-[11px] text-slate-400">
+                        Score: <strong className="text-white">{selectedMatch.home_team.name} {selectedMatch.home_score} - {selectedMatch.away_score} {selectedMatch.away_team.name}</strong>
+                      </span>
+                    </div>
                   </div>
 
                   {!Array.isArray(selectedMatch.events) || selectedMatch.events.length === 0 ? (
@@ -1932,6 +1947,20 @@ export default function FrontendAdminPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Match Broadcast Graphic Generator Studio Modal */}
+                {selectedMatch && (
+                  <MatchBroadcastGraphicGenerator
+                    match={selectedMatch}
+                    eligiblePlayers={membersList}
+                    isOpen={broadcastGraphicOpen}
+                    onClose={() => setBroadcastGraphicOpen(false)}
+                    onPublished={() => {
+                      loadAnnouncements();
+                      setSquadSuccessMsg('✓ Official Broadcast Graphic published to homepage hero carousel and pinned!');
+                    }}
+                  />
+                )}
               </div>
             )}
 

@@ -22,6 +22,7 @@ import {
 import TeamCrest from '@/components/TeamCrest';
 import { apiCache } from '@/lib/cache';
 import LineupPosterGenerator from '@/components/LineupPosterGenerator';
+import MatchBroadcastGraphicGenerator from '@/components/MatchBroadcastGraphicGenerator';
 
 import { Suspense } from 'react';
 
@@ -32,6 +33,7 @@ function MatchDetailContent() {
   const [loading, setLoading] = useState<boolean>(() => !cached);
   const [activeTab, setActiveTab] = useState<'timeline' | 'lineups' | 'report'>('timeline');
   const [posterOpen, setPosterOpen] = useState<boolean>(false);
+  const [broadcastGraphicOpen, setBroadcastGraphicOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (id) {
@@ -308,11 +310,45 @@ function MatchDetailContent() {
 
       {/* TAB CONTENT: TIMELINE */}
       {activeTab === 'timeline' && (
-        <div className="card-gloss p-6 rounded-2xl">
-          <h3 className="text-sm font-bold text-white mb-6 flex items-center gap-2">
-            <Flame className="w-4 h-4 text-emerald-400" />
-            Chronological Match Events
-          </h3>
+        <div className="space-y-6">
+          {/* Match Broadcast Graphic Banner */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-900/40 via-teal-900/30 to-[#161D36] border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 shrink-0">
+                <Camera className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-black text-white flex items-center gap-2">
+                  Premier League Style Broadcast Graphic
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    match.status === 'COMPLETED'
+                      ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                      : 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
+                  }`}>
+                    {match.status === 'COMPLETED' ? 'FULL TIME RESULT' : 'LIVE BROADCAST'}
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-300">
+                  Dynamic scoreboard, chronological goal scorers, and Player of the Match presentation.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setBroadcastGraphicOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all shrink-0"
+            >
+              <Camera className="w-4 h-4" />
+              <span>Open Broadcast Graphic Studio</span>
+            </button>
+          </div>
+
+          <div className="card-gloss p-6 rounded-2xl">
+            <h3 className="text-sm font-bold text-white mb-6 flex items-center gap-2">
+              <Flame className="w-4 h-4 text-emerald-400" />
+              Chronological Match Events
+            </h3>
 
           {match.events && match.events.length > 0 ? (
             <div className="space-y-4 relative before:absolute before:top-2 before:bottom-2 before:left-6 before:w-0.5 before:bg-[#2C3960]">
@@ -370,6 +406,7 @@ function MatchDetailContent() {
               No match incidents or events have been recorded yet.
             </p>
           )}
+        </div>
         </div>
       )}
 
@@ -570,6 +607,15 @@ function MatchDetailContent() {
           }))}
           isOpen={posterOpen}
           onClose={() => setPosterOpen(false)}
+        />
+      )}
+
+      {/* Match Broadcast Graphic Studio Modal */}
+      {match && (
+        <MatchBroadcastGraphicGenerator
+          match={match}
+          isOpen={broadcastGraphicOpen}
+          onClose={() => setBroadcastGraphicOpen(false)}
         />
       )}
     </div>
