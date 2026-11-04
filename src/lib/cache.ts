@@ -360,3 +360,4 @@ export function useCachedData<T = any>(
     setData,
   };
 }
+
