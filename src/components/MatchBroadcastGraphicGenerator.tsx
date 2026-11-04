@@ -324,24 +324,47 @@ export default function MatchBroadcastGraphicGenerator({
 
     // 2. TOURNAMENT HEADER (Top Bar)
     ctx.save();
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '900 20px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('FOCUS FOOTBALL CUP 2026', 412, 70);
+    // Clean solid dark fill over top bar area (wiping out any previous text or Premier League logo)
+    ctx.fillStyle = '#0E1522';
+    ctx.fillRect(45, 40, 735, 55);
+    ctx.strokeStyle = '#2A364F';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(45, 40, 735, 55);
 
-    ctx.font = '700 13px sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.textAlign = 'right';
+    // Subtle vertical dividers between sections
+    ctx.beginPath();
+    ctx.moveTo(265, 40);
+    ctx.lineTo(265, 95);
+    ctx.moveTo(565, 40);
+    ctx.lineTo(565, 95);
+    ctx.strokeStyle = 'rgba(42, 54, 79, 0.7)';
+    ctx.stroke();
+
+    // Top Left: Project Identity (NO Premier League lion!)
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 13px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('✝ FOCUS CUP', 75, 72);
+
+    // Top Center: Tournament Name
+    ctx.font = '900 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('FOCUS FOOTBALL CUP 2026', 415, 72);
+
+    // Top Right: Date & Round
+    ctx.font = '700 12px sans-serif';
+    ctx.fillStyle = 'rgba(203, 213, 225, 0.9)';
+    ctx.textAlign = 'center';
     const dateVenue = `${match.match_date || 'MATCHDAY'} | ROUND ${match.round_number || 1}`;
-    ctx.fillText(dateVenue, 765, 70);
+    ctx.fillText(dateVenue, 672, 72);
     ctx.restore();
 
     // 3. SCOREBOARD: TOP BANNER (FULL TIME vs LIVE [MINUTE]')
     ctx.save();
     const bannerX = 300;
-    const bannerY = 127;
+    const bannerY = 125;
     const bannerW = 225;
-    const bannerH = 38;
+    const bannerH = 40;
 
     if (operationalMode === 'FINAL') {
       ctx.fillStyle = '#FFFFFF';
@@ -349,30 +372,27 @@ export default function MatchBroadcastGraphicGenerator({
       ctx.fillStyle = '#0F172A';
       ctx.font = '900 18px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('FULL TIME', bannerX + bannerW / 2, bannerY + 25);
+      ctx.fillText('FULL TIME', bannerX + bannerW / 2, bannerY + 26);
     } else {
-      // Live Mode indicator
       ctx.fillStyle = '#DC2626';
       ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '900 17px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`🔴 LIVE • ${liveMinute}'`, bannerX + bannerW / 2, bannerY + 25);
+      ctx.fillText(`🔴 LIVE • ${liveMinute}'`, bannerX + bannerW / 2, bannerY + 26);
     }
-    ctx.restore();
 
     // 4. SCOREBOARD: CENTRAL SCORE
-    ctx.save();
-    ctx.fillStyle = '#0F172A';
-    ctx.font = '900 62px sans-serif';
-    ctx.textAlign = 'center';
-    // Clean background score box
     ctx.fillStyle = '#F8FAFC';
     ctx.fillRect(bannerX, bannerY + bannerH, bannerW, 110);
 
     ctx.fillStyle = '#0F172A';
+    ctx.font = '900 62px sans-serif';
+    ctx.textAlign = 'center';
     ctx.fillText(String(homeScoreState), 350, 245);
+    ctx.fillStyle = '#64748B';
     ctx.fillText('-', 412, 242);
+    ctx.fillStyle = '#0F172A';
     ctx.fillText(String(awayScoreState), 475, 245);
     ctx.restore();
 
@@ -429,24 +449,32 @@ export default function MatchBroadcastGraphicGenerator({
     }
     ctx.restore();
 
-    // Home and Away Team Name Bars
+    // Home and Away Team Name Bars (Clean solid white pills covering old text)
     ctx.save();
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(135, 278, 162, 32);
-    ctx.fillRect(530, 278, 162, 32);
+    ctx.fillRect(528, 278, 162, 32);
 
     ctx.fillStyle = '#0F172A';
     ctx.font = '900 13px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(match.home_team.name.toUpperCase(), 216, 294);
-    ctx.fillText(match.away_team.name.toUpperCase(), 611, 294);
+    ctx.fillText(match.away_team.name.toUpperCase(), 609, 294);
     ctx.restore();
 
     // 6. GOAL SCORERS SECTION
     ctx.save();
+    // Header bar
+    ctx.fillStyle = '#121B2E';
+    ctx.fillRect(134, 340, 558, 33);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('GOAL SCORERS', 413, 362);
+
     const rowsY = 373;
-    const rowHeight = 31;
+    const rowHeight = 32;
     const maxRows = 5;
 
     for (let i = 0; i < maxRows; i++) {
@@ -458,26 +486,26 @@ export default function MatchBroadcastGraphicGenerator({
       ctx.fillStyle = i % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
       ctx.fillRect(134, currentY, 558, rowHeight - 2);
 
-      // Home Scorer (Right aligned to center line)
+      // Center divider
+      ctx.fillStyle = '#CBD5E1';
+      ctx.font = '700 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('||', 413, currentY + 20);
+
+      // Home Scorer
       if (homeScorer) {
         ctx.fillStyle = '#0F172A';
         ctx.font = '800 13px sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(`${homeScorer} ⚽`, 395, currentY + 19);
+        ctx.fillText(`${homeScorer} ⚽`, 395, currentY + 20);
       }
 
-      // Center separator
-      ctx.fillStyle = '#CBD5E1';
-      ctx.font = '700 12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('||', 412, currentY + 19);
-
-      // Away Scorer (Left aligned from center line)
+      // Away Scorer
       if (awayScorer) {
         ctx.fillStyle = '#0F172A';
         ctx.font = '800 13px sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(`⚽ ${awayScorer}`, 430, currentY + 19);
+        ctx.fillText(`⚽ ${awayScorer}`, 430, currentY + 20);
       }
     }
 
@@ -485,42 +513,51 @@ export default function MatchBroadcastGraphicGenerator({
       ctx.fillStyle = '#64748B';
       ctx.font = 'italic 600 13px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('No goals scored at this point', 412, rowsY + 2 * rowHeight + 19);
+      ctx.fillText('No goals scored at this point', 413, rowsY + 2 * rowHeight + 20);
     }
     ctx.restore();
 
     // 7. PLAYER OF THE MATCH SECTION
     ctx.save();
+    // Header
+    ctx.fillStyle = '#121B2E';
+    ctx.fillRect(224, 560, 377, 35);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('PLAYER OF THE MATCH', 412, 582);
+
     const potmBoxX = 224;
     const potmBoxY = 595;
-    const potmBoxW = 376;
-    const potmBoxH = 250;
+    const potmBoxW = 377;
+    const potmBoxH = 260;
+
+    // Cleanly wipe card background
+    ctx.fillStyle = '#0B1324';
+    ctx.fillRect(potmBoxX, potmBoxY, potmBoxW, potmBoxH);
+    ctx.strokeStyle = '#2A364F';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(potmBoxX, potmBoxY, potmBoxW, potmBoxH);
 
     if (operationalMode === 'LIVE') {
-      // Subdued / empty state for mid-game live mode
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-      ctx.fillRect(potmBoxX, potmBoxY, potmBoxW, potmBoxH);
-
-      ctx.fillStyle = '#64748B';
-      ctx.font = '900 48px sans-serif';
+      ctx.fillStyle = '#F59E0B';
+      ctx.font = '900 44px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('🏆', 412, 690);
+      ctx.fillText('🏆', 412, 695);
 
-      ctx.fillStyle = '#94A3B8';
-      ctx.font = '900 15px sans-serif';
-      ctx.fillText('PLAYER OF THE MATCH', 412, 730);
+      ctx.fillStyle = '#CBD5E1';
+      ctx.font = '900 16px sans-serif';
+      ctx.fillText('DECIDED AT FULL TIME', 412, 745);
 
       ctx.font = '600 12px sans-serif';
       ctx.fillStyle = '#64748B';
-      ctx.fillText('LOCKED UNTIL FULL TIME WHISTLE', 412, 755);
+      ctx.fillText('Live match in progress', 412, 775);
     } else {
-      // Final Publication Mode: designated POTM
       let potmImg: HTMLImageElement | null = null;
       if (potmCandidate?.photo_url && allowRemote) {
         potmImg = await loadImage(potmCandidate.photo_url);
       }
 
-      // Draw photo container
       if (potmImg) {
         ctx.save();
         ctx.beginPath();
@@ -529,7 +566,6 @@ export default function MatchBroadcastGraphicGenerator({
         ctx.drawImage(potmImg, 332, 615, 160, 155);
         ctx.restore();
       } else {
-        // Fallback vector star badge
         ctx.fillStyle = '#0F172A';
         ctx.fillRect(332, 615, 160, 155);
         ctx.fillStyle = '#F59E0B';
@@ -560,19 +596,39 @@ export default function MatchBroadcastGraphicGenerator({
     }
     ctx.restore();
 
-    // 8. TOURNAMENT SLOGAN & FOOTER
+    // 8. TOURNAMENT SLOGAN
     ctx.save();
+    ctx.fillStyle = '#0D1523';
+    ctx.fillRect(45, 898, 735, 52);
+    ctx.strokeStyle = '#2A364F';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(45, 898, 735, 52);
+
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '800 14px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('AASTU FOCUS FELLOWSHIP • CHRIST ABOVE ALL', 412, 928);
+    ctx.fillText('AASTU FOCUS FELLOWSHIP • CHRIST ABOVE ALL', 412, 930);
+    ctx.restore();
 
-    ctx.font = '600 11px sans-serif';
+    // 9. FOOTER (Clean dark bar - NO Premier League branding!)
+    ctx.save();
+    ctx.fillStyle = '#0A101C';
+    ctx.fillRect(0, 955, 825, 69);
+
+    ctx.font = '700 11px sans-serif';
     ctx.fillStyle = '#94A3B8';
     ctx.textAlign = 'left';
-    ctx.fillText('@AASTU_FocusCup', 140, 978);
+    ctx.fillText('@AASTU_FocusCup', 55, 990);
+
+    ctx.font = '600 11px sans-serif';
+    ctx.fillStyle = '#64748B';
+    ctx.textAlign = 'center';
+    ctx.fillText('Focus Fellowship Football Tournament 2026', 412, 990);
+
+    ctx.font = '700 11px sans-serif';
+    ctx.fillStyle = '#F59E0B';
     ctx.textAlign = 'right';
-    ctx.fillText('@FocusFellowship @PremierStyle', 685, 978);
+    ctx.fillText('Playing for His Glory!', 770, 990);
     ctx.restore();
 
     return canvas;
