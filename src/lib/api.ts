@@ -178,6 +178,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data)
     }),
+    getBatchJerseys: (batchCode?: string) => {
+      const query = batchCode ? `?batch_code=${encodeURIComponent(batchCode)}` : '';
+      return fetchAPI<any>(`/api/v1/members/batch-jerseys/${query}`);
+    },
   },
 
   // Competitions

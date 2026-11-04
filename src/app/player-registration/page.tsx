@@ -1,21 +1,74 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { Trophy, GraduationCap, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Trophy, GraduationCap, AlertCircle, CheckCircle, ArrowLeft, Shirt, Sparkles, Hash } from 'lucide-react';
 
 export default function PlayerRegistrationPage() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
   const [preferredPosition, setPreferredPosition] = useState(user?.profile?.primary_position || 'Midfielder');
-  const [jerseyNumber, setJerseyNumber] = useState(user?.profile?.preferred_jersey_number || 10);
+  const [jerseyNumber, setJerseyNumber] = useState<number | string>(user?.profile?.preferred_jersey_number || 10);
   const [footballNotes, setFootballNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Batch jersey availability state
+  const [takenNumbers, setTakenNumbers] = useState<number[]>([]);
+  const [takenDetails, setTakenDetails] = useState<any[]>([]);
+  const [batchName, setBatchName] = useState<string>('');
+  const [fetchingJerseys, setFetchingJerseys] = useState(false);
+
+  // Fetch taken jerseys for member's competing batch
+  useEffect(() => {
+    const batchCode = user?.profile?.competing_batch;
+    if (batchCode) {
+      setFetchingJerseys(true);
+      api.members.getBatchJerseys(batchCode)
+        .then((data) => {
+          if (data?.taken_numbers) {
+            setTakenNumbers(data.taken_numbers);
+          }
+          if (data?.taken_details) {
+            setTakenDetails(data.taken_details);
+          }
+          if (data?.batch_name) {
+            setBatchName(data.batch_name);
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not load batch jersey numbers:', err);
+        })
+        .finally(() => {
+          setFetchingJerseys(false);
+        });
+    }
+  }, [user?.profile?.competing_batch]);
+
+  const numVal = Number(jerseyNumber);
+  const isNumberValid = !isNaN(numVal) && numVal >= 1 && numVal <= 99;
+
+  // Check if chosen jersey is already taken in this batch
+  const takenInfo = useMemo(() => {
+    if (!isNumberValid) return null;
+    return takenDetails.find((d: any) => d.jersey_number === numVal && !d.is_current_user) || null;
+  }, [numVal, takenDetails, isNumberValid]);
+
+  const isTaken = Boolean(takenInfo || (isNumberValid && takenNumbers.includes(numVal)));
+
+  // Find next available jersey number recommendation
+  const nextAvailableJersey = useMemo(() => {
+    for (let i = 1; i <= 99; i++) {
+      if (!takenNumbers.includes(i)) {
+        return i;
+      }
+    }
+    return 10;
+  }, [takenNumbers]);
 
   if (!user) {
     return (
@@ -52,6 +105,11 @@ export default function PlayerRegistrationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isTaken) {
+      setError(`Jersey number #${numVal} is already taken in ${batchName || 'your batch'}. Please choose another number.`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -59,7 +117,7 @@ export default function PlayerRegistrationPage() {
     try {
       const res = await api.members.applyPlayer({
         preferred_position: preferredPosition,
-        jersey_number: Number(jerseyNumber),
+        jersey_number: numVal,
         football_notes: footballNotes,
       });
       setSuccess(res.message);
@@ -109,7 +167,7 @@ export default function PlayerRegistrationPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="text-xs font-semibold text-slate-300 block mb-1">Preferred Position</label>
             <select
@@ -131,17 +189,126 @@ export default function PlayerRegistrationPage() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Squad Jersey Number</label>
-            <input
-              type="number"
-              min="1"
-              max="99"
-              value={jerseyNumber}
-              onChange={(e) => setJerseyNumber(Number(e.target.value))}
-              placeholder="e.g. 10"
-              className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
-              required
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                <Shirt className="w-3.5 h-3.5 text-emerald-400" />
+                Squad Jersey Number (1 - 99)
+              </label>
+              {isTaken && (
+                <button
+                  type="button"
+                  onClick={() => setJerseyNumber(nextAvailableJersey)}
+                  className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Suggest free: #{nextAvailableJersey}
+                </button>
+              )}
+            </div>
+
+            <div className="relative">
+              <input
+                type="number"
+                min="1"
+                max="99"
+                value={jerseyNumber}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? '' : Number(e.target.value);
+                  setJerseyNumber(val);
+                  if (error) setError(null);
+                }}
+                placeholder="e.g. 10"
+                className={`w-full bg-[#161D36] border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none transition-colors ${
+                  isTaken
+                    ? 'border-rose-500 focus:border-rose-400'
+                    : isNumberValid
+                    ? 'border-emerald-500/50 focus:border-emerald-400'
+                    : 'border-[#2C3960]'
+                }`}
+                required
+              />
+              <div className="absolute right-3 top-2.5 pointer-events-none">
+                {isTaken ? (
+                  <span className="text-[10px] font-bold text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/30">
+                    TAKEN
+                  </span>
+                ) : isNumberValid ? (
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                    AVAILABLE
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            {/* In-batch Uniqueness Feedback */}
+            {isTaken && (
+              <div className="mt-2.5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                <div className="flex-1 space-y-1">
+                  <p className="font-bold text-rose-200">
+                    This jersey number (#{numVal}) is already taken in {batchName || 'your batch'}.
+                  </p>
+                  <p className="text-[11px] text-rose-300/90 leading-relaxed">
+                    {takenInfo ? (
+                      <>
+                        Reserved by <span className="font-semibold text-white">{takenInfo.member_name}</span> ({takenInfo.status === 'APPROVED' ? 'Approved Squad Player' : 'Pending Review'}).
+                      </>
+                    ) : (
+                      'Another player in your batch is already registered with this number.'
+                    )}
+                    {' '}Please choose another number for your squad jersey.
+                  </p>
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setJerseyNumber(nextAvailableJersey)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-[10px] transition-colors"
+                    >
+                      <Sparkles className="w-3 h-3 text-emerald-400" />
+                      Pick next free jersey: #{nextAvailableJersey}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!isTaken && isNumberValid && (
+              <p className="mt-1.5 text-[11px] text-emerald-400/90 flex items-center gap-1">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                Jersey #{numVal} is available for {batchName || 'your batch'}!
+              </p>
+            )}
+
+            {/* List of currently taken numbers for transparency */}
+            {takenNumbers.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-[#2C3960]/50">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 mb-2">
+                  <Hash className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Numbers already taken in {batchName || 'your batch'} squad:</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {takenDetails.map((t: any) => (
+                    <span
+                      key={t.jersey_number}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${
+                        t.jersey_number === numVal
+                          ? 'bg-rose-500/30 border-rose-400 text-rose-200'
+                          : 'bg-slate-800/70 border-slate-700 text-slate-300'
+                      }`}
+                      title={`${t.member_name} (${t.status}) - ${t.position}`}
+                    >
+                      #{t.jersey_number}
+                      <span className="text-[9px] font-normal text-slate-400">
+                        {t.member_name?.split(' ')[0]}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-2">
+                  * Note: Different batches can use the same jersey number, but each batch squad must have unique numbers.
+                </p>
+              </div>
+            )}
           </div>
 
           <div>
@@ -157,10 +324,18 @@ export default function PlayerRegistrationPage() {
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.01] mt-4"
+            disabled={loading || isTaken || !isNumberValid}
+            className={`w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg transition-all mt-4 ${
+              isTaken
+                ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+                : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 shadow-emerald-500/20 hover:scale-[1.01]'
+            }`}
           >
-            {loading ? 'Submitting Application...' : 'Submit Player Application'}
+            {loading
+              ? 'Submitting Application...'
+              : isTaken
+              ? `Jersey #${numVal} Is Taken — Choose Another Number`
+              : 'Submit Player Application'}
           </button>
         </form>
       </div>

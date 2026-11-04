@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { UserCog, User, Trophy, Check, ArrowLeft, Camera, Upload, Sparkles, Cloud } from 'lucide-react';
+import { UserCog, User, Trophy, Check, ArrowLeft, Camera, Upload, Sparkles, Cloud, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 
@@ -33,6 +33,10 @@ export default function EditProfilePage() {
   const [currentPhoto, setCurrentPhoto] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string>('');
 
+  // Batch Squad Jersey Availability
+  const [takenNumbers, setTakenNumbers] = useState<number[]>([]);
+  const [batchName, setBatchName] = useState<string>('');
+
   useEffect(() => {
     let active = true;
 
@@ -60,6 +64,17 @@ export default function EditProfilePage() {
             bio: p.bio || '',
           });
           setCurrentPhoto(p.profile_picture || null);
+
+          if (p.competing_batch) {
+            api.members.getBatchJerseys(p.competing_batch)
+              .then((bData) => {
+                if (active && bData) {
+                  setTakenNumbers(bData.taken_numbers || []);
+                  setBatchName(bData.batch_name || '');
+                }
+              })
+              .catch((err) => console.warn('Could not load batch jerseys in profile edit', err));
+          }
         }
         setProfileLoading(false);
       })
@@ -79,6 +94,17 @@ export default function EditProfilePage() {
               bio: p.bio || '',
             });
             setCurrentPhoto(p.profile_picture || null);
+
+            if (p.competing_batch) {
+              api.members.getBatchJerseys(p.competing_batch)
+                .then((bData) => {
+                  if (active && bData) {
+                    setTakenNumbers(bData.taken_numbers || []);
+                    setBatchName(bData.batch_name || '');
+                  }
+                })
+                .catch((err) => console.warn('Could not load batch jerseys in profile edit', err));
+            }
           }
           setProfileLoading(false);
         }
@@ -313,7 +339,7 @@ export default function EditProfilePage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">Preferred Jersey Number</label>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Preferred Jersey Number (1-99)</label>
                 <input
                   type="number"
                   min="1"
@@ -323,6 +349,14 @@ export default function EditProfilePage() {
                   placeholder="e.g. 10"
                   className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
                 />
+                {formData.preferred_jersey_number && takenNumbers.includes(Number(formData.preferred_jersey_number)) && (
+                  <p className="mt-1 text-[11px] text-amber-400 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      #{formData.preferred_jersey_number} is already taken in {batchName || 'your batch'} squad.
+                    </span>
+                  </p>
+                )}
               </div>
 
               <div>
