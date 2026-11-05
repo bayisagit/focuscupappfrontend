@@ -170,6 +170,21 @@ export const apiCache = {
   invalidateMembers(): void {
     apiCache.invalidate('/members');
     apiCache.invalidate('/statistics');
+    apiCache.invalidate('/player-registrations');
+    apiCache.invalidate('/player');
+    apiCache.invalidate('/coach/players');
+    apiCache.invalidate('/coach/dashboard');
+    apiCache.invalidate('/manager/dashboard');
+    apiCache.invalidate('/competitions/batches');
+  },
+
+  invalidatePlayerRegistrations(): void {
+    apiCache.invalidate('/player-registrations');
+    apiCache.invalidate('/player');
+    apiCache.invalidate('/coach/players');
+    apiCache.invalidate('/coach/dashboard');
+    apiCache.invalidate('/manager/dashboard');
+    apiCache.invalidate('/competitions/batches');
   },
 
   /**

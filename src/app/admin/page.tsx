@@ -6,6 +6,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/components/ToastProvider';
+import { apiCache } from '@/lib/cache';
 import {
   Trophy,
   Shield,
@@ -81,6 +83,7 @@ const isPlayerInBatchTeam = (player: any, team: any) => {
 
 export default function FrontendAdminPage() {
   const { user, login } = useAuth();
+  const { showToast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'matches' | 'create-fixture' | 'players' | 'members' | 'coaches' | 'content' | 'audit' | 'reports'>('dashboard');
 
@@ -897,13 +900,24 @@ export default function FrontendAdminPage() {
     setPlayerActionLoading(true);
     try {
       await api.manager.reviewPlayer(regId, status, reviewReason);
-      alert(`Player application ${status.toLowerCase()}!`);
+
+      // 1. Immediately remove the reviewed player from local state so the UI updates instantly
+      setPendingPlayers((prev: any[]) => (Array.isArray(prev) ? prev.filter((p: any) => p.id !== regId) : []));
       setSelectedPlayer(null);
       setReviewReason('');
+
+      // 2. Clear relevant client caches
+      apiCache.invalidatePlayerRegistrations();
+
+      // 3. Show non-blocking success toast
+      showToast(`Player application ${status.toLowerCase()} successfully!`, 'success');
+
+      // 4. Background re-sync with server
       loadPendingPlayers();
       loadDashboard();
     } catch (err: any) {
-      alert(err.data?.error || 'Failed to review player.');
+      const errMsg = err.data?.error || err.message || 'Failed to review player.';
+      showToast(errMsg, 'error');
     } finally {
       setPlayerActionLoading(false);
     }

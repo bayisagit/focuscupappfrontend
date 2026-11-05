@@ -3,9 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/ToastProvider';
+import { apiCache } from '@/lib/cache';
 import { Trophy, Check, X, ArrowLeft, Clock, Filter, AlertCircle } from 'lucide-react';
 
 export default function ManagerPlayersPage() {
+  const { showToast } = useToast();
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState('PENDING');
   const [loading, setLoading] = useState(true);
@@ -14,7 +17,7 @@ export default function ManagerPlayersPage() {
   const loadRegistrations = () => {
     setLoading(true);
     api.manager.getPlayerRegistrations(statusFilter)
-      .then((data) => setRegistrations(data))
+      .then((data) => setRegistrations(Array.isArray(data) ? data : data?.results || []))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
   };
@@ -34,10 +37,19 @@ export default function ManagerPlayersPage() {
     setActionLoading((prev) => ({ ...prev, [id]: true }));
     try {
       const res = await api.manager.reviewPlayer(id, status, reason);
-      alert(res.message);
+      
+      // Optimistic update: immediately remove from pending list or update status
+      if (statusFilter === 'PENDING') {
+        setRegistrations((prev) => prev.filter((r) => r.id !== id));
+      } else {
+        setRegistrations((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
+      }
+
+      apiCache.invalidatePlayerRegistrations();
+      showToast(res.message || `Player application ${status.toLowerCase()} successfully!`, 'success');
       loadRegistrations();
     } catch (err: any) {
-      alert(err.data?.error || 'Failed to review player application.');
+      showToast(err.data?.error || 'Failed to review player application.', 'error');
     } finally {
       setActionLoading((prev) => ({ ...prev, [id]: false }));
     }

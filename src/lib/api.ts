@@ -79,8 +79,9 @@ async function fetchAPI<T>(endpoint: string, options: FetchAPIOptions = {}): Pro
     } else if (endpoint.includes('/gallery')) {
       apiCache.invalidate('/api/v1/community/gallery/');
       apiCache.invalidate('/api/v1/community/gallery/upload/');
-    } else if (endpoint.includes('/members') || endpoint.includes('/player')) {
+    } else if (endpoint.includes('/members') || endpoint.includes('/player') || endpoint.includes('/coach')) {
       apiCache.invalidateMembers();
+      apiCache.invalidatePlayerRegistrations();
     } else if (endpoint.includes('/settings')) {
       apiCache.invalidate('/settings');
     } else {
@@ -311,7 +312,7 @@ export const api = {
     }),
     getPlayerRegistrations: (status?: string) => {
       const qs = status ? `?status=${status}` : '';
-      return fetchAPI<any>(`/api/v1/manager/player-registrations/${qs}`);
+      return fetchAPI<any>(`/api/v1/manager/player-registrations/${qs}`, { skipCache: true });
     },
     reviewPlayer: (registrationId: number, status: 'APPROVED' | 'REJECTED', reason?: string) =>
       fetchAPI<any>(`/api/v1/manager/player-registrations/${registrationId}/review/`, {
@@ -409,7 +410,7 @@ export const api = {
   coach: {
     getDashboard: () => fetchAPI<any>('/api/v1/coach/dashboard/'),
     getPlayers: (status?: string) =>
-      fetchAPI<any>(`/api/v1/coach/players/${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+      fetchAPI<any>(`/api/v1/coach/players/${status ? `?status=${encodeURIComponent(status)}` : ''}`, { skipCache: true }),
     reviewPlayer: (registrationId: number, data: { status: 'APPROVED' | 'REJECTED'; reason?: string; jersey_number?: number }) =>
       fetchAPI<any>(`/api/v1/coach/players/${registrationId}/review/`, {
         method: 'POST',

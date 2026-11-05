@@ -30,10 +30,13 @@ import {
 } from 'lucide-react';
 import LineupPosterGenerator, { SquadPlayerItem } from '@/components/LineupPosterGenerator';
 import BatchPhotoLightbox from '@/components/BatchPhotoLightbox';
+import { useToast } from '@/components/ToastProvider';
+import { apiCache } from '@/lib/cache';
 
 export default function CoachPortalPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'applications' | 'lineups' | 'poster'>('overview');
   const [loading, setLoading] = useState(true);
@@ -186,27 +189,38 @@ export default function CoachPortalPage() {
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewModal.app) return;
+    const appId = reviewModal.app.id;
+    const action = reviewModal.action;
     setSubmittingReview(true);
     try {
       const payload: any = {
-        status: reviewModal.action,
+        status: action,
         reason: reviewModal.reason,
       };
-      if (reviewModal.action === 'APPROVE' && reviewModal.jersey) {
+      if (action === 'APPROVE' && reviewModal.jersey) {
         payload.jersey_number = parseInt(reviewModal.jersey, 10);
       }
-      const res = await api.coach.reviewPlayer(reviewModal.app.id, payload);
-      alert(res.message || 'Application updated successfully!');
+      const res = await api.coach.reviewPlayer(appId, payload);
+
+      // 1. Immediately remove from local state and close modal
+      setApplications((prev) => (Array.isArray(prev) ? prev.filter((a) => a.id !== appId) : []));
       setReviewModal({ open: false, app: null, action: 'APPROVE', jersey: '', reason: '' });
-      // Refresh applications and stats
+
+      // 2. Clear relevant cache
+      apiCache.invalidatePlayerRegistrations();
+
+      // 3. Show smooth toast
+      showToast(res.message || `Player application ${action.toLowerCase()}d successfully!`, 'success');
+
+      // 4. Refresh applications and stats in background
       const [updatedApps, data] = await Promise.all([
         api.coach.getPlayers(),
         api.coach.getDashboard(),
       ]);
-      setApplications(updatedApps || []);
-      setDashboardData(data);
+      if (updatedApps) setApplications(updatedApps);
+      if (data) setDashboardData(data);
     } catch (err: any) {
-      alert(err.data?.error || err.message || 'Failed to update application.');
+      showToast(err.data?.error || err.message || 'Failed to update application.', 'error');
     } finally {
       setSubmittingReview(false);
     }
