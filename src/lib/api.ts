@@ -245,8 +245,14 @@ export const api = {
       if (seasonId) params.append('season', seasonId.toString());
       return fetchAPI<any>(`/api/v1/statistics/top-assists/?${params.toString()}`);
     },
-    getMostFollowed: (limit = 10, batch?: string) => {
-      const params = new URLSearchParams({ limit: limit.toString() });
+    getMostFollowed: (limit: number | string = 20, batch?: string) => {
+      const params = new URLSearchParams();
+      if (limit === 'all' || limit === 500) {
+        params.append('all', 'true');
+        params.append('limit', '500');
+      } else {
+        params.append('limit', limit.toString());
+      }
       if (batch) params.append('batch', batch);
       return fetchAPI<any>(`/api/v1/statistics/most-followed/?${params.toString()}`);
     },
