@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { Users, Search, Shield, Ban, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Users, Search, Shield, Ban, CheckCircle, ArrowLeft, ShieldCheck } from 'lucide-react';
 
 export default function ManagerMembersPage() {
   const { user } = useAuth();
@@ -50,6 +50,13 @@ export default function ManagerMembersPage() {
       <div className="mb-6 flex items-center justify-between">
         <Link href="/manager/dashboard" className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 font-semibold">
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+        </Link>
+        <Link
+          href="/admin"
+          className="px-3.5 py-1.5 rounded-xl bg-purple-600/20 text-purple-300 hover:bg-purple-600/30 border border-purple-500/40 text-xs font-bold transition-all flex items-center gap-1.5"
+        >
+          <ShieldCheck className="w-4 h-4 text-purple-400" />
+          <span>Batch Coaches &amp; Admin Central &rarr;</span>
         </Link>
       </div>
 

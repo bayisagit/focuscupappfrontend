@@ -82,7 +82,24 @@ const isPlayerInBatchTeam = (player: any, team: any) => {
 export default function FrontendAdminPage() {
   const { user, login } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'matches' | 'create-fixture' | 'players' | 'members' | 'content' | 'audit' | 'reports'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'matches' | 'create-fixture' | 'players' | 'members' | 'coaches' | 'content' | 'audit' | 'reports'>('dashboard');
+
+  // Batch Coaches Management State
+  const [coachesData, setCoachesData] = useState<any[]>([]);
+  const [coachesLoading, setCoachesLoading] = useState(false);
+  const [appointModalOpen, setAppointModalOpen] = useState(false);
+  const [selectedBatchForCoach, setSelectedBatchForCoach] = useState<any>(null);
+  const [appointMemberId, setAppointMemberId] = useState('');
+  const [appointUsername, setAppointUsername] = useState('');
+  const [appointPassword, setAppointPassword] = useState('');
+  const [showAppointPassword, setShowAppointPassword] = useState(false);
+  const [appointLoading, setAppointLoading] = useState(false);
+  const [appointError, setAppointError] = useState('');
+  const [appointSuccess, setAppointSuccess] = useState('');
+  const [revokeModalOpen, setRevokeModalOpen] = useState(false);
+  const [revokeBatchTarget, setRevokeBatchTarget] = useState<any>(null);
+  const [revokeLoading, setRevokeLoading] = useState(false);
+  const [squadDetails, setSquadDetails] = useState<any>(null);
 
   // Collapsible Sidebar States
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -396,6 +413,83 @@ export default function FrontendAdminPage() {
     }
   };
 
+  // Batch Coaches Handlers
+  const loadCoaches = async () => {
+    setCoachesLoading(true);
+    try {
+      const res = await api.manager.getCoaches();
+      setCoachesData(res.batches || []);
+    } catch (err: any) {
+      console.error('Failed to load coaches:', err);
+      setCoachesData([]);
+    } finally {
+      setCoachesLoading(false);
+    }
+  };
+
+  const handleOpenAppointCoach = (batch: any) => {
+    setSelectedBatchForCoach(batch);
+    const defaultUsername = `coach_${(batch.batch_code || '').toLowerCase()}`;
+    setAppointUsername(defaultUsername);
+    setAppointPassword('');
+    setShowAppointPassword(false);
+    setAppointError('');
+    setAppointSuccess('');
+    setAppointMemberId(batch.coach?.member_id ? String(batch.coach.member_id) : '');
+    setAppointModalOpen(true);
+  };
+
+  const handleAssignCoachSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBatchForCoach || !appointMemberId || !appointUsername.trim() || !appointPassword) {
+      setAppointError('Please select a member, set a username, and enter a password.');
+      return;
+    }
+    if (appointPassword.length < 6) {
+      setAppointError('Password must be at least 6 characters.');
+      return;
+    }
+    setAppointLoading(true);
+    setAppointError('');
+    setAppointSuccess('');
+    try {
+      const res = await api.manager.assignCoach({
+        batch_code: selectedBatchForCoach.batch_code,
+        member_id: Number(appointMemberId),
+        username: appointUsername.trim(),
+        password: appointPassword,
+      });
+      setAppointSuccess(res.message || 'Coach appointed successfully!');
+      await loadCoaches();
+      loadAuditLogs();
+      setTimeout(() => {
+        setAppointModalOpen(false);
+        setAppointSuccess('');
+      }, 1500);
+    } catch (err: any) {
+      setAppointError(err?.data?.error || err?.message || 'Failed to appoint coach.');
+    } finally {
+      setAppointLoading(false);
+    }
+  };
+
+  const handleRevokeCoachSubmit = async () => {
+    if (!revokeBatchTarget) return;
+    setRevokeLoading(true);
+    try {
+      const res = await api.manager.revokeCoach(revokeBatchTarget.batch_code);
+      alert(res.message || 'Coach role revoked successfully.');
+      setRevokeModalOpen(false);
+      setRevokeBatchTarget(null);
+      await loadCoaches();
+      loadAuditLogs();
+    } catch (err: any) {
+      alert(err?.data?.error || err?.message || 'Failed to revoke coach role.');
+    } finally {
+      setRevokeLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (user?.is_manager) {
       loadDashboard();
@@ -406,6 +500,7 @@ export default function FrontendAdminPage() {
       loadSettings();
       loadBatchTeams();
       loadAnnouncements();
+      loadCoaches();
     }
   }, [user]);
 
@@ -559,6 +654,7 @@ export default function FrontendAdminPage() {
     setSquadErrorMsg('');
     try {
       const res = await api.manager.getMatchSquad(matchId);
+      setSquadDetails(res);
       setHomeEligiblePlayers(res.home_eligible_players || []);
       setAwayEligiblePlayers(res.away_eligible_players || []);
       setHomeSquadList(res.home_squad || []);
@@ -1159,6 +1255,26 @@ export default function FrontendAdminPage() {
                 >
                   <Users className="w-4 h-4 text-emerald-400 shrink-0" />
                   {!sidebarCollapsed && <span>Member Directory</span>}
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('coaches'); setMobileSidebarOpen(false); }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'coaches'
+                      ? 'bg-purple-600/80 text-white font-bold'
+                      : 'text-slate-300 hover:text-white hover:bg-[#161D36]'
+                  }`}
+                  title="Batch Coaches Administration"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
+                    {!sidebarCollapsed && <span>Batch Coaches</span>}
+                  </div>
+                  {!sidebarCollapsed && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-900/60 text-purple-200 border border-purple-500/30 font-bold">
+                      4 Batches
+                    </span>
+                  )}
                 </button>
 
                 <Link
@@ -2081,6 +2197,21 @@ export default function FrontendAdminPage() {
                         <div>
                           <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Home Batch</span>
                           <h4 className="text-base font-black text-white">{selectedMatch.home_team.name}</h4>
+                          {squadDetails?.home_team?.coach_name && (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
+                                <ShieldCheck className="w-3 h-3 text-purple-400" />
+                                Coach: {squadDetails.home_team.coach_name}
+                              </span>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                squadDetails.home_lineup_submitted
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              }`}>
+                                {squadDetails.home_lineup_submitted ? '✓ Coach Lineup Submitted' : '⏳ Lineup Pending'}
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -2263,6 +2394,21 @@ export default function FrontendAdminPage() {
                         <div>
                           <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400">Away Batch</span>
                           <h4 className="text-base font-black text-white">{selectedMatch.away_team.name}</h4>
+                          {squadDetails?.away_team?.coach_name && (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
+                                <ShieldCheck className="w-3 h-3 text-purple-400" />
+                                Coach: {squadDetails.away_team.coach_name}
+                              </span>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                squadDetails.away_lineup_submitted
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              }`}>
+                                {squadDetails.away_lineup_submitted ? '✓ Coach Lineup Submitted' : '⏳ Lineup Pending'}
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -3046,6 +3192,193 @@ export default function FrontendAdminPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB: BATCH COACHES ADMINISTRATION */}
+      {/* ========================================================================= */}
+      {activeTab === 'coaches' && (
+        <div className="space-y-6">
+          <div className="card-gloss p-6 sm:p-8 rounded-3xl border border-purple-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-600/30 shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                  Batch Coaches Administration
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Appoint dedicated coaches per academic batch (2nd, 3rd, 4th, 5th Year). Coaches receive separate credentials to manage applications and submit official lineups via <code className="text-purple-300 font-mono">/coach</code>.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={loadCoaches}
+                disabled={coachesLoading}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${coachesLoading ? 'animate-spin' : ''}`} />
+                <span>Refresh Coaches</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Batches Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {coachesLoading && coachesData.length === 0 ? (
+              <div className="col-span-2 card-gloss p-12 text-center text-slate-400">
+                <RefreshCw className="w-6 h-6 animate-spin text-purple-400 mx-auto mb-2" />
+                <p className="text-xs">Loading batch coach data...</p>
+              </div>
+            ) : coachesData.length === 0 ? (
+              <div className="col-span-2 card-gloss p-12 text-center text-slate-400">
+                <Shield className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+                <p className="text-xs">No batch teams configured yet.</p>
+              </div>
+            ) : (
+              coachesData.map((batch: any) => {
+                const hasCoach = !!batch.coach;
+                return (
+                  <div
+                    key={batch.batch_id || batch.batch_code}
+                    className="card-gloss p-6 rounded-3xl border border-[#2C3960]/80 hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-5"
+                  >
+                    <div>
+                      {/* Card Header */}
+                      <div className="flex items-center justify-between gap-3 border-b border-[#2C3960]/60 pb-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-md"
+                            style={{
+                              background: batch.primary_color
+                                ? `linear-gradient(135deg, ${batch.primary_color}, #0B0E1A)`
+                                : 'linear-gradient(135deg, #7C3AED, #4338CA)',
+                              borderColor: batch.primary_color || '#8B5CF6',
+                            }}
+                          >
+                            {batch.batch_code || `${batch.year_number}th`}
+                          </div>
+                          <div>
+                            <h3 className="text-base font-black text-white">{batch.name}</h3>
+                            <span className="text-[11px] text-slate-400 font-mono">
+                              Batch Code: {batch.batch_code} &bull; {batch.eligible_members?.length || 0} Registered Members
+                            </span>
+                          </div>
+                        </div>
+
+                        {hasCoach ? (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Coach Assigned
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            No Coach
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Coach Details Body */}
+                      <div className="mt-4">
+                        {hasCoach ? (
+                          <div className="p-4 rounded-2xl bg-[#161D36]/80 border border-[#2C3960]/70 flex items-start gap-4">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600/30 to-indigo-600/30 border-2 border-purple-500/40 flex items-center justify-center text-purple-200 font-black text-base shrink-0 overflow-hidden shadow-inner">
+                              {batch.coach.photo_url ? (
+                                <img
+                                  src={batch.coach.photo_url}
+                                  alt={batch.coach.full_name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span>{(batch.coach.full_name || 'C')[0]}</span>
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-sm font-bold text-white truncate flex items-center gap-2">
+                                <span>{batch.coach.full_name}</span>
+                                {batch.coach.jersey_number && (
+                                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono font-bold">
+                                    #{batch.coach.jersey_number} Player-Coach
+                                  </span>
+                                )}
+                              </h4>
+                              <p className="text-xs text-slate-400 truncate mt-0.5">
+                                {batch.coach.department || 'Academic Member'}
+                              </p>
+
+                              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0E162E] border border-purple-500/30 text-[11px] font-mono text-purple-300">
+                                  <Lock className="w-3 h-3 text-purple-400" />
+                                  <span>Portal Login: <strong>@{batch.coach.username}</strong></span>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-5 rounded-2xl bg-[#161D36]/40 border border-dashed border-[#2C3960] text-center space-y-2">
+                            <Shield className="w-8 h-8 text-slate-500 mx-auto" />
+                            <p className="text-xs text-slate-300 font-semibold">
+                              No dedicated coach assigned for {batch.name}
+                            </p>
+                            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                              The tournament manager directly handles approvals and matchday lineups for this batch until a coach is appointed.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card Actions */}
+                    <div className="border-t border-[#2C3960]/60 pt-4 flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[11px] text-slate-400">
+                        {batch.eligible_members?.length || 0} eligible candidates
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        {hasCoach ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRevokeBatchTarget(batch);
+                                setRevokeModalOpen(true);
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-all cursor-pointer"
+                            >
+                              Revoke Role
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAppointCoach(batch)}
+                              className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md shadow-purple-600/25 transition-all cursor-pointer flex items-center gap-1.5"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                              <span>Reassign / Update</span>
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAppointCoach(batch)}
+                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-600/30 transition-all cursor-pointer flex items-center gap-1.5"
+                          >
+                            <PlusCircle className="w-3.5 h-3.5" />
+                            <span>Appoint Batch Coach</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}
@@ -4122,6 +4455,253 @@ export default function FrontendAdminPage() {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================================= */}
+      {/* APPOINT / REASSIGN BATCH COACH MODAL (PORTAL) */}
+      {/* ========================================================================= */}
+      {mounted && appointModalOpen && selectedBatchForCoach && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[999999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5"
+          onClick={() => {
+            if (!appointLoading) setAppointModalOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-lg rounded-3xl border border-purple-500/40 bg-[#0E162E] text-white shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-[#2C3960]/60 flex items-center justify-between gap-3 bg-[#0E162E]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    {selectedBatchForCoach.coach ? 'Reassign Batch Coach' : 'Appoint Batch Coach'}
+                  </h3>
+                  <p className="text-xs text-purple-300">
+                    {selectedBatchForCoach.name} ({selectedBatchForCoach.batch_code})
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                disabled={appointLoading}
+                onClick={() => setAppointModalOpen(false)}
+                className="p-2 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body / Form */}
+            <form id="appoint-coach-form" onSubmit={handleAssignCoachSubmit} className="p-5 space-y-4">
+              {appointSuccess && (
+                <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 shrink-0 text-emerald-400" />
+                  <span>{appointSuccess}</span>
+                </div>
+              )}
+
+              {appointError && (
+                <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>{appointError}</span>
+                </div>
+              )}
+
+              {/* Two Credentials Notice */}
+              <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-200 space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-purple-300">
+                  <Shield className="w-3.5 h-3.5 text-purple-400" />
+                  Two Credentials System
+                </div>
+                <p className="text-[11px] leading-relaxed text-slate-300">
+                  The selected member will be granted a <strong>dedicated Coach Account</strong> to manage batch applications and submit matchday starting line-ups at <code className="text-purple-300 font-mono">/coach</code>. Their personal member account remains separate for pitch participation.
+                </p>
+              </div>
+
+              {/* Step 1: Select Member */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  1. Select Member from {selectedBatchForCoach.name} <span className="text-rose-400">*</span>
+                </label>
+                {selectedBatchForCoach.eligible_members?.length > 0 ? (
+                  <select
+                    value={appointMemberId}
+                    onChange={(e) => {
+                      setAppointMemberId(e.target.value);
+                      const m = selectedBatchForCoach.eligible_members.find((x: any) => String(x.id) === e.target.value);
+                      if (m && !appointUsername) {
+                        setAppointUsername(`coach_${(m.full_name || 'batch').toLowerCase().split(' ')[0]}`);
+                      }
+                    }}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                  >
+                    <option value="">-- Choose an approved member --</option>
+                    {selectedBatchForCoach.eligible_members.map((m: any) => (
+                      <option key={m.id} value={m.id}>
+                        {m.full_name} {m.jersey_number ? `(#${m.jersey_number})` : ''} - {m.department || 'Member'}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
+                    ⚠️ No approved members found for this batch. Members must apply and be approved first.
+                  </div>
+                )}
+              </div>
+
+              {/* Step 2: Dedicated Coach Username */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  2. Coach Account Username <span className="text-rose-400">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs">@</span>
+                  <input
+                    type="text"
+                    value={appointUsername}
+                    onChange={(e) => setAppointUsername(e.target.value)}
+                    placeholder={`coach_${(selectedBatchForCoach.batch_code || '').toLowerCase()}`}
+                    required
+                    className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Unique username used solely for the coach login.
+                </p>
+              </div>
+
+              {/* Step 3: Dedicated Coach Password */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  3. Coach Account Password <span className="text-rose-400">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showAppointPassword ? 'text' : 'password'}
+                    value={appointPassword}
+                    onChange={(e) => setAppointPassword(e.target.value)}
+                    placeholder="Enter secure password (min 6 chars)"
+                    required
+                    minLength={6}
+                    className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAppointPassword(!showAppointPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  >
+                    {showAppointPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Share this password with the appointed coach for their coaching duties.
+                </p>
+              </div>
+            </form>
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-[#2C3960]/60 shrink-0 flex items-center justify-end gap-3 bg-[#0E162E]">
+              <button
+                type="button"
+                disabled={appointLoading}
+                onClick={() => setAppointModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs cursor-pointer transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="appoint-coach-form"
+                disabled={appointLoading || !appointMemberId || !appointUsername || !appointPassword}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {appointLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Appointing Coach...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Confirm &amp; Appoint Coach</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================================= */}
+      {/* REVOKE COACH ROLE CONFIRMATION MODAL (PORTAL) */}
+      {/* ========================================================================= */}
+      {mounted && revokeModalOpen && revokeBatchTarget && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[999999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5"
+          onClick={() => {
+            if (!revokeLoading) setRevokeModalOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border border-rose-500/40 bg-[#0E162E] text-white shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-7 h-7" />
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-white">Revoke Coach Role?</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Are you sure you want to revoke coach permissions for <strong className="text-white">{revokeBatchTarget.name}</strong>?
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 text-left">
+                ⚠️ The coach login credentials (<code className="font-mono font-bold">@{revokeBatchTarget.coach?.username}</code>) will be deactivated. Roster and lineup management will revert completely to tournament managers. The member's playing profile will remain untouched.
+              </div>
+
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={revokeLoading}
+                  onClick={() => setRevokeModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs cursor-pointer transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={revokeLoading}
+                  onClick={handleRevokeCoachSubmit}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {revokeLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Revoking...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>Yes, Revoke Role</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>,

@@ -25,6 +25,8 @@ export default function LoginPage() {
       const user = await login({ username, password });
       if (user.is_manager) {
         router.push('/admin');
+      } else if (user.is_coach || user.role === 'COACH') {
+        router.push('/coach');
       } else {
         router.push('/');
       }

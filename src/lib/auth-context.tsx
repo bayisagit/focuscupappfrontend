@@ -31,8 +31,13 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  role: 'MEMBER' | 'MANAGER';
+  role: 'MEMBER' | 'MANAGER' | 'COACH';
   is_manager: boolean;
+  is_coach?: boolean;
+  coached_batch?: string | null;
+  coached_batch_name?: string | null;
+  coached_batch_id?: number | null;
+  coached_team?: any;
   profile?: UserProfile | null;
   player_registration?: any;
 }

@@ -392,5 +392,35 @@ export const api = {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     },
-  }
+    getCoaches: () => fetchAPI<any>('/api/v1/manager/coaches/'),
+    assignCoach: (data: { batch_code: string; member_id: number; username: string; password: string }) =>
+      fetchAPI<any>('/api/v1/manager/coaches/assign/', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    revokeCoach: (batch_code: string) =>
+      fetchAPI<any>('/api/v1/manager/coaches/revoke/', {
+        method: 'POST',
+        body: JSON.stringify({ batch_code }),
+      }),
+  },
+
+  // Dedicated Coach Portal Endpoints
+  coach: {
+    getDashboard: () => fetchAPI<any>('/api/v1/coach/dashboard/'),
+    getPlayers: (status?: string) =>
+      fetchAPI<any>(`/api/v1/coach/players/${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+    reviewPlayer: (registrationId: number, data: { status: 'APPROVED' | 'REJECTED'; reason?: string; jersey_number?: number }) =>
+      fetchAPI<any>(`/api/v1/coach/players/${registrationId}/review/`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    getMatches: () => fetchAPI<any>('/api/v1/coach/matches/'),
+    getMatchSquad: (matchId: number) => fetchAPI<any>(`/api/v1/coach/matches/${matchId}/squad/`),
+    saveMatchSquad: (matchId: number, squad: any[]) =>
+      fetchAPI<any>(`/api/v1/coach/matches/${matchId}/squad/`, {
+        method: 'POST',
+        body: JSON.stringify({ squad }),
+      }),
+  },
 };

@@ -24,6 +24,7 @@ import {
   Lock,
   Smartphone,
   Download,
+  Shield,
 } from 'lucide-react';
 import { Suspense } from 'react';
 
@@ -152,6 +153,21 @@ function NavbarContent() {
               </Link>
             )}
 
+            {mounted && (user?.is_coach || user?.role === 'COACH') && (
+              <Link
+                href="/coach"
+                className="px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold hover:bg-emerald-500 hover:text-slate-950 transition-all flex items-center gap-1.5 shadow-sm"
+              >
+                <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Coach Portal</span>
+                {user.coached_batch_name && (
+                  <span className="hidden xl:inline text-[10px] text-emerald-400 font-normal">
+                    ({user.coached_batch_name})
+                  </span>
+                )}
+              </Link>
+            )}
+
             {/* Notification Bell Button */}
             {mounted && user && (
               <Link
@@ -257,6 +273,17 @@ function NavbarContent() {
                       >
                         <LayoutDashboard className="w-4 h-4 mr-2.5 text-purple-400" />
                         Admin Command Center
+                      </Link>
+                    )}
+
+                    {(user.is_coach || user.role === 'COACH') && (
+                      <Link
+                        href="/coach"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center px-4 py-2.5 text-xs text-emerald-300 hover:bg-emerald-500/10 border-t border-[#2C3960]/60 font-bold"
+                      >
+                        <Shield className="w-4 h-4 mr-2.5 text-emerald-400" />
+                        Coach Portal ({user.coached_batch_name || 'My Batch'})
                       </Link>
                     )}
 
@@ -432,6 +459,15 @@ function NavbarContent() {
                     className="block px-3 py-2 text-sm text-purple-400 font-bold"
                   >
                     Admin Command Center
+                  </Link>
+                )}
+                {(user.is_coach || user.role === 'COACH') && (
+                  <Link
+                    href="/coach"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 text-sm text-emerald-400 font-bold"
+                  >
+                    Coach Portal ({user.coached_batch_name || 'My Batch'})
                   </Link>
                 )}
                 <button
