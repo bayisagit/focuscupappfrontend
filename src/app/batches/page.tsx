@@ -99,10 +99,16 @@ export default function BatchesIndexPage() {
               </p>
             </div>
 
-            <div className="pt-4 border-t border-[#2C3960]/60 flex items-center justify-between text-xs">
-              <span className="text-emerald-400 font-bold">
-                {b.approved_players} Approved Squad Players
-              </span>
+            <div className="pt-4 border-t border-[#2C3960]/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="text-blue-400 font-bold">
+                  {b.total_members || 0} Registered
+                </span>
+                <span className="text-slate-600">&bull;</span>
+                <span className="text-emerald-400 font-bold">
+                  {b.approved_players} Squad
+                </span>
+              </div>
               <span className="text-white group-hover:translate-x-1.5 transition-transform flex items-center gap-1 font-bold">
                 View Batch <ArrowRight className="w-3.5 h-3.5" />
               </span>
