@@ -938,23 +938,24 @@ export default function CoachPortalPage() {
 
       {/* TAB 4: LINEUP POSTER STUDIO */}
       {activeTab === 'poster' && selectedMatch && (
-        <div className="space-y-6 animate-in fade-in duration-200">
-          <div className="card-gloss p-6 rounded-3xl border border-[#2C3960]">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-6 border-b border-[#2C3960]/60">
-              <div>
-                <h3 className="text-base font-black text-white flex items-center gap-2">
-                  <FileImage className="w-5 h-5 text-emerald-400" />
-                  Starting Lineup Poster Generator
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Generate, preview, and download broadcast-quality Starting XI posters (1080x1440 HD PNG) for {team?.name}.
-                </p>
-              </div>
+        <div className="space-y-6">
+          <div className="p-4 sm:p-5 rounded-3xl bg-[#161D36] border border-[#2C3960] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+            <div>
+              <h3 className="text-base font-black text-white flex items-center gap-2">
+                <FileImage className="w-5 h-5 text-emerald-400" />
+                Lineup Poster Studio &bull; {team?.name}
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Generate, preview, and download broadcast-quality Starting XI posters (1080x1440 HD PNG) for {team?.name}.
+              </p>
+            </div>
 
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider shrink-0">Fixture:</span>
               <select
                 value={selectedMatchId || ''}
                 onChange={(e) => setSelectedMatchId(Number(e.target.value))}
-                className="bg-[#161D36] border border-[#2C3960] rounded-xl px-4 py-2 text-xs text-white font-semibold focus:outline-none focus:border-emerald-500 cursor-pointer"
+                className="bg-[#0B132B] border border-[#2C3960] rounded-xl px-4 py-2 text-xs text-white font-bold focus:outline-none focus:border-emerald-500 cursor-pointer shadow-inner"
               >
                 {matches.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -963,66 +964,67 @@ export default function CoachPortalPage() {
                 ))}
               </select>
             </div>
-
-            {/* Embedded LineupPosterGenerator */}
-            <LineupPosterGenerator
-              match={{
-                id: selectedMatch.id,
-                round_number: selectedMatch.round_number,
-                match_date: selectedMatch.match_date,
-                kick_off_time: selectedMatch.kick_off_time,
-                venue: selectedMatch.venue,
-                home_team: {
-                  id: selectedMatch.is_home ? team.id : selectedMatch.opponent.id,
-                  name: selectedMatch.is_home ? team.name : selectedMatch.opponent.name,
-                  batch_code: selectedMatch.is_home ? team.batch_code : selectedMatch.opponent.batch_code,
-                  color_hex: selectedMatch.is_home ? team.color_hex : selectedMatch.opponent.color_hex,
-                  photo_url: selectedMatch.is_home ? team.photo_url : selectedMatch.opponent.photo_url,
-                },
-                away_team: {
-                  id: selectedMatch.is_home ? selectedMatch.opponent.id : team.id,
-                  name: selectedMatch.is_home ? selectedMatch.opponent.name : team.name,
-                  batch_code: selectedMatch.is_home ? selectedMatch.opponent.batch_code : team.batch_code,
-                  color_hex: selectedMatch.is_home ? selectedMatch.opponent.color_hex : team.color_hex,
-                  photo_url: selectedMatch.is_home ? selectedMatch.opponent.photo_url : team.photo_url,
-                },
-              }}
-              homeSquad={
-                selectedMatch.is_home
-                  ? Object.entries(selectedSquadMap).map(([pid, s]) => {
-                      const p = eligiblePlayers.find((pl: any) => pl.id === Number(pid));
-                      return {
-                        id: pid,
-                        player_id: pid,
-                        player_name: p?.full_name || 'Player',
-                        jersey_number: s.jersey_number,
-                        is_starter: s.is_starter,
-                        is_goalkeeper: s.is_goalkeeper,
-                        avatar_url: p?.avatar_url,
-                      };
-                    })
-                  : []
-              }
-              awaySquad={
-                !selectedMatch.is_home
-                  ? Object.entries(selectedSquadMap).map(([pid, s]) => {
-                      const p = eligiblePlayers.find((pl: any) => pl.id === Number(pid));
-                      return {
-                        id: pid,
-                        player_id: pid,
-                        player_name: p?.full_name || 'Player',
-                        jersey_number: s.jersey_number,
-                        is_starter: s.is_starter,
-                        is_goalkeeper: s.is_goalkeeper,
-                        avatar_url: p?.avatar_url,
-                      };
-                    })
-                  : []
-              }
-              isOpen={true}
-              onClose={() => setActiveTab('overview')}
-            />
           </div>
+
+          {/* Embedded LineupPosterGenerator with full vertical visibility */}
+          <LineupPosterGenerator
+            match={{
+              id: selectedMatch.id,
+              round_number: selectedMatch.round_number,
+              match_date: selectedMatch.match_date,
+              kick_off_time: selectedMatch.kick_off_time,
+              venue: selectedMatch.venue,
+              home_team: {
+                id: selectedMatch.is_home ? team.id : selectedMatch.opponent.id,
+                name: selectedMatch.is_home ? team.name : selectedMatch.opponent.name,
+                batch_code: selectedMatch.is_home ? team.batch_code : selectedMatch.opponent.batch_code,
+                color_hex: selectedMatch.is_home ? team.color_hex : selectedMatch.opponent.color_hex,
+                photo_url: selectedMatch.is_home ? team.photo_url : selectedMatch.opponent.photo_url,
+              },
+              away_team: {
+                id: selectedMatch.is_home ? selectedMatch.opponent.id : team.id,
+                name: selectedMatch.is_home ? selectedMatch.opponent.name : team.name,
+                batch_code: selectedMatch.is_home ? selectedMatch.opponent.batch_code : team.batch_code,
+                color_hex: selectedMatch.is_home ? selectedMatch.opponent.color_hex : team.color_hex,
+                photo_url: selectedMatch.is_home ? selectedMatch.opponent.photo_url : team.photo_url,
+              },
+            }}
+            homeSquad={
+              selectedMatch.is_home
+                ? Object.entries(selectedSquadMap).map(([pid, s]) => {
+                    const p = eligiblePlayers.find((pl: any) => pl.id === Number(pid));
+                    return {
+                      id: pid,
+                      player_id: pid,
+                      player_name: p?.full_name || 'Player',
+                      jersey_number: s.jersey_number,
+                      is_starter: s.is_starter,
+                      is_goalkeeper: s.is_goalkeeper,
+                      avatar_url: p?.avatar_url,
+                    };
+                  })
+                : []
+            }
+            awaySquad={
+              !selectedMatch.is_home
+                ? Object.entries(selectedSquadMap).map(([pid, s]) => {
+                    const p = eligiblePlayers.find((pl: any) => pl.id === Number(pid));
+                    return {
+                      id: pid,
+                      player_id: pid,
+                      player_name: p?.full_name || 'Player',
+                      jersey_number: s.jersey_number,
+                      is_starter: s.is_starter,
+                      is_goalkeeper: s.is_goalkeeper,
+                      avatar_url: p?.avatar_url,
+                    };
+                  })
+                : []
+            }
+            isOpen={true}
+            embedded={true}
+            onClose={() => setActiveTab('overview')}
+          />
         </div>
       )}
 

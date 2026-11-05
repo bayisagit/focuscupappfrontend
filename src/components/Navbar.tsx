@@ -37,6 +37,19 @@ function NavbarContent() {
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  const isCoach = Boolean(user && (user.role === 'COACH' || user.is_coach) && !user.is_manager);
+  const coachPhotoUrl =
+    user?.coach_avatar_url ||
+    user?.coach_photo_url ||
+    user?.coach_member?.photo_url ||
+    user?.coach_member?.avatar_url ||
+    user?.coached_team?.coach_photo_url ||
+    (user?.profile as any)?.avatar_url ||
+    user?.profile?.profile_picture ||
+    (user?.profile as any)?.profile_picture_url ||
+    null;
+  const coachName = user?.coach_name || user?.coach_member?.full_name || user?.profile?.full_name || user?.username || 'Coach';
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -153,21 +166,6 @@ function NavbarContent() {
               </Link>
             )}
 
-            {mounted && (user?.is_coach || user?.role === 'COACH') && (
-              <Link
-                href="/coach"
-                className="px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold hover:bg-emerald-500 hover:text-slate-950 transition-all flex items-center gap-1.5 shadow-sm"
-              >
-                <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Coach Portal</span>
-                {user.coached_batch_name && (
-                  <span className="hidden xl:inline text-[10px] text-emerald-400 font-normal">
-                    ({user.coached_batch_name})
-                  </span>
-                )}
-              </Link>
-            )}
-
             {/* Notification Bell Button */}
             {mounted && user && (
               <Link
@@ -188,7 +186,84 @@ function NavbarContent() {
               </Link>
             )}
 
-            {mounted && user ? (
+            {/* Coach Portal / User Profile Dropdown */}
+            {mounted && user && isCoach ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center space-x-2.5 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 hover:bg-emerald-500/25 transition-all text-left shadow-sm cursor-pointer"
+                  title={`Coach Portal - ${user.coached_batch_name || 'Batch Coach'}`}
+                >
+                  <div className="w-7 h-7 rounded-full bg-emerald-900/70 border border-emerald-400/50 flex items-center justify-center overflow-hidden shrink-0">
+                    {coachPhotoUrl ? (
+                      <img src={coachPhotoUrl} alt={coachName} className="w-full h-full object-cover" />
+                    ) : (
+                      <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                    )}
+                  </div>
+                  <div className="text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-white leading-tight">Coach Portal</span>
+                      {user.coached_batch_name && (
+                        <span className="text-emerald-400 font-medium text-[11px]">
+                          ({user.coached_batch_name})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-emerald-400/80 ml-0.5" />
+                </button>
+
+                {/* Coach Dropdown Menu */}
+                {userDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-60 rounded-xl bg-[#1C2541] border border-emerald-500/30 shadow-2xl py-2 z-50">
+                    <div className="px-4 py-2 border-b border-[#2C3960]/60">
+                      <p className="text-xs font-bold text-white truncate">{coachName}</p>
+                      <p className="text-[11px] text-emerald-400 font-medium truncate">
+                        Official Batch Coach • {user.coached_batch_name || 'Batch'}
+                      </p>
+                    </div>
+
+                    <Link
+                      href="/coach"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center px-4 py-2.5 text-xs text-emerald-300 hover:bg-emerald-500/10 font-semibold"
+                    >
+                      <Shield className="w-4 h-4 mr-2.5 text-emerald-400" />
+                      Coach Dashboard & Lineups
+                    </Link>
+
+                    <Link
+                      href="/notifications"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center justify-between px-4 py-2.5 text-xs text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-400"
+                    >
+                      <div className="flex items-center">
+                        <Bell className="w-4 h-4 mr-2.5 text-slate-400" />
+                        Notifications
+                      </div>
+                      {unreadNotifs > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                          {unreadNotifs} new
+                        </span>
+                      )}
+                    </Link>
+
+                    <button
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setShowLogoutConfirm(true);
+                      }}
+                      className="w-full text-left flex items-center px-4 py-2.5 text-xs text-rose-400 hover:bg-rose-500/10 border-t border-[#2C3960]/60 mt-1 cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4 mr-2.5 text-rose-400" />
+                      Sign Out (Coach Session)
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : mounted && user ? (
               <div className="relative">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
@@ -338,16 +413,30 @@ function NavbarContent() {
                     </span>
                   )}
                 </Link>
-                <Link
-                  href={`/members/${user.username}`}
-                  className="w-8 h-8 rounded-full bg-emerald-700/50 flex items-center justify-center border border-emerald-400/30 overflow-hidden"
-                >
-                  {(user.profile?.profile_picture || (user.profile as any)?.avatar_url || (user.profile as any)?.profile_picture_url) ? (
-                    <img src={user.profile?.profile_picture || (user.profile as any)?.avatar_url || (user.profile as any)?.profile_picture_url} alt="" className="w-full h-full object-cover rounded-full" />
-                  ) : (
-                    <UserIcon className="w-4 h-4 text-emerald-300" />
-                  )}
-                </Link>
+                {isCoach ? (
+                  <Link
+                    href="/coach"
+                    className="w-8 h-8 rounded-full bg-emerald-800/80 flex items-center justify-center border border-emerald-400/50 overflow-hidden shrink-0"
+                    title={`Coach Portal (${user.coached_batch_name || 'My Batch'})`}
+                  >
+                    {coachPhotoUrl ? (
+                      <img src={coachPhotoUrl} alt={coachName} className="w-full h-full object-cover" />
+                    ) : (
+                      <Shield className="w-4 h-4 text-emerald-300" />
+                    )}
+                  </Link>
+                ) : (
+                  <Link
+                    href={`/members/${user.username}`}
+                    className="w-8 h-8 rounded-full bg-emerald-700/50 flex items-center justify-center border border-emerald-400/30 overflow-hidden shrink-0"
+                  >
+                    {(user.profile?.profile_picture || (user.profile as any)?.avatar_url || (user.profile as any)?.profile_picture_url) ? (
+                      <img src={user.profile?.profile_picture || (user.profile as any)?.avatar_url || (user.profile as any)?.profile_picture_url} alt="" className="w-full h-full object-cover rounded-full" />
+                    ) : (
+                      <UserIcon className="w-4 h-4 text-emerald-300" />
+                    )}
+                  </Link>
+                )}
               </>
             )}
             <button
@@ -430,55 +519,100 @@ function NavbarContent() {
           <div className="pt-4 border-t border-[#2C3960] space-y-2">
             {mounted && user ? (
               <>
-                <Link
-                  href="/notifications"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:text-white"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Bell className="w-4 h-4 text-emerald-400" />
-                    <span>Notifications</span>
-                  </div>
-                  {unreadNotifs > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-xs font-black">
-                      {unreadNotifs} new
-                    </span>
-                  )}
-                </Link>
-                <Link
-                  href="/profile/edit"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 text-sm text-slate-300 hover:text-white"
-                >
-                  Edit Profile & Jersey
-                </Link>
-                {user.is_manager && (
-                  <Link
-                    href="/admin"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 text-sm text-purple-400 font-bold"
-                  >
-                    Admin Command Center
-                  </Link>
+                {isCoach ? (
+                  <>
+                    <div className="px-3 py-2 border-b border-[#2C3960]/60 mb-2 flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-emerald-900/80 border border-emerald-400/50 overflow-hidden shrink-0 flex items-center justify-center">
+                        {coachPhotoUrl ? (
+                          <img src={coachPhotoUrl} alt={coachName} className="w-full h-full object-cover" />
+                        ) : (
+                          <Shield className="w-4 h-4 text-emerald-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white truncate">{coachName}</p>
+                        <p className="text-[10px] text-emerald-400 font-semibold truncate">
+                          Official Coach • {user.coached_batch_name || 'Batch'}
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      href="/coach"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 text-sm text-emerald-300 font-bold hover:bg-emerald-500/10 rounded-lg"
+                    >
+                      <Shield className="w-4 h-4 text-emerald-400" />
+                      <span>Coach Dashboard & Lineups</span>
+                    </Link>
+                    <Link
+                      href="/notifications"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:text-white"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Bell className="w-4 h-4 text-emerald-400" />
+                        <span>Notifications</span>
+                      </div>
+                      {unreadNotifs > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-xs font-black">
+                          {unreadNotifs} new
+                        </span>
+                      )}
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setShowLogoutConfirm(true);
+                      }}
+                      className="block w-full text-left px-3 py-2 text-sm text-rose-400 font-semibold cursor-pointer border-t border-[#2C3960]/60 mt-1"
+                    >
+                      Sign Out (Coach Session)
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/notifications"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:text-white"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Bell className="w-4 h-4 text-emerald-400" />
+                        <span>Notifications</span>
+                      </div>
+                      {unreadNotifs > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-xs font-black">
+                          {unreadNotifs} new
+                        </span>
+                      )}
+                    </Link>
+                    <Link
+                      href="/profile/edit"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 text-sm text-slate-300 hover:text-white"
+                    >
+                      Edit Profile & Jersey
+                    </Link>
+                    {user.is_manager && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block px-3 py-2 text-sm text-purple-400 font-bold"
+                      >
+                        Admin Command Center
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setShowLogoutConfirm(true);
+                      }}
+                      className="block w-full text-left px-3 py-2 text-sm text-rose-400 font-semibold cursor-pointer"
+                    >
+                      Sign Out
+                    </button>
+                  </>
                 )}
-                {(user.is_coach || user.role === 'COACH') && (
-                  <Link
-                    href="/coach"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 text-sm text-emerald-400 font-bold"
-                  >
-                    Coach Portal ({user.coached_batch_name || 'My Batch'})
-                  </Link>
-                )}
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setShowLogoutConfirm(true);
-                  }}
-                  className="block w-full text-left px-3 py-2 text-sm text-rose-400 font-semibold cursor-pointer"
-                >
-                  Sign Out
-                </button>
               </>
             ) : (
               <div className="grid grid-cols-2 gap-2 pt-2">

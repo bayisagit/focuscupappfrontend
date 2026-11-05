@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Download,
   Share2,
@@ -91,6 +92,7 @@ export interface LineupPosterGeneratorProps {
   isOpen: boolean;
   onClose: () => void;
   onPublished?: (announcement: any) => void;
+  embedded?: boolean;
 }
 
 // Tactical Formation coordinates (X%, Y% from top-left of pitch area)
@@ -190,6 +192,7 @@ export default function LineupPosterGenerator({
   isOpen,
   onClose,
   onPublished,
+  embedded = false,
 }: LineupPosterGeneratorProps) {
   const [teamSide, setTeamSide] = useState<'home' | 'away'>('home');
   const [formationKey, setFormationKey] = useState<string>('4-3-3');
@@ -872,38 +875,39 @@ export default function LineupPosterGenerator({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-5xl rounded-3xl bg-[#0B132B] border border-purple-500/40 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Header */}
-        <div className="px-6 py-4 bg-[#161D36] border-b border-[#2C3960] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/30">
-              <Camera className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
-                Starting Lineup Poster Studio
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                  AUTOMATED
-                </span>
-              </h2>
-              <p className="text-xs text-slate-400">
-                Matchday graphic generator with dynamic pitch formations and featured player spotlight
-              </p>
-            </div>
+  const studioCard = (
+    <div className={`relative w-full ${embedded ? 'rounded-3xl border border-purple-500/40 shadow-2xl bg-[#0B132B]' : 'max-w-5xl rounded-3xl bg-[#0B132B] border border-purple-500/40 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]'}`}>
+      {/* Header */}
+      <div className="px-6 py-4 bg-[#161D36] border-b border-[#2C3960] flex items-center justify-between rounded-t-3xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/30">
+            <Camera className="w-5 h-5" />
           </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
+              Starting Lineup Poster Studio
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                AUTOMATED
+              </span>
+            </h2>
+            <p className="text-xs text-slate-400">
+              Matchday graphic generator with dynamic pitch formations and featured player spotlight
+            </p>
+          </div>
+        </div>
 
+        {onClose && !embedded && (
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
+        )}
+      </div>
 
-        {/* Content Area */}
-        <div className="p-4 sm:p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+      {/* Content Area */}
+      <div className={`p-4 sm:p-6 ${embedded ? '' : 'overflow-y-auto flex-1'} grid grid-cols-1 lg:grid-cols-12 gap-6`}>
           {/* Controls Column (Left, 5 cols) */}
           <div className="lg:col-span-5 space-y-4">
             {/* Team Selector */}
@@ -1275,6 +1279,20 @@ export default function LineupPosterGenerator({
           </div>
         </div>
       </div>
-    </div>
+  );
+
+  if (embedded) {
+    return studioCard;
+  }
+
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
+      {studioCard}
+    </div>,
+    document.body
   );
 }

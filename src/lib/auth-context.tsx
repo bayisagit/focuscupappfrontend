@@ -38,6 +38,10 @@ export interface User {
   coached_batch_name?: string | null;
   coached_batch_id?: number | null;
   coached_team?: any;
+  coach_name?: string | null;
+  coach_avatar_url?: string | null;
+  coach_photo_url?: string | null;
+  coach_member?: any;
   profile?: UserProfile | null;
   player_registration?: any;
 }
