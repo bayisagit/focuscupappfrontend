@@ -126,6 +126,13 @@ export default function FrontendAdminPage() {
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam && ['dashboard', 'matches', 'create-fixture', 'players', 'members', 'coaches', 'content', 'audit', 'reports'].includes(tabParam)) {
+        setActiveTab(tabParam as any);
+      }
+    }
   }, []);
 
   // Login form state (if not logged in as manager)

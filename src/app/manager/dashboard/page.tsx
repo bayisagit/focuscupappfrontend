@@ -18,6 +18,7 @@ import {
   Download,
   Lock,
   Layers,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default function ManagerDashboardPage() {
@@ -87,6 +88,12 @@ export default function ManagerDashboardPage() {
             className="px-4 py-2 rounded-xl bg-[#1C2541] hover:bg-[#232F54] text-white border border-[#2C3960] font-bold text-xs flex items-center gap-1.5"
           >
             <Download className="w-4 h-4 text-blue-400" /> Export Reports
+          </Link>
+          <Link
+            href="/admin?tab=coaches"
+            className="px-4 py-2 rounded-xl bg-purple-600/80 hover:bg-purple-600 text-white font-bold text-xs flex items-center gap-1.5 shadow"
+          >
+            <ShieldCheck className="w-4 h-4 text-purple-200" /> Batch Coaches
           </Link>
           <Link
             href="/manager/graphics"
@@ -188,6 +195,19 @@ export default function ManagerDashboardPage() {
               </h3>
               <p className="text-[11px] text-slate-400 mt-1">
                 Approve or reject player applications per batch rules.
+              </p>
+            </Link>
+
+            <Link
+              href="/admin?tab=coaches"
+              className="p-4 rounded-xl bg-[#161D36] border border-[#2C3960] hover:border-purple-500/40 transition-all block group"
+            >
+              <h3 className="text-xs font-bold text-white group-hover:text-purple-400 flex items-center justify-between">
+                <span>Batch Coaches Administration</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Appoint dedicated coaches per batch and set portal credentials.
               </p>
             </Link>
 
