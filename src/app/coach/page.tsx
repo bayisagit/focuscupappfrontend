@@ -24,8 +24,12 @@ import {
   RefreshCw,
   Search,
   Filter,
+  Edit,
+  Camera,
+  ShieldCheck,
 } from 'lucide-react';
 import LineupPosterGenerator, { SquadPlayerItem } from '@/components/LineupPosterGenerator';
+import BatchPhotoLightbox from '@/components/BatchPhotoLightbox';
 
 export default function CoachPortalPage() {
   const router = useRouter();
@@ -34,6 +38,7 @@ export default function CoachPortalPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'applications' | 'lineups' | 'poster'>('overview');
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [isPhotoLightboxOpen, setIsPhotoLightboxOpen] = useState(false);
 
   // Applications State
   const [applications, setApplications] = useState<any[]>([]);
@@ -345,6 +350,16 @@ export default function CoachPortalPage() {
               <p className="text-xs text-slate-300 mt-1 max-w-xl italic">
                 &ldquo;{team?.motto || 'United in Christ, Strong in Fellowship'}&rdquo;
               </p>
+              <div className="pt-2 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPhotoLightboxOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Edit className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Edit Batch Profile &amp; Sketch Photo</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1084,6 +1099,21 @@ export default function CoachPortalPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Batch Profile & Photo Lightbox */}
+      {team && (
+        <BatchPhotoLightbox
+          isOpen={isPhotoLightboxOpen}
+          onClose={() => setIsPhotoLightboxOpen(false)}
+          batch={team}
+          onBatchUpdated={(updated) => {
+            setDashboardData((prev: any) => ({
+              ...prev,
+              team: { ...prev?.team, ...updated },
+            }));
+          }}
+        />
       )}
     </div>
   );

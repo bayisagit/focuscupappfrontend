@@ -116,7 +116,14 @@ function BatchDetailContent() {
                 </div>
               )}
 
-              {user?.is_manager && (
+              {Boolean(
+                user?.is_manager ||
+                (user?.is_coach && (
+                  user?.coached_batch === team.batch_code ||
+                  user?.coached_batch_id === team.id ||
+                  (user?.coached_team && (user.coached_team.batch_code === team.batch_code || user.coached_team.id === team.id))
+                ))
+              ) && (
                 <button
                   type="button"
                   onClick={() => setIsPhotoLightboxOpen(true)}

@@ -15,6 +15,7 @@ import {
   ArrowRight,
   ExternalLink,
   Shield,
+  ShieldCheck,
   Loader2,
 } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
@@ -35,6 +36,10 @@ export interface BatchTeamData {
   team_photo?: string | null;
   logo_url?: string | null;
   logo?: string | null;
+  coach_name?: string | null;
+  coach_photo_url?: string | null;
+  coach_username?: string | null;
+  coach?: any;
   total_members?: number;
   approved_players?: number;
 }
@@ -67,6 +72,15 @@ export default function BatchPhotoLightbox({
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const canEditBatch = Boolean(
+    user?.is_manager ||
+    (user?.is_coach && (
+      user?.coached_batch === batch?.batch_code ||
+      user?.coached_batch_id === batch?.id ||
+      (user?.coached_team && (user.coached_team.batch_code === batch?.batch_code || user.coached_team.id === batch?.id))
+    ))
+  );
 
   useEffect(() => {
     if (batch) {
@@ -169,9 +183,9 @@ export default function BatchPhotoLightbox({
       <div className="relative w-full max-w-4xl bg-[#121A33] border border-[#2C3960] rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         {/* Top Header Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#2C3960]/80 bg-[#0E162E]">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 min-w-0">
             <span
-              className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-slate-950 shadow"
+              className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-slate-950 shadow shrink-0"
               style={{ backgroundColor: formData.color_hex || batch.color_hex || '#10B981' }}
             >
               {batch.batch_code.replace('_', ' ')}
@@ -184,10 +198,16 @@ export default function BatchPhotoLightbox({
                 &ldquo;{batch.nickname}&rdquo;
               </span>
             )}
+            {(batch.coach_name || batch.coach?.full_name) && (
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center gap-1 shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+                <span>Coach: {batch.coach_name || batch.coach?.full_name}</span>
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            {user?.is_manager && !isEditing && (
+          <div className="flex items-center gap-2 shrink-0">
+            {canEditBatch && !isEditing && (
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
@@ -233,6 +253,29 @@ export default function BatchPhotoLightbox({
                   Cancel
                 </button>
               </div>
+
+              {/* Coach Attribution Banner in Edit Modal */}
+              {(batch.coach_name || batch.coach?.full_name) ? (
+                <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/25 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2.5 text-purple-200">
+                    <div className="w-7 h-7 rounded-xl bg-purple-600/30 border border-purple-400/40 flex items-center justify-center text-purple-300 font-bold shrink-0">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="block text-[10px] uppercase font-bold text-purple-400 tracking-wider">Batch Coach</span>
+                      <strong className="text-white text-xs">{batch.coach_name || batch.coach?.full_name}</strong>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold">
+                    Official Coach
+                  </span>
+                </div>
+              ) : (
+                <div className="p-3 rounded-2xl bg-[#161D36] border border-[#2C3960] flex items-center gap-2.5 text-xs text-slate-400">
+                  <ShieldCheck className="w-4 h-4 text-slate-500 shrink-0" />
+                  <span>No dedicated coach appointed yet &bull; Managed directly by Tournament Directors.</span>
+                </div>
+              )}
 
               {error && (
                 <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs">
@@ -383,7 +426,7 @@ export default function BatchPhotoLightbox({
                     </div>
                     <div>
                       <p className="text-sm font-bold text-white">No batch sketch/photo uploaded yet</p>
-                      {user?.is_manager ? (
+                      {canEditBatch ? (
                         <button
                           type="button"
                           onClick={() => setIsEditing(true)}
@@ -394,7 +437,7 @@ export default function BatchPhotoLightbox({
                         </button>
                       ) : (
                         <p className="text-xs text-slate-400 mt-1">
-                          Tournament manager can upload the batch sketch or group photo
+                          Tournament manager or batch coach can upload the batch sketch or group photo
                         </p>
                       )}
                     </div>
@@ -406,7 +449,7 @@ export default function BatchPhotoLightbox({
               <div className="p-6 bg-[#0E162E] border-t border-[#2C3960]/80 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-xl font-black text-white">{batch.name}</h3>
                       {batch.nickname && (
                         <span className="text-xs text-amber-400 font-bold">
@@ -419,16 +462,34 @@ export default function BatchPhotoLightbox({
                         &ldquo;{batch.motto}&rdquo;
                       </p>
                     )}
+                    {(batch.coach_name || batch.coach?.full_name) && (
+                      <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-200 text-xs font-semibold">
+                        <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
+                        <span>Head Coach: <strong className="text-white">{batch.coach_name || batch.coach?.full_name}</strong></span>
+                      </div>
+                    )}
                   </div>
 
-                  <Link
-                    href={`/batches/${batch.batch_code}`}
-                    onClick={onClose}
-                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow shrink-0"
-                  >
-                    <span>Visit Batch Page &amp; Squad</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canEditBatch && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(true)}
+                        className="px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 font-bold text-xs flex items-center gap-1.5 shadow shrink-0 cursor-pointer"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Edit Batch Info &amp; Photo</span>
+                      </button>
+                    )}
+                    <Link
+                      href={`/batches/${batch.batch_code}`}
+                      onClick={onClose}
+                      className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow shrink-0"
+                    >
+                      <span>Visit Batch Page &amp; Squad</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
                 </div>
 
                 {batch.description && (
