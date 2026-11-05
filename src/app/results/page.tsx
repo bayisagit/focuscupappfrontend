@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { apiCache } from '@/lib/cache';
 import { Trophy, Calendar, MapPin, ChevronRight, Award } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
+import Spinner from '@/components/Spinner';
 
 export default function ResultsPage() {
   const cached = apiCache.get<any>('/api/v1/matches/?category=results');
@@ -37,10 +38,14 @@ export default function ResultsPage() {
       </div>
 
       {loading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-28 rounded-2xl bg-[#1C2541]/40 animate-pulse" />
-          ))}
+        <div className="card-gloss p-12 rounded-3xl text-center border border-[#2C3960] shadow-xl my-4">
+          <Spinner
+            size="lg"
+            color="amber"
+            label="Loading official match results & scores..."
+            sublabel="AASTU Focus Football Cup"
+            centered
+          />
         </div>
       ) : results.length > 0 ? (
         <div className="space-y-4">

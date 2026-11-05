@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { apiCache } from '@/lib/cache';
 import { Calendar, MapPin, Clock, Filter, ChevronRight, RefreshCw, AlertCircle } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
+import Spinner from '@/components/Spinner';
 
 export default function FixturesPage() {
   const cachedMatches = apiCache.get<any>('/api/v1/matches/');
@@ -108,10 +109,14 @@ export default function FixturesPage() {
 
       {/* Fixtures List */}
       {loading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-28 rounded-2xl bg-[#1C2541]/40 animate-pulse" />
-          ))}
+        <div className="card-gloss p-12 rounded-3xl text-center border border-[#2C3960] shadow-xl my-4">
+          <Spinner
+            size="lg"
+            color="emerald"
+            label="Loading tournament fixtures & schedule..."
+            sublabel="AASTU Focus Football Cup"
+            centered
+          />
         </div>
       ) : filteredMatches.length > 0 ? (
         <div className="space-y-4">

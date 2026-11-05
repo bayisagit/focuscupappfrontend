@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import LineupPosterGenerator, { SquadPlayerItem } from '@/components/LineupPosterGenerator';
 import BatchPhotoLightbox from '@/components/BatchPhotoLightbox';
+import Spinner from '@/components/Spinner';
 import { useToast } from '@/components/ToastProvider';
 import { apiCache } from '@/lib/cache';
 
@@ -128,11 +129,15 @@ export default function CoachPortalPage() {
     }
   }, [selectedMatchId]);
 
-  if (authLoading) {
+  if (authLoading || (loading && !dashboardData)) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-      </div>
+      <Spinner
+        fullPage
+        size="xl"
+        color="emerald"
+        label="Loading Batch Coach Portal..."
+        sublabel="AASTU Focus Football Cup"
+      />
     );
   }
 

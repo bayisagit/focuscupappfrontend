@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Trophy, GraduationCap, AlertCircle, CheckCircle, ArrowLeft, Shirt, Sparkles, Hash } from 'lucide-react';
+import Spinner from '@/components/Spinner';
 
 export default function PlayerRegistrationPage() {
   const router = useRouter();
@@ -325,17 +326,22 @@ export default function PlayerRegistrationPage() {
           <button
             type="submit"
             disabled={loading || isTaken || !isNumberValid}
-            className={`w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg transition-all mt-4 ${
+            className={`w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg transition-all mt-4 flex items-center justify-center gap-2 ${
               isTaken
                 ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
-                : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 shadow-emerald-500/20 hover:scale-[1.01]'
+                : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 shadow-emerald-500/20 hover:scale-[1.01] cursor-pointer'
             }`}
           >
-            {loading
-              ? 'Submitting Application...'
-              : isTaken
-              ? `Jersey #${numVal} Is Taken — Choose Another Number`
-              : 'Submit Player Application'}
+            {loading ? (
+              <>
+                <Spinner size="xs" color="slate" />
+                <span>Submitting Application...</span>
+              </>
+            ) : isTaken ? (
+              `Jersey #${numVal} Is Taken — Choose Another Number`
+            ) : (
+              'Submit Player Application'
+            )}
           </button>
         </form>
       </div>

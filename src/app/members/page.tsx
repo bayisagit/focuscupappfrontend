@@ -19,6 +19,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import ProfilePhotoLightbox, { LightboxProfile } from '@/components/ProfilePhotoLightbox';
+import Spinner from '@/components/Spinner';
 
 export default function MembersDirectoryPage() {
   const { user } = useAuth();
@@ -231,10 +232,14 @@ export default function MembersDirectoryPage() {
 
       {/* Members Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="h-64 rounded-2xl bg-[#1C2541]/40 animate-pulse" />
-          ))}
+        <div className="card-gloss p-12 rounded-3xl text-center border border-[#2C3960] shadow-xl my-4">
+          <Spinner
+            size="lg"
+            color="emerald"
+            label="Loading fellowship member directory..."
+            sublabel="AASTU Focus Fellowship"
+            centered
+          />
         </div>
       ) : members.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

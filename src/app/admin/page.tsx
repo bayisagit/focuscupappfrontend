@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/components/ToastProvider';
 import { apiCache } from '@/lib/cache';
+import Spinner from '@/components/Spinner';
 import {
   Trophy,
   Shield,
@@ -1000,10 +1001,13 @@ export default function FrontendAdminPage() {
   // -------------------------------------------------------------
   if (!mounted) {
     return (
-      <div className="max-w-md mx-auto px-4 py-24 text-center">
-        <div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-xs text-slate-400">Loading Admin Central...</p>
-      </div>
+      <Spinner
+        fullPage
+        size="xl"
+        color="purple"
+        label="Loading Admin Command Center..."
+        sublabel="Focus Football Cup Directorate"
+      />
     );
   }
 

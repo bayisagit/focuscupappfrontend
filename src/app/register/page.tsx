@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Trophy, AlertCircle, CheckCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import Spinner from '@/components/Spinner';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -367,10 +368,19 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-sm uppercase tracking-wider shadow-xl shadow-emerald-500/25 transition-all hover:scale-[1.01] flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-sm uppercase tracking-wider shadow-xl shadow-emerald-500/25 transition-all hover:scale-[1.01] flex items-center justify-center gap-2 cursor-pointer"
           >
-            {loading ? 'Creating Member Account...' : 'Complete Fellowship Registration'}
-            <ArrowRight className="w-4 h-4" />
+            {loading ? (
+              <>
+                <Spinner size="xs" color="slate" />
+                <span>Creating Member Account...</span>
+              </>
+            ) : (
+              <>
+                <span>Complete Fellowship Registration</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </form>
 

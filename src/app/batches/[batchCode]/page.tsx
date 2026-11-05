@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
 import BatchPhotoLightbox, { BatchTeamData } from '@/components/BatchPhotoLightbox';
+import Spinner from '@/components/Spinner';
 import { useAuth } from '@/lib/auth-context';
 import { apiCache } from '@/lib/cache';
 
@@ -110,10 +111,13 @@ function BatchDetailContent() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-20 text-center">
-        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-xs text-slate-400">Loading batch details...</p>
-      </div>
+      <Spinner
+        fullPage
+        size="xl"
+        color="emerald"
+        label="Loading batch details & roster squad..."
+        sublabel="AASTU Focus Football Cup"
+      />
     );
   }
 

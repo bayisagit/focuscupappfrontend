@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import { UserCog, User, Trophy, Check, ArrowLeft, Camera, Upload, Sparkles, Cloud, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import Spinner from '@/components/Spinner';
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -227,9 +228,14 @@ export default function EditProfilePage() {
         )}
 
         {profileLoading && !formData.first_name ? (
-          <div className="py-16 text-center space-y-3">
-            <div className="w-8 h-8 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mx-auto" />
-            <p className="text-xs text-slate-400">Loading your profile information...</p>
+          <div className="py-16 text-center">
+            <Spinner
+              size="lg"
+              color="emerald"
+              label="Loading your profile information..."
+              sublabel="AASTU Focus Fellowship"
+              centered
+            />
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -411,9 +417,16 @@ export default function EditProfilePage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 cursor-pointer"
+                className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 cursor-pointer flex items-center gap-2"
               >
-                {loading ? 'Saving Changes...' : 'Save Profile'}
+                {loading ? (
+                  <>
+                    <Spinner size="xs" color="slate" />
+                    <span>Saving Changes...</span>
+                  </>
+                ) : (
+                  'Save Profile'
+                )}
               </button>
             </div>
           </form>

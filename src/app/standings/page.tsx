@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { apiCache } from '@/lib/cache';
 import { Trophy, Info, ArrowUpRight } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
+import Spinner from '@/components/Spinner';
 
 export default function StandingsPage() {
   const cached = apiCache.get<any>('/api/v1/competitions/standings/');
@@ -159,6 +160,18 @@ export default function StandingsPage() {
                     </td>
                   </tr>
                 ))
+              ) : loading ? (
+                <tr>
+                  <td colSpan={11} className="py-12 text-center text-slate-400">
+                    <Spinner
+                      size="md"
+                      color="emerald"
+                      label="Calculating league standings table..."
+                      sublabel="AASTU Focus Football Cup"
+                      centered
+                    />
+                  </td>
+                </tr>
               ) : (
                 <tr>
                   <td colSpan={11} className="py-12 text-center text-slate-400">

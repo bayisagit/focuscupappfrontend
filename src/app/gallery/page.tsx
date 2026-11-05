@@ -18,6 +18,7 @@ import { FORMER_GALLERY_PHOTOS, FormerPhoto } from '@/data/formerGallery';
 import FormerPhotoItem from '@/components/FormerPhotoItem';
 import GalleryLightbox from '@/components/GalleryLightbox';
 import TournamentPhotoLightbox from '@/components/TournamentPhotoLightbox';
+import Spinner from '@/components/Spinner';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { apiCache } from '@/lib/cache';
 
@@ -238,10 +239,14 @@ export default function GalleryPage() {
 
             {/* Current Photos Grid */}
             {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="aspect-square rounded-2xl bg-[#1C2541]/40 animate-pulse" />
-                ))}
+              <div className="card-gloss p-12 rounded-3xl text-center border border-[#2C3960] shadow-xl my-4">
+                <Spinner
+                  size="lg"
+                  color="emerald"
+                  label="Loading fellowship gallery photos..."
+                  sublabel="AASTU Focus Football Cup"
+                  centered
+                />
               </div>
             ) : currentPhotos.length > 0 ? (
               <>

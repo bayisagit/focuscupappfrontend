@@ -14,6 +14,7 @@ import {
   Heart,
   Sparkles,
 } from 'lucide-react';
+import Spinner from '@/components/Spinner';
 
 export default function StatisticsPage() {
   const cachedScorers = apiCache.get<any>('/api/v1/statistics/top-scorers/?limit=20');
@@ -140,6 +141,12 @@ export default function StatisticsPage() {
                     </td>
                   </tr>
                 ))
+              ) : loading ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <Spinner size="md" color="emerald" label="Loading Golden Boot scorers..." centered />
+                  </td>
+                </tr>
               ) : (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
@@ -194,6 +201,12 @@ export default function StatisticsPage() {
                     </td>
                   </tr>
                 ))
+              ) : loading ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <Spinner size="md" color="blue" label="Loading Playmaker assists..." centered />
+                  </td>
+                </tr>
               ) : (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
@@ -208,7 +221,12 @@ export default function StatisticsPage() {
 
       {/* 3. MOST FOLLOWED */}
       {activeTab === 'followed' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        loading && followed.length === 0 ? (
+          <div className="card-gloss p-12 rounded-2xl text-center">
+            <Spinner size="md" color="emerald" label="Loading most followed fellowship players..." centered />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {followed.map((m) => (
             <div key={m.id} className="card-gloss p-5 rounded-2xl text-center group hover:border-emerald-500/40">
               <div className="w-16 h-16 rounded-full bg-emerald-800/40 border-2 border-emerald-400/40 mx-auto mb-3 flex items-center justify-center font-bold text-white overflow-hidden">
@@ -230,6 +248,7 @@ export default function StatisticsPage() {
             </div>
           ))}
         </div>
+        )
       )}
 
       {/* 4. AWARDS */}
@@ -278,6 +297,10 @@ export default function StatisticsPage() {
                 </p>
               </div>
             ))
+          ) : loading ? (
+            <div className="card-gloss p-12 rounded-2xl text-center text-slate-400 col-span-2">
+              <Spinner size="md" color="amber" label="Loading tournament awards..." centered />
+            </div>
           ) : (
             <div className="card-gloss p-12 rounded-2xl text-center text-slate-400 col-span-2">
               <Award className="w-12 h-12 text-amber-500 mx-auto mb-3 opacity-60" />

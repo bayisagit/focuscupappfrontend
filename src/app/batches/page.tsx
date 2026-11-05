@@ -7,6 +7,7 @@ import { apiCache } from '@/lib/cache';
 import { GraduationCap, ArrowRight, Camera } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
 import BatchPhotoLightbox, { BatchTeamData } from '@/components/BatchPhotoLightbox';
+import Spinner from '@/components/Spinner';
 
 export default function BatchesIndexPage() {
   const cached = apiCache.get<any>('/api/v1/competitions/batches/');
@@ -47,8 +48,19 @@ export default function BatchesIndexPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {batches.map((b) => (
+      {loading ? (
+        <div className="card-gloss p-12 rounded-3xl text-center border border-[#2C3960] shadow-xl my-4">
+          <Spinner
+            size="lg"
+            color="emerald"
+            label="Loading fellowship academic batches..."
+            sublabel="AASTU Focus Football Cup"
+            centered
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {batches.map((b) => (
           <Link
             key={b.batch_code}
             href={`/batches/${b.batch_code}`}
@@ -116,6 +128,7 @@ export default function BatchesIndexPage() {
           </Link>
         ))}
       </div>
+      )}
 
       {/* Fullscreen Batch Photo Lightbox */}
       <BatchPhotoLightbox

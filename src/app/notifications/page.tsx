@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Bell, Check, User, Heart, ArrowRight, Sparkles, LogIn } from 'lucide-react';
+import Spinner from '@/components/Spinner';
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -64,7 +65,15 @@ export default function NotificationsPage() {
 
       <div className="card-gloss rounded-2xl overflow-hidden border border-[#2C3960] shadow-xl divide-y divide-[#2C3960]/60">
         {loading ? (
-          <div className="py-12 text-center text-xs text-slate-400">Loading notifications...</div>
+          <div className="py-12 text-center">
+            <Spinner
+              size="md"
+              color="emerald"
+              label="Loading notifications..."
+              sublabel="AASTU Focus Fellowship"
+              centered
+            />
+          </div>
         ) : notifications.length > 0 ? (
           notifications.map((n) => (
             <div

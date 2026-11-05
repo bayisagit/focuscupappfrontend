@@ -26,6 +26,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import ProfilePhotoLightbox from '@/components/ProfilePhotoLightbox';
+import Spinner from '@/components/Spinner';
 import { apiCache } from '@/lib/cache';
 
 import { Suspense } from 'react';
@@ -96,10 +97,13 @@ function MemberProfileContent() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
-        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-xs text-slate-400">Loading member profile...</p>
-      </div>
+      <Spinner
+        fullPage
+        size="xl"
+        color="emerald"
+        label="Loading member profile & statistics..."
+        sublabel="AASTU Focus Fellowship"
+      />
     );
   }
 

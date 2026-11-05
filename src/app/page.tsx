@@ -23,6 +23,7 @@ import {
 import TeamCrest from '@/components/TeamCrest';
 import BatchPhotoLightbox, { BatchTeamData } from '@/components/BatchPhotoLightbox';
 import AnnouncementHeroCarousel from '@/components/AnnouncementHeroCarousel';
+import Spinner from '@/components/Spinner';
 import { apiCache } from '@/lib/cache';
 
 export default function HomePage() {
@@ -100,6 +101,20 @@ export default function HomePage() {
 
     loadHomeData();
   }, []);
+
+  if (loading && !hasAnyHomeCache) {
+    return (
+      <div className="pitch-bg min-h-screen flex items-center justify-center">
+        <Spinner
+          fullPage
+          size="xl"
+          color="emerald"
+          label="Welcome to Focus Football Cup..."
+          sublabel="Loading live fixtures, standings & announcements"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="pitch-bg min-h-screen">

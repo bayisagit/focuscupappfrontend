@@ -23,6 +23,7 @@ import TeamCrest from '@/components/TeamCrest';
 import { apiCache } from '@/lib/cache';
 import LineupPosterGenerator from '@/components/LineupPosterGenerator';
 import MatchBroadcastGraphicGenerator from '@/components/MatchBroadcastGraphicGenerator';
+import Spinner from '@/components/Spinner';
 
 import { Suspense } from 'react';
 
@@ -46,10 +47,13 @@ function MatchDetailContent() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-16 text-center">
-        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-xs text-slate-400">Loading Match Center...</p>
-      </div>
+      <Spinner
+        fullPage
+        size="xl"
+        color="emerald"
+        label="Loading Match Center & Live Event..."
+        sublabel="AASTU Focus Football Cup"
+      />
     );
   }
 
