@@ -198,8 +198,9 @@ export default function CoachPortalPage() {
     const action = reviewModal.action;
     setSubmittingReview(true);
     try {
+      const statusValue = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
       const payload: any = {
-        status: action,
+        status: statusValue,
         reason: reviewModal.reason,
       };
       if (action === 'APPROVE' && reviewModal.jersey) {

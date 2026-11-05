@@ -9,6 +9,7 @@ export interface UserProfile {
   first_name?: string;
   second_name?: string;
   batch: string;
+  batch_display?: string;
   competing_batch?: string;
   college: string;
   department: string;
