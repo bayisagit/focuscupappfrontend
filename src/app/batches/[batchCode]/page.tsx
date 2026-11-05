@@ -16,6 +16,7 @@ import {
   Award,
   Camera,
   Edit,
+  ShieldCheck,
 } from 'lucide-react';
 import TeamCrest from '@/components/TeamCrest';
 import BatchPhotoLightbox, { BatchTeamData } from '@/components/BatchPhotoLightbox';
@@ -108,6 +109,13 @@ function BatchDetailContent() {
                 &ldquo;{team.nickname || team.motto}&rdquo;
               </p>
 
+              {team.coach_name && (
+                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-200 text-xs font-bold">
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Coach: {team.coach_name}</span>
+                </div>
+              )}
+
               {user?.is_manager && (
                 <button
                   type="button"
@@ -179,12 +187,19 @@ function BatchDetailContent() {
                   </div>
 
                   <div className="flex-1 truncate">
-                    <Link
-                      href={`/members/${p.username}`}
-                      className="text-xs font-bold text-white hover:text-emerald-400 truncate block"
-                    >
-                      {p.full_name}
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        href={`/members/${p.username}`}
+                        className="text-xs font-bold text-white hover:text-emerald-400 truncate block"
+                      >
+                        {p.full_name}
+                      </Link>
+                      {p.is_coach && (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-purple-600 text-white shrink-0">
+                          Coach
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[10px] text-emerald-400 font-medium">{p.position}</p>
                     <p className="text-[10px] text-slate-400 truncate">{p.department}</p>
                     {p.personal_chant && (

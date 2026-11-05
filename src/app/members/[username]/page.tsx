@@ -23,6 +23,7 @@ import {
   Maximize2,
   Eye,
   X,
+  ShieldCheck,
 } from 'lucide-react';
 import ProfilePhotoLightbox from '@/components/ProfilePhotoLightbox';
 import { apiCache } from '@/lib/cache';
@@ -156,6 +157,12 @@ function MemberProfileContent() {
                 <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                   {profile.full_name}
                 </h1>
+                {profile.is_coach && (
+                  <span className="px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/30 flex items-center gap-1.5 border border-purple-400/50">
+                    <ShieldCheck className="w-3.5 h-3.5 text-purple-200" />
+                    <span>Coach &bull; {profile.coached_batch_name || `${profile.batch_display} Coach`}</span>
+                  </span>
+                )}
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#161D36] text-emerald-400 border border-[#2C3960]">
                   {profile.batch_display || profile.academic_year}
                 </span>
