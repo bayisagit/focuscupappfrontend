@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import {
@@ -14,6 +14,7 @@ import {
   Users,
   Flame,
   ArrowRightLeft,
+  ArrowLeft,
   AlertTriangle,
   FileText,
   User,
@@ -28,6 +29,7 @@ import Spinner from '@/components/Spinner';
 import { Suspense } from 'react';
 
 function MatchDetailContent() {
+  const router = useRouter();
   const { id } = useParams();
   const cached = id ? apiCache.get<any>(`/api/v1/matches/${id}/`) : null;
   const [match, setMatch] = useState<any>(() => cached || null);
@@ -81,7 +83,42 @@ function MatchDetailContent() {
   ) || [];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-screen">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 min-h-screen">
+      {/* Navigation Top Bar / Back Button */}
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push('/fixtures');
+            }
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#161D36] border border-[#2C3960] hover:border-emerald-500/60 hover:bg-[#1C2541] text-slate-300 hover:text-white text-xs font-bold transition-all shadow-md cursor-pointer hover:-translate-x-1"
+          title="Turn back to fixtures"
+        >
+          <ArrowLeft className="w-4 h-4 text-emerald-400" />
+          <span>Back to Matches</span>
+        </button>
+
+        <div className="flex items-center gap-3 text-xs">
+          <Link
+            href="/fixtures"
+            className="text-slate-400 hover:text-emerald-400 transition-colors font-medium"
+          >
+            All Fixtures
+          </Link>
+          <span className="text-slate-600">&bull;</span>
+          <Link
+            href="/results"
+            className="text-slate-400 hover:text-amber-400 transition-colors font-medium"
+          >
+            Match Results
+          </Link>
+        </div>
+      </div>
+
       {/* 1. MATCH HEADER & SCOREBOARD */}
       <div className="card-gloss rounded-3xl p-6 sm:p-8 shadow-2xl border border-[#2C3960] mb-8 relative overflow-hidden">
         {/* Match Meta Top Bar */}

@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { Bell, Check, User, Heart, ArrowRight, Sparkles, LogIn } from 'lucide-react';
+import { Bell, Check, User, Heart, ArrowRight, ArrowLeft, Sparkles, LogIn } from 'lucide-react';
 import Spinner from '@/components/Spinner';
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -41,7 +43,26 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-screen">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 min-h-screen">
+      {/* Navigation Top Bar / Back Button */}
+      <div className="mb-6 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push('/');
+            }
+          }}
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#161D36] border border-[#2C3960] hover:border-emerald-500/60 hover:bg-[#1C2541] text-slate-300 hover:text-white text-xs font-bold transition-all shadow-md cursor-pointer hover:-translate-x-1"
+          title="Turn back"
+        >
+          <ArrowLeft className="w-4 h-4 text-emerald-400" />
+          <span>Back</span>
+        </button>
+      </div>
+
       <div className="flex items-center justify-between mb-8 border-b border-[#2C3960]/60 pb-6">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">

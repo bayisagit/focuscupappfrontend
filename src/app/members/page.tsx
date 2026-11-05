@@ -27,8 +27,13 @@ export default function MembersDirectoryPage() {
   const cachedOptions = apiCache.get<any>('/api/v1/members/options/');
 
   const [members, setMembers] = useState<any[]>(() => cachedMembers?.results || cachedMembers || []);
+  const [totalCount, setTotalCount] = useState<number>(() => cachedMembers?.count || (Array.isArray(cachedMembers) ? cachedMembers.length : 0));
   const [options, setOptions] = useState<any>(() => cachedOptions || null);
   const [loading, setLoading] = useState<boolean>(() => !cachedMembers);
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(() => Boolean(cachedMembers?.next));
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [viewAll, setViewAll] = useState<boolean>(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -54,9 +59,9 @@ export default function MembersDirectoryPage() {
   }, [options]);
 
   useEffect(() => {
-    if (members.length === 0) {
-      setLoading(true);
-    }
+    setLoading(true);
+    setPage(1);
+
     const params: Record<string, string> = {};
     if (search) params.search = search;
     if (selectedBatch) params.batch = selectedBatch;
@@ -66,11 +71,54 @@ export default function MembersDirectoryPage() {
     if (selectedPosition) params.position = selectedPosition;
     if (sortBy) params.sort_by = sortBy;
 
+    if (viewAll) {
+      params.view_all = 'true';
+    } else {
+      params.page = '1';
+      params.page_size = '20';
+    }
+
     api.members.list(params)
-      .then((data) => setMembers(data.results || data || []))
+      .then((data) => {
+        const results = Array.isArray(data) ? data : (data?.results || []);
+        const count = Array.isArray(data) ? data.length : (data?.count ?? results.length);
+        setMembers(results);
+        setTotalCount(count);
+        setHasMore(!viewAll && Boolean(data?.next));
+      })
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
-  }, [search, selectedBatch, selectedCollege, selectedDept, selectedTeam, selectedPosition, sortBy]);
+  }, [search, selectedBatch, selectedCollege, selectedDept, selectedTeam, selectedPosition, sortBy, viewAll]);
+
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore || viewAll) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+
+    const params: Record<string, string> = {
+      page: String(nextPage),
+      page_size: '20',
+    };
+    if (search) params.search = search;
+    if (selectedBatch) params.batch = selectedBatch;
+    if (selectedCollege) params.college = selectedCollege;
+    if (selectedDept) params.department = selectedDept;
+    if (selectedTeam) params.fellowship_team = selectedTeam;
+    if (selectedPosition) params.position = selectedPosition;
+    if (sortBy) params.sort_by = sortBy;
+
+    try {
+      const data = await api.members.list(params);
+      const results = Array.isArray(data) ? data : (data?.results || []);
+      setMembers((prev) => [...prev, ...results]);
+      setPage(nextPage);
+      setHasMore(Boolean(data?.next));
+    } catch (err) {
+      console.error('Failed to load more members', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handleFollowToggle = async (memberId: number) => {
     if (!user) {
@@ -230,6 +278,37 @@ export default function MembersDirectoryPage() {
         </div>
       </div>
 
+      {/* Directory Count Bar & View All Toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-[#161D36] border border-[#2C3960] px-5 py-3 rounded-2xl shadow-sm">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+          <span className="text-slate-300">
+            Showing <strong className="text-white font-bold">{members.length}</strong> of{' '}
+            <strong className="text-emerald-400 font-bold">{totalCount || members.length}</strong> registered members
+          </span>
+          {selectedBatch && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              {selectedBatch.replace('_', ' ')}
+            </span>
+          )}
+        </div>
+
+        {totalCount > 20 && (
+          <button
+            type="button"
+            onClick={() => setViewAll(!viewAll)}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
+              viewAll
+                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 hover:bg-purple-600/30'
+                : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>{viewAll ? 'Switch to Paginated View (20)' : `View All ${totalCount} Members`}</span>
+          </button>
+        )}
+      </div>
+
       {/* Members Grid */}
       {loading ? (
         <div className="card-gloss p-12 rounded-3xl text-center border border-[#2C3960] shadow-xl my-4">
@@ -242,7 +321,8 @@ export default function MembersDirectoryPage() {
           />
         </div>
       ) : members.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {members.map((member) => (
             <div
               key={member.id}
@@ -367,6 +447,55 @@ export default function MembersDirectoryPage() {
             </div>
           ))}
         </div>
+
+        {/* Pagination & Load More Controls */}
+        {!loading && hasMore && !viewAll && (
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              {loadingMore ? (
+                <>
+                  <Spinner size="xs" color="slate" />
+                  <span>Loading More Members...</span>
+                </>
+              ) : (
+                <>
+                  <span>Load More Members ({Math.max(0, totalCount - members.length)} remaining)</span>
+                  <ChevronDown className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewAll(true)}
+              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#1C2541] border border-[#2C3960] hover:border-emerald-500/50 text-slate-200 hover:text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Users className="w-3.5 h-3.5 text-emerald-400" />
+              <span>View All {totalCount} Members</span>
+            </button>
+          </div>
+        )}
+
+        {!loading && (viewAll || (!hasMore && members.length > 20)) && (
+          <div className="mt-8 p-4 rounded-2xl bg-[#161D36]/80 border border-[#2C3960] text-center text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span className="text-emerald-400 font-semibold">
+              ✓ All {members.length} members loaded across fellowship batches
+            </span>
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="text-xs text-slate-300 hover:text-white flex items-center gap-1 font-semibold underline underline-offset-4 cursor-pointer"
+            >
+              Back to top ↑
+            </button>
+          </div>
+        )}
+      </>
       ) : (
         <div className="text-center py-20 card-gloss rounded-2xl">
           <Users className="w-12 h-12 text-slate-500 mx-auto mb-3" />

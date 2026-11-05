@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import {
@@ -12,6 +12,7 @@ import {
   Clock,
   MapPin,
   ChevronRight,
+  ArrowLeft,
   Flame,
   Award,
   Camera,
@@ -30,6 +31,7 @@ import { apiCache } from '@/lib/cache';
 import { Suspense } from 'react';
 
 function BatchDetailContent() {
+  const router = useRouter();
   const { batchCode } = useParams();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -172,7 +174,36 @@ function BatchDetailContent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-screen">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 min-h-screen">
+      {/* Navigation Top Bar / Back Button */}
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push('/batches');
+            }
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#161D36] border border-[#2C3960] hover:border-emerald-500/60 hover:bg-[#1C2541] text-slate-300 hover:text-white text-xs font-bold transition-all shadow-md cursor-pointer hover:-translate-x-1"
+          title="Turn back to batches list"
+        >
+          <ArrowLeft className="w-4 h-4 text-emerald-400" />
+          <span>Back to Batches</span>
+        </button>
+
+        <div className="flex items-center gap-2">
+          <Link
+            href="/batches"
+            className="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center gap-1 font-semibold"
+          >
+            <span>All Batches</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+
       {/* Batch Hero Card */}
       <div
         className="card-gloss rounded-3xl p-6 sm:p-8 shadow-2xl border-t-4 mb-8"
