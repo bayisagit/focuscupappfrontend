@@ -425,7 +425,8 @@ export default function FrontendAdminPage() {
     setCoachesLoading(true);
     try {
       const res = await api.manager.getCoaches();
-      setCoachesData(res.batches || []);
+      const list = Array.isArray(res) ? res : (res?.batches || res?.results || []);
+      setCoachesData(list);
     } catch (err: any) {
       console.error('Failed to load coaches:', err);
       setCoachesData([]);
@@ -436,7 +437,8 @@ export default function FrontendAdminPage() {
 
   const handleOpenAppointCoach = (batch: any) => {
     setSelectedBatchForCoach(batch);
-    const defaultUsername = `coach_${(batch.batch_code || '').toLowerCase()}`;
+    const codeClean = (batch.batch_code || '').toLowerCase().replace('_year', '');
+    const defaultUsername = `coach_${codeClean}`;
     setAppointUsername(defaultUsername);
     setAppointPassword('');
     setShowAppointPassword(false);
@@ -510,6 +512,12 @@ export default function FrontendAdminPage() {
       loadCoaches();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user?.is_manager && activeTab === 'coaches') {
+      loadCoaches();
+    }
+  }, [activeTab, user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1265,7 +1273,11 @@ export default function FrontendAdminPage() {
                 </button>
 
                 <button
-                  onClick={() => { setActiveTab('coaches'); setMobileSidebarOpen(false); }}
+                  onClick={() => {
+                    setActiveTab('coaches');
+                    setMobileSidebarOpen(false);
+                    loadCoaches();
+                  }}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     activeTab === 'coaches'
                       ? 'bg-purple-600/80 text-white font-bold'
@@ -3263,18 +3275,19 @@ export default function FrontendAdminPage() {
                           <div
                             className="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-md"
                             style={{
-                              background: batch.primary_color
-                                ? `linear-gradient(135deg, ${batch.primary_color}, #0B0E1A)`
+                              background: (batch.color_hex || batch.primary_color)
+                                ? `linear-gradient(135deg, ${batch.color_hex || batch.primary_color}, #0B0E1A)`
                                 : 'linear-gradient(135deg, #7C3AED, #4338CA)',
-                              borderColor: batch.primary_color || '#8B5CF6',
+                              borderColor: batch.color_hex || batch.primary_color || '#8B5CF6',
                             }}
                           >
-                            {batch.batch_code || `${batch.year_number}th`}
+                            {batch.batch_code?.replace('_YEAR', '').replace('_', ' ') || `${batch.year_number || ''}th`}
                           </div>
                           <div>
                             <h3 className="text-base font-black text-white">{batch.name}</h3>
                             <span className="text-[11px] text-slate-400 font-mono">
-                              Batch Code: {batch.batch_code} &bull; {batch.eligible_members?.length || 0} Registered Members
+                              {batch.nickname ? `${batch.nickname} • ` : ''}
+                              {(batch.eligible_members || batch.eligible_candidates || []).length} Eligible Members
                             </span>
                           </div>
                         </div>
@@ -3296,9 +3309,9 @@ export default function FrontendAdminPage() {
                         {hasCoach ? (
                           <div className="p-4 rounded-2xl bg-[#161D36]/80 border border-[#2C3960]/70 flex items-start gap-4">
                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600/30 to-indigo-600/30 border-2 border-purple-500/40 flex items-center justify-center text-purple-200 font-black text-base shrink-0 overflow-hidden shadow-inner">
-                              {batch.coach.photo_url ? (
+                              {(batch.coach.photo_url || batch.coach.avatar_url) ? (
                                 <img
-                                  src={batch.coach.photo_url}
+                                  src={batch.coach.photo_url || batch.coach.avatar_url}
                                   alt={batch.coach.full_name}
                                   className="w-full h-full object-cover"
                                 />
@@ -3310,9 +3323,9 @@ export default function FrontendAdminPage() {
                             <div className="min-w-0 flex-1">
                               <h4 className="text-sm font-bold text-white truncate flex items-center gap-2">
                                 <span>{batch.coach.full_name}</span>
-                                {batch.coach.jersey_number && (
+                                {(batch.coach.jersey_number || batch.coach.preferred_jersey_number) && (
                                   <span className="px-1.5 py-0.2 rounded text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono font-bold">
-                                    #{batch.coach.jersey_number} Player-Coach
+                                    #{batch.coach.jersey_number || batch.coach.preferred_jersey_number} Player-Coach
                                   </span>
                                 )}
                               </h4>
@@ -3345,7 +3358,7 @@ export default function FrontendAdminPage() {
                     {/* Card Actions */}
                     <div className="border-t border-[#2C3960]/60 pt-4 flex flex-wrap items-center justify-between gap-2">
                       <span className="text-[11px] text-slate-400">
-                        {batch.eligible_members?.length || 0} eligible candidates
+                        {(batch.eligible_members || batch.eligible_candidates || []).length} eligible candidates
                       </span>
 
                       <div className="flex items-center gap-2">
@@ -4540,31 +4553,34 @@ export default function FrontendAdminPage() {
                 <label className="block text-xs font-bold text-slate-300 mb-1.5">
                   1. Select Member from {selectedBatchForCoach.name} <span className="text-rose-400">*</span>
                 </label>
-                {selectedBatchForCoach.eligible_members?.length > 0 ? (
-                  <select
-                    value={appointMemberId}
-                    onChange={(e) => {
-                      setAppointMemberId(e.target.value);
-                      const m = selectedBatchForCoach.eligible_members.find((x: any) => String(x.id) === e.target.value);
-                      if (m && !appointUsername) {
-                        setAppointUsername(`coach_${(m.full_name || 'batch').toLowerCase().split(' ')[0]}`);
-                      }
-                    }}
-                    required
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer"
-                  >
-                    <option value="">-- Choose an approved member --</option>
-                    {selectedBatchForCoach.eligible_members.map((m: any) => (
-                      <option key={m.id} value={m.id}>
-                        {m.full_name} {m.jersey_number ? `(#${m.jersey_number})` : ''} - {m.department || 'Member'}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
-                    ⚠️ No approved members found for this batch. Members must apply and be approved first.
-                  </div>
-                )}
+                {(() => {
+                  const candidateList = selectedBatchForCoach.eligible_members || selectedBatchForCoach.eligible_candidates || [];
+                  return candidateList.length > 0 ? (
+                    <select
+                      value={appointMemberId}
+                      onChange={(e) => {
+                        setAppointMemberId(e.target.value);
+                        const m = candidateList.find((x: any) => String(x.id) === e.target.value);
+                        if (m && !appointUsername) {
+                          setAppointUsername(`coach_${(m.full_name || 'batch').toLowerCase().split(' ')[0]}`);
+                        }
+                      }}
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#161D36] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                    >
+                      <option value="">-- Choose an approved member ({candidateList.length} available) --</option>
+                      {candidateList.map((m: any) => (
+                        <option key={m.id} value={m.id}>
+                          {m.full_name} {m.jersey_number || m.preferred_jersey_number ? `(#${m.jersey_number || m.preferred_jersey_number})` : ''} - {m.department || 'Member'}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
+                      ⚠️ No approved members found for this batch. Members must apply and be approved first.
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Step 2: Dedicated Coach Username */}
