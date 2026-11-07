@@ -104,9 +104,187 @@ interface FormationPosition {
   y: number; // 0 to 100
 }
 
-const FORMATIONS: Record<string, { name: string; positions: FormationPosition[] }> = {
+interface FormationConfig {
+  name: string;
+  players: 8 | 9 | 11;
+  positions: FormationPosition[];
+}
+
+const FORMATIONS: Record<string, FormationConfig> = {
+  // ==========================================
+  // --- 9-PLAYER SYSTEMS (ACTIVE FORMAT) ---
+  // ==========================================
+  '3-3-2': {
+    name: '3-3-2 Balanced',
+    players: 9,
+    positions: [
+      { role: 'GK', x: 50, y: 88 },
+      { role: 'LCB', x: 24, y: 72 },
+      { role: 'CB', x: 50, y: 75 },
+      { role: 'RCB', x: 76, y: 72 },
+      { role: 'LM', x: 22, y: 48 },
+      { role: 'CM', x: 50, y: 50 },
+      { role: 'RM', x: 78, y: 48 },
+      { role: 'LS', x: 36, y: 22 },
+      { role: 'RS', x: 64, y: 22 },
+    ],
+  },
+  '3-2-3': {
+    name: '3-2-3 Attacking Trio',
+    players: 9,
+    positions: [
+      { role: 'GK', x: 50, y: 88 },
+      { role: 'LCB', x: 24, y: 73 },
+      { role: 'CB', x: 50, y: 76 },
+      { role: 'RCB', x: 76, y: 73 },
+      { role: 'LCM', x: 35, y: 52 },
+      { role: 'RCM', x: 65, y: 52 },
+      { role: 'LW', x: 22, y: 25 },
+      { role: 'ST', x: 50, y: 19 },
+      { role: 'RW', x: 78, y: 25 },
+    ],
+  },
+  '2-4-2': {
+    name: '2-4-2 Midfield Control',
+    players: 9,
+    positions: [
+      { role: 'GK', x: 50, y: 88 },
+      { role: 'LCB', x: 35, y: 74 },
+      { role: 'RCB', x: 65, y: 74 },
+      { role: 'LM', x: 18, y: 48 },
+      { role: 'LCM', x: 39, y: 52 },
+      { role: 'RCM', x: 61, y: 52 },
+      { role: 'RM', x: 82, y: 48 },
+      { role: 'LS', x: 36, y: 22 },
+      { role: 'RS', x: 64, y: 22 },
+    ],
+  },
+  '3-4-1': {
+    name: '3-4-1 Anchor & Wings',
+    players: 9,
+    positions: [
+      { role: 'GK', x: 50, y: 88 },
+      { role: 'LCB', x: 24, y: 73 },
+      { role: 'CB', x: 50, y: 76 },
+      { role: 'RCB', x: 76, y: 73 },
+      { role: 'LM', x: 18, y: 50 },
+      { role: 'LCM', x: 39, y: 52 },
+      { role: 'RCM', x: 61, y: 52 },
+      { role: 'RM', x: 82, y: 50 },
+      { role: 'ST', x: 50, y: 20 },
+    ],
+  },
+  '2-3-3': {
+    name: '2-3-3 High Press',
+    players: 9,
+    positions: [
+      { role: 'GK', x: 50, y: 88 },
+      { role: 'LCB', x: 35, y: 74 },
+      { role: 'RCB', x: 65, y: 74 },
+      { role: 'LM', x: 22, y: 50 },
+      { role: 'CM', x: 50, y: 52 },
+      { role: 'RM', x: 78, y: 50 },
+      { role: 'LW', x: 22, y: 25 },
+      { role: 'ST', x: 50, y: 19 },
+      { role: 'RW', x: 78, y: 25 },
+    ],
+  },
+  '4-3-1': {
+    name: '4-3-1 Solid Fortress',
+    players: 9,
+    positions: [
+      { role: 'GK', x: 50, y: 88 },
+      { role: 'LB', x: 16, y: 72 },
+      { role: 'CB', x: 38, y: 75 },
+      { role: 'CB', x: 62, y: 75 },
+      { role: 'RB', x: 84, y: 72 },
+      { role: 'LCM', x: 28, y: 48 },
+      { role: 'CM', x: 50, y: 50 },
+      { role: 'RCM', x: 72, y: 48 },
+      { role: 'ST', x: 50, y: 22 },
+    ],
+  },
+
+  // ==========================================
+  // --- 8-PLAYER SYSTEMS ---
+  // ==========================================
+  '3-3-1': {
+    name: '3-3-1 Classic 8s',
+    players: 8,
+    positions: [
+      { role: 'GK', x: 50, y: 88 },
+      { role: 'LCB', x: 24, y: 73 },
+      { role: 'CB', x: 50, y: 76 },
+      { role: 'RCB', x: 76, y: 73 },
+      { role: 'LM', x: 22, y: 48 },
+      { role: 'CM', x: 50, y: 50 },
+      { role: 'RM', x: 78, y: 48 },
+      { role: 'ST', x: 50, y: 21 },
+    ],
+  },
+  '2-4-1': {
+    name: '2-4-1 Wide Midfield',
+    players: 8,
+    positions: [
+      { role: 'GK', x: 50, y: 88 },
+      { role: 'LCB', x: 35, y: 74 },
+      { role: 'RCB', x: 65, y: 74 },
+      { role: 'LM', x: 18, y: 48 },
+      { role: 'LCM', x: 39, y: 52 },
+      { role: 'RCM', x: 61, y: 52 },
+      { role: 'RM', x: 82, y: 48 },
+      { role: 'ST', x: 50, y: 20 },
+    ],
+  },
+  '3-2-2': {
+    name: '3-2-2 Twin Strike',
+    players: 8,
+    positions: [
+      { role: 'GK', x: 50, y: 88 },
+      { role: 'LCB', x: 24, y: 73 },
+      { role: 'CB', x: 50, y: 76 },
+      { role: 'RCB', x: 76, y: 73 },
+      { role: 'LCM', x: 36, y: 50 },
+      { role: 'RCM', x: 64, y: 50 },
+      { role: 'LS', x: 36, y: 22 },
+      { role: 'RS', x: 64, y: 22 },
+    ],
+  },
+  '2-3-2': {
+    name: '2-3-2 Dynamic Attack',
+    players: 8,
+    positions: [
+      { role: 'GK', x: 50, y: 88 },
+      { role: 'LCB', x: 35, y: 74 },
+      { role: 'RCB', x: 65, y: 74 },
+      { role: 'LM', x: 22, y: 48 },
+      { role: 'CM', x: 50, y: 50 },
+      { role: 'RM', x: 78, y: 48 },
+      { role: 'LS', x: 36, y: 22 },
+      { role: 'RS', x: 64, y: 22 },
+    ],
+  },
+  '3-1-3': {
+    name: '3-1-3 Diamond Front',
+    players: 8,
+    positions: [
+      { role: 'GK', x: 50, y: 88 },
+      { role: 'LCB', x: 24, y: 74 },
+      { role: 'CB', x: 50, y: 76 },
+      { role: 'RCB', x: 76, y: 74 },
+      { role: 'DM', x: 50, y: 52 },
+      { role: 'LW', x: 22, y: 25 },
+      { role: 'ST', x: 50, y: 19 },
+      { role: 'RW', x: 78, y: 25 },
+    ],
+  },
+
+  // ==========================================
+  // --- 11-PLAYER SYSTEMS (STANDARD XI) ---
+  // ==========================================
   '4-3-3': {
     name: '4-3-3 Attack',
+    players: 11,
     positions: [
       { role: 'GK', x: 50, y: 88 },
       { role: 'LB', x: 16, y: 70 },
@@ -123,6 +301,7 @@ const FORMATIONS: Record<string, { name: string; positions: FormationPosition[] 
   },
   '4-2-3-1': {
     name: '4-2-3-1 Modern',
+    players: 11,
     positions: [
       { role: 'GK', x: 50, y: 88 },
       { role: 'LB', x: 16, y: 72 },
@@ -139,6 +318,7 @@ const FORMATIONS: Record<string, { name: string; positions: FormationPosition[] 
   },
   '4-4-2': {
     name: '4-4-2 Classic',
+    players: 11,
     positions: [
       { role: 'GK', x: 50, y: 88 },
       { role: 'LB', x: 16, y: 72 },
@@ -155,6 +335,7 @@ const FORMATIONS: Record<string, { name: string; positions: FormationPosition[] 
   },
   '3-5-2': {
     name: '3-5-2 Dynamic',
+    players: 11,
     positions: [
       { role: 'GK', x: 50, y: 88 },
       { role: 'CB', x: 25, y: 74 },
@@ -171,6 +352,7 @@ const FORMATIONS: Record<string, { name: string; positions: FormationPosition[] 
   },
   '3-4-3': {
     name: '3-4-3 Frontline',
+    players: 11,
     positions: [
       { role: 'GK', x: 50, y: 88 },
       { role: 'CB', x: 25, y: 74 },
@@ -197,7 +379,8 @@ export default function LineupPosterGenerator({
   embedded = false,
 }: LineupPosterGeneratorProps) {
   const [teamSide, setTeamSide] = useState<'home' | 'away'>('home');
-  const [formationKey, setFormationKey] = useState<string>('4-3-3');
+  const [squadFormat, setSquadFormat] = useState<8 | 9 | 11>(9);
+  const [formationKey, setFormationKey] = useState<string>('3-3-2');
   const [posterStyle, setPosterStyle] = useState<'matchday' | 'tactical'>('matchday');
   const [featuredPlayerId, setFeaturedPlayerId] = useState<string>('');
   const [customHeroPhoto, setCustomHeroPhoto] = useState<string | null>(null);
@@ -222,16 +405,25 @@ export default function LineupPosterGenerator({
   const opponentTeam = teamSide === 'home' ? match.away_team : match.home_team;
   const currentSquad = teamSide === 'home' ? homeSquad : awaySquad;
 
-  // Starters (up to 11) and Subs
-  const starters = useMemo(() => {
+  // Maximum players on pitch for selected system/format (8, 9, or 11)
+  const maxStarters = FORMATIONS[formationKey]?.players || squadFormat;
+
+  // All confirmed starters in squad, sorted GK first, then outfield
+  const allStarters = useMemo(() => {
     const s = currentSquad.filter((p) => p.is_starter);
-    // Sort so GK is first, then outfield players
     return s.sort((a, b) => (b.is_goalkeeper ? 1 : 0) - (a.is_goalkeeper ? 1 : 0));
   }, [currentSquad]);
 
+  // Starters active on the pitch for this match format
+  const starters = useMemo(() => {
+    return allStarters.slice(0, maxStarters);
+  }, [allStarters, maxStarters]);
+
+  // Substitutes (all squad players not active on the pitch)
   const substitutes = useMemo(() => {
-    return currentSquad.filter((p) => !p.is_starter);
-  }, [currentSquad]);
+    const starterIds = new Set(starters.map((p) => String(p.player_id || p.id)));
+    return currentSquad.filter((p) => !starterIds.has(String(p.player_id || p.id)));
+  }, [currentSquad, starters]);
 
   // Featured player default selection (prioritize captain, or player with photo, or 1st starter)
   useEffect(() => {
@@ -245,6 +437,29 @@ export default function LineupPosterGenerator({
       }
     }
   }, [currentSquad, starters, featuredPlayerId]);
+
+  // Switch match format (8, 9, or 11 players)
+  const handleSquadFormatChange = (newFormat: 8 | 9 | 11) => {
+    setSquadFormat(newFormat);
+    setCustomPositions({});
+    if (newFormat === 8) {
+      setFormationKey('3-3-1');
+    } else if (newFormat === 9) {
+      setFormationKey('3-3-2');
+    } else {
+      setFormationKey('4-3-3');
+    }
+  };
+
+  // Switch tactical formation and automatically synchronize squadFormat
+  const handleFormationSelect = (newKey: string) => {
+    setFormationKey(newKey);
+    setCustomPositions({});
+    const fmt = FORMATIONS[newKey]?.players;
+    if (fmt && fmt !== squadFormat) {
+      setSquadFormat(fmt);
+    }
+  };
 
   // When team changes, reset featured player and custom positions
   const handleTeamChange = (newSide: 'home' | 'away') => {
@@ -630,13 +845,13 @@ export default function LineupPosterGenerator({
     ctx.fillText(`${matchDateFormatted} • ${kickOffFormatted}`, pillX + pillW / 2, pillY + 26);
     ctx.restore();
 
-    // 9. STARTING XI PRESENTATION (MATCHDAY LIST vs TACTICAL PITCH)
+    // 9. STARTING LINEUP PRESENTATION (MATCHDAY LIST vs TACTICAL PITCH)
     if (posterStyle === 'matchday') {
       // Bold, Uppercase, Condensed Starting Lineup (Matchday Card Style)
       ctx.save();
-      const listStartY = 280;
-      const rowHeight = 72;
-      const displayStarters = starters.slice(0, 11);
+      const rowHeight = maxStarters <= 8 ? 86 : maxStarters <= 9 ? 80 : 72;
+      const listStartY = maxStarters <= 8 ? 320 : maxStarters <= 9 ? 295 : 280;
+      const displayStarters = starters;
 
       displayStarters.forEach((player, idx) => {
         const y = listStartY + idx * rowHeight;
@@ -672,6 +887,7 @@ export default function LineupPosterGenerator({
       const pitchH = 820;
 
       // Formation Header Banner
+      const currentFormation = FORMATIONS[formationKey] || FORMATIONS['3-3-2'];
       ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
       ctx.beginPath();
       ctx.roundRect(pitchX, pitchY - 45, pitchW, 36, 18);
@@ -680,7 +896,7 @@ export default function LineupPosterGenerator({
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '800 16px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`FORMATION • ${FORMATIONS[formationKey]?.name || formationKey}`, pitchX + pitchW / 2, pitchY - 22);
+      ctx.fillText(`FORMATION • ${currentFormation.name} (${currentFormation.players}-a-side)`, pitchX + pitchW / 2, pitchY - 22);
 
       // Pitch Grass / Tactical Board Background
       const pitchGrad = ctx.createLinearGradient(pitchX, pitchY, pitchX + pitchW, pitchY + pitchH);
@@ -713,11 +929,11 @@ export default function LineupPosterGenerator({
       ctx.restore();
 
       // Place starters according to formation positions or custom drag positions
-      const positions = FORMATIONS[formationKey]?.positions || FORMATIONS['4-3-3'].positions;
-      const displayStarters = starters.slice(0, 11);
+      const currentPositions = (FORMATIONS[formationKey] || FORMATIONS['3-3-2']).positions;
+      const displayStarters = starters;
 
       displayStarters.forEach((player, idx) => {
-        const defaultPos = positions[idx] || { x: 50, y: 50 };
+        const defaultPos = currentPositions[idx] || { x: 50, y: 50 };
         const pos = customPositions[idx] || defaultPos;
         const px = pitchX + (pos.x / 100) * pitchW;
         const py = pitchY + (pos.y / 100) * pitchH;
@@ -839,7 +1055,8 @@ export default function LineupPosterGenerator({
       const { blob } = await getPosterBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      const filename = `FocusCup_StartingXI_${currentTeam.name.replace(/\s+/g, '_')}_Round${match.round_number || 1}.png`;
+      const lineupLabel = maxStarters === 9 ? 'StartingIX' : maxStarters === 8 ? 'StartingVIII' : 'StartingXI';
+      const filename = `FocusCup_${lineupLabel}_${currentTeam.name.replace(/\s+/g, '_')}_Round${match.round_number || 1}.png`;
       link.download = filename;
       link.href = url;
       link.click();
@@ -867,19 +1084,21 @@ export default function LineupPosterGenerator({
       const uploadRes = await uploadToCloudinary(blob, 'focus_fellowship/lineups');
       const imageUrl = uploadRes.secure_url;
 
+      const lineupLabel = maxStarters === 9 ? 'Starting IX' : maxStarters === 8 ? 'Starting VIII' : 'Starting XI';
+      const currentFormation = FORMATIONS[formationKey] || FORMATIONS['3-3-2'];
+
       // Construct high-impact announcement content
       const starterListText = starters
-        .slice(0, 11)
         .map((p, i) => `${i + 1}. ${p.player_name} #${p.jersey_number || 'NA'}${p.is_captain ? ' (C)' : ''}`)
         .join(', ');
 
       const subsListText = substitutes.map((p) => `${p.player_name} #${p.jersey_number || 'NA'}`).join(', ');
 
       const announcementPayload = {
-        title: `🔥 Official Starting XI: ${currentTeam.name} vs ${opponentTeam.name}`,
+        title: `🔥 Official ${lineupLabel} (${maxStarters}-a-side): ${currentTeam.name} vs ${opponentTeam.name}`,
         category: 'MATCH_DAY',
         priority: 'IMPORTANT',
-        content: `Official starting line-up confirmed for Round ${match.round_number || '1'} showdown! Match date: ${matchDateFormatted} at ${kickOffFormatted} (${match.venue || 'AASTU Football Field'}). Starters: ${starterListText}. Subs: ${subsListText || 'None'}. Playing for His Glory!`,
+        content: `Official starting line-up confirmed for Round ${match.round_number || '1'} showdown! Format: ${maxStarters}-a-side match (${currentFormation.name}). Match date: ${matchDateFormatted} at ${kickOffFormatted} (${match.venue || 'AASTU Football Field'}). Starters: ${starterListText}. Subs: ${subsListText || 'None'}. Playing for His Glory!`,
         image_url: imageUrl,
         is_pinned: true,
       };
@@ -894,11 +1113,12 @@ export default function LineupPosterGenerator({
           team_id: currentTeam.id,
           opponent_team_id: opponentTeam.id,
           round_number: match.round_number || 1,
-          title: `Starting XI: ${currentTeam.name} vs ${opponentTeam.name}`,
+          title: `${lineupLabel} (${maxStarters}-a-side): ${currentTeam.name} vs ${opponentTeam.name}`,
           image_url: imageUrl,
           data_snapshot: {
             poster_style: posterStyle,
             formation: formationKey,
+            match_format: `${maxStarters}-a-side`,
             featured_player: featuredPlayer
               ? {
                   player_name: featuredPlayer.player_name,
@@ -907,7 +1127,7 @@ export default function LineupPosterGenerator({
                   is_goalkeeper: featuredPlayer.is_goalkeeper,
                 }
               : null,
-            starters: starters.slice(0, 11).map((s) => ({
+            starters: starters.map((s) => ({
               player_name: s.player_name,
               jersey_number: s.jersey_number,
               is_captain: s.is_captain,
@@ -1076,6 +1296,60 @@ export default function LineupPosterGenerator({
               </div>
             </div>
 
+            {/* Match Format Selector (8, 9, or 11 Players) */}
+            <div className="p-4 rounded-2xl bg-[#161D36] border border-[#2C3960] space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-300 block uppercase tracking-wider flex items-center gap-1.5">
+                  <Shirt className="w-3.5 h-3.5 text-purple-400" />
+                  Match Format (Players on Pitch)
+                </label>
+                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  {maxStarters}-a-side
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSquadFormatChange(9)}
+                  className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                    squadFormat === 9
+                      ? 'bg-purple-600/30 border-purple-400 text-white shadow-md ring-1 ring-purple-400'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span className="text-xs font-black text-white">9 Players</span>
+                  <span className="text-[9px] font-semibold text-emerald-400">Active Format</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSquadFormatChange(8)}
+                  className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                    squadFormat === 8
+                      ? 'bg-purple-600/30 border-purple-400 text-white shadow-md ring-1 ring-purple-400'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span className="text-xs font-black text-white">8 Players</span>
+                  <span className="text-[9px] font-semibold text-slate-400">8-a-side</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSquadFormatChange(11)}
+                  className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                    squadFormat === 11
+                      ? 'bg-purple-600/30 border-purple-400 text-white shadow-md ring-1 ring-purple-400'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span className="text-xs font-black text-white">11 Players</span>
+                  <span className="text-[9px] font-semibold text-slate-400">Standard XI</span>
+                </button>
+              </div>
+            </div>
+
             {/* Poster Layout Style & Formation */}
             <div className="p-4 rounded-2xl bg-[#161D36] border border-[#2C3960] space-y-3">
               <label className="text-xs font-bold text-slate-300 block uppercase tracking-wider">
@@ -1112,7 +1386,7 @@ export default function LineupPosterGenerator({
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] text-slate-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
                       <Move className="w-3.5 h-3.5 text-emerald-400" />
-                      Tactical System &amp; Formation
+                      Tactical System ({maxStarters}-a-side)
                     </label>
                     {Object.keys(customPositions).length > 0 && (
                       <button
@@ -1131,17 +1405,36 @@ export default function LineupPosterGenerator({
 
                   <select
                     value={formationKey}
-                    onChange={(e) => {
-                      setFormationKey(e.target.value);
-                      setCustomPositions({});
-                    }}
+                    onChange={(e) => handleFormationSelect(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-400"
                   >
-                    {Object.keys(FORMATIONS).map((k) => (
-                      <option key={k} value={k}>
-                        {FORMATIONS[k].name} ({k})
-                      </option>
-                    ))}
+                    <optgroup label="9-A-SIDE SYSTEMS (ACTIVE TOURNAMENT FORMAT)">
+                      {Object.entries(FORMATIONS)
+                        .filter(([_, f]) => f.players === 9)
+                        .map(([k, f]) => (
+                          <option key={k} value={k}>
+                            {f.name} ({k})
+                          </option>
+                        ))}
+                    </optgroup>
+                    <optgroup label="8-A-SIDE SYSTEMS">
+                      {Object.entries(FORMATIONS)
+                        .filter(([_, f]) => f.players === 8)
+                        .map(([k, f]) => (
+                          <option key={k} value={k}>
+                            {f.name} ({k})
+                          </option>
+                        ))}
+                    </optgroup>
+                    <optgroup label="11-A-SIDE SYSTEMS (STANDARD XI)">
+                      {Object.entries(FORMATIONS)
+                        .filter(([_, f]) => f.players === 11)
+                        .map(([k, f]) => (
+                          <option key={k} value={k}>
+                            {f.name} ({k})
+                          </option>
+                        ))}
+                    </optgroup>
                   </select>
 
                   {/* Interactive Drag & Drop Pitch Board */}
@@ -1149,7 +1442,7 @@ export default function LineupPosterGenerator({
                     <div className="flex items-center justify-between px-0.5">
                       <span className="text-[11px] text-emerald-300 font-bold flex items-center gap-1.5">
                         <Move className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                        Interactive Pitch Board (Drag &amp; Drop)
+                        Interactive Pitch Board ({maxStarters} Players)
                       </span>
                       {Object.keys(customPositions).length > 0 ? (
                         <span className="text-[9px] font-extrabold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40">
@@ -1163,7 +1456,7 @@ export default function LineupPosterGenerator({
                     </div>
 
                     <p className="text-[10px] text-slate-400 leading-tight">
-                      Touch or click &amp; drag any player token to move them to your custom tactical spot.
+                      Touch or click &amp; drag any of the {maxStarters} player tokens to move them anywhere on the pitch.
                     </p>
 
                     <div
@@ -1192,7 +1485,7 @@ export default function LineupPosterGenerator({
                       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-36 h-10 border-t border-x border-white/30 pointer-events-none rounded-t-md" />
 
                       {/* Draggable Starter Tokens */}
-                      {starters.slice(0, 11).map((player, idx) => {
+                      {starters.map((player, idx) => {
                         const defaultPos = FORMATIONS[formationKey]?.positions[idx] || { x: 50, y: 50 };
                         const pos = customPositions[idx] || defaultPos;
                         const isDragging = activeDragIndex === idx && activeBoard === 'editor';
@@ -1244,16 +1537,18 @@ export default function LineupPosterGenerator({
             {/* Squad Summary Pill */}
             <div className="p-4 rounded-2xl bg-[#161D36]/60 border border-[#2C3960]/60 space-y-2 text-xs">
               <div className="flex items-center justify-between text-slate-300 font-semibold">
-                <span>Starting XI Confirmed:</span>
-                <span className="text-emerald-400 font-bold">{starters.length}/11 Players</span>
+                <span>
+                  {maxStarters === 9 ? 'Starting IX' : maxStarters === 8 ? 'Starting VIII' : 'Starting XI'} ({maxStarters}-a-side):
+                </span>
+                <span className="text-emerald-400 font-bold">{starters.length}/{maxStarters} Players</span>
               </div>
               <div className="flex items-center justify-between text-slate-300 font-semibold">
                 <span>Substitutes Bench:</span>
                 <span className="text-purple-300 font-bold">{substitutes.length} Players</span>
               </div>
-              {starters.length < 11 && (
+              {starters.length < maxStarters && (
                 <p className="text-[11px] text-amber-300 font-medium">
-                  ⚠️ Note: {starters.length} starters selected. Poster will display confirmed starters.
+                  ⚠️ Note: {starters.length} starters selected. Poster will display confirmed starters for this {maxStarters}-player match.
                 </p>
               )}
             </div>
@@ -1408,7 +1703,7 @@ export default function LineupPosterGenerator({
                 {/* Content: Matchday Card Style vs Tactical Pitch */}
                 {posterStyle === 'matchday' ? (
                   <div className="my-auto space-y-1 pl-3 text-right">
-                    {starters.slice(0, 11).map((p, idx) => {
+                    {starters.map((p, idx) => {
                       const formattedName = formatPlayerDisplayName(p.player_name, true);
                       const num = p.jersey_number || idx + 1;
                       return (
@@ -1429,6 +1724,11 @@ export default function LineupPosterGenerator({
                     ref={previewPitchRef}
                     className="relative my-auto h-[55%] rounded-xl bg-gradient-to-b from-[#064E3B] to-[#042F2E] border border-emerald-400/40 p-1 flex flex-col justify-between overflow-hidden select-none touch-none"
                   >
+                    {/* Formation Badge */}
+                    <div className="absolute top-1 left-1.5 z-10 px-1.5 py-0.5 rounded-full bg-black/60 border border-white/20 text-[7px] font-black text-emerald-300 uppercase tracking-wider">
+                      {formationKey} • {maxStarters}p
+                    </div>
+
                     {/* Pitch markings */}
                     <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1px] bg-white/30 pointer-events-none" />
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-white/30 pointer-events-none" />
@@ -1436,7 +1736,7 @@ export default function LineupPosterGenerator({
                     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-5 border-t border-x border-white/25 pointer-events-none" />
 
                     {/* Formations positions (Supports live drag & drop) */}
-                    {starters.slice(0, 11).map((p, i) => {
+                    {starters.map((p, i) => {
                       const defaultPos = FORMATIONS[formationKey]?.positions[i] || { x: 50, y: 50 };
                       const pos = customPositions[i] || defaultPos;
                       const isDragging = activeDragIndex === i && activeBoard === 'preview';
