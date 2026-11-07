@@ -21,6 +21,8 @@ import {
   Clock,
   Shield,
   Upload,
+  Move,
+  RotateCcw,
 } from 'lucide-react';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { api } from '@/lib/api';
@@ -204,6 +206,13 @@ export default function LineupPosterGenerator({
   const [isPublishing, setIsPublishing] = useState<boolean>(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
+  // Custom Tactical Drag & Drop state
+  const [customPositions, setCustomPositions] = useState<Record<number, { x: number; y: number }>>({});
+  const [activeDragIndex, setActiveDragIndex] = useState<number | null>(null);
+  const [activeBoard, setActiveBoard] = useState<'editor' | 'preview' | null>(null);
+
+  const editorPitchRef = useRef<HTMLDivElement | null>(null);
+  const previewPitchRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -237,9 +246,10 @@ export default function LineupPosterGenerator({
     }
   }, [currentSquad, starters, featuredPlayerId]);
 
-  // When team changes, reset featured player to suit new team
+  // When team changes, reset featured player and custom positions
   const handleTeamChange = (newSide: 'home' | 'away') => {
     setTeamSide(newSide);
+    setCustomPositions({});
     const newSquad = newSide === 'home' ? homeSquad : awaySquad;
     const captain = newSquad.find((p) => p.is_captain);
     const withPhoto = newSquad.find((p) => Boolean(p.avatar_url || p.profile_picture || p.profile_picture_url));
@@ -247,6 +257,64 @@ export default function LineupPosterGenerator({
     if (best) {
       setFeaturedPlayerId(String(best.player_id || best.id));
     }
+  };
+
+  /**
+   * Pointer Events Drag-and-Drop handlers for interactive tactical pitch board.
+   * Works smoothly on desktop mice and mobile touch screens with pointer capture.
+   */
+  const handlePointerDown = (
+    e: React.PointerEvent<HTMLDivElement>,
+    index: number,
+    board: 'editor' | 'preview'
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // safe fallback if pointer capture is unsupported
+    }
+    setActiveDragIndex(index);
+    setActiveBoard(board);
+  };
+
+  const handlePointerMove = (
+    e: React.PointerEvent<HTMLDivElement>,
+    index: number,
+    board: 'editor' | 'preview'
+  ) => {
+    if (activeDragIndex !== index || activeBoard !== board) return;
+    const targetPitch = board === 'editor' ? editorPitchRef.current : previewPitchRef.current;
+    if (!targetPitch) return;
+
+    const rect = targetPitch.getBoundingClientRect();
+    const rawX = ((e.clientX - rect.left) / rect.width) * 100;
+    const rawY = ((e.clientY - rect.top) / rect.height) * 100;
+
+    // Clamp coordinates safely inside pitch boundaries (6% to 94%)
+    const clampedX = Math.round(Math.min(94, Math.max(6, rawX)) * 10) / 10;
+    const clampedY = Math.round(Math.min(94, Math.max(6, rawY)) * 10) / 10;
+
+    setCustomPositions((prev) => ({
+      ...prev,
+      [index]: { x: clampedX, y: clampedY },
+    }));
+  };
+
+  const handlePointerUp = (
+    e: React.PointerEvent<HTMLDivElement>,
+    _index: number
+  ) => {
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // safe fallback
+    }
+    setActiveDragIndex(null);
+    setActiveBoard(null);
   };
 
   const featuredPlayer = useMemo(() => {
@@ -644,12 +712,13 @@ export default function LineupPosterGenerator({
       ctx.strokeRect(pitchX + pitchW * 0.22, pitchY + pitchH * 0.84, pitchW * 0.56, pitchH * 0.16);
       ctx.restore();
 
-      // Place starters according to formation positions
+      // Place starters according to formation positions or custom drag positions
       const positions = FORMATIONS[formationKey]?.positions || FORMATIONS['4-3-3'].positions;
       const displayStarters = starters.slice(0, 11);
 
       displayStarters.forEach((player, idx) => {
-        const pos = positions[idx] || { x: 50, y: 50 };
+        const defaultPos = positions[idx] || { x: 50, y: 50 };
+        const pos = customPositions[idx] || defaultPos;
         const px = pitchX + (pos.x / 100) * pitchW;
         const py = pitchY + (pos.y / 100) * pitchH;
 
@@ -1039,12 +1108,34 @@ export default function LineupPosterGenerator({
               </div>
 
               {posterStyle === 'tactical' && (
-                <div>
-                  <label className="text-[11px] text-slate-400 block mb-1">Tactical System</label>
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-slate-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <Move className="w-3.5 h-3.5 text-emerald-400" />
+                      Tactical System &amp; Formation
+                    </label>
+                    {Object.keys(customPositions).length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomPositions({});
+                          setFeedbackMsg({ text: `Reset all player positions to ${formationKey} preset.`, type: 'success' });
+                        }}
+                        className="px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors border border-amber-500/30"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Reset Positions
+                      </button>
+                    )}
+                  </div>
+
                   <select
                     value={formationKey}
-                    onChange={(e) => setFormationKey(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white focus:outline-none"
+                    onChange={(e) => {
+                      setFormationKey(e.target.value);
+                      setCustomPositions({});
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-400"
                   >
                     {Object.keys(FORMATIONS).map((k) => (
                       <option key={k} value={k}>
@@ -1052,6 +1143,100 @@ export default function LineupPosterGenerator({
                       </option>
                     ))}
                   </select>
+
+                  {/* Interactive Drag & Drop Pitch Board */}
+                  <div className="rounded-2xl border border-emerald-500/40 bg-[#07131D] p-2.5 space-y-2">
+                    <div className="flex items-center justify-between px-0.5">
+                      <span className="text-[11px] text-emerald-300 font-bold flex items-center gap-1.5">
+                        <Move className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                        Interactive Pitch Board (Drag &amp; Drop)
+                      </span>
+                      {Object.keys(customPositions).length > 0 ? (
+                        <span className="text-[9px] font-extrabold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40">
+                          {Object.keys(customPositions).length} Customized
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-slate-400 font-semibold">
+                          Preset Formation
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-[10px] text-slate-400 leading-tight">
+                      Touch or click &amp; drag any player token to move them to your custom tactical spot.
+                    </p>
+
+                    <div
+                      ref={editorPitchRef}
+                      className="relative w-full aspect-[4/3] rounded-xl bg-gradient-to-b from-[#064E3B] via-[#043d32] to-[#042F2E] border-2 border-white/20 select-none overflow-hidden touch-none shadow-inner"
+                    >
+                      {/* Pitch Grass Stripes */}
+                      <div className="absolute inset-0 opacity-10 pointer-events-none flex flex-col">
+                        <div className="flex-1 bg-white/10" />
+                        <div className="flex-1 bg-transparent" />
+                        <div className="flex-1 bg-white/10" />
+                        <div className="flex-1 bg-transparent" />
+                        <div className="flex-1 bg-white/10" />
+                        <div className="flex-1 bg-transparent" />
+                      </div>
+
+                      {/* Halfway Line & Center Circle */}
+                      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1px] bg-white/35 pointer-events-none" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full border border-white/35 pointer-events-none" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/60 pointer-events-none" />
+
+                      {/* Top Penalty Area */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-10 border-b border-x border-white/30 pointer-events-none rounded-b-md" />
+
+                      {/* Bottom Penalty Area (GK side) */}
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-36 h-10 border-t border-x border-white/30 pointer-events-none rounded-t-md" />
+
+                      {/* Draggable Starter Tokens */}
+                      {starters.slice(0, 11).map((player, idx) => {
+                        const defaultPos = FORMATIONS[formationKey]?.positions[idx] || { x: 50, y: 50 };
+                        const pos = customPositions[idx] || defaultPos;
+                        const isDragging = activeDragIndex === idx && activeBoard === 'editor';
+                        const isGK = player.is_goalkeeper || idx === 0;
+
+                        return (
+                          <div
+                            key={String(player.player_id || player.id || idx)}
+                            onPointerDown={(e) => handlePointerDown(e, idx, 'editor')}
+                            onPointerMove={(e) => handlePointerMove(e, idx, 'editor')}
+                            onPointerUp={(e) => handlePointerUp(e, idx)}
+                            onPointerCancel={(e) => handlePointerUp(e, idx)}
+                            style={{
+                              left: `${pos.x}%`,
+                              top: `${pos.y}%`,
+                            }}
+                            className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing transition-transform ${
+                              isDragging ? 'scale-125 z-40' : 'hover:scale-110 z-20'
+                            }`}
+                          >
+                            <div className="flex flex-col items-center">
+                              <div
+                                className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shadow-lg border-2 ${
+                                  isDragging
+                                    ? 'ring-2 ring-emerald-300 ring-offset-1 ring-offset-black scale-110'
+                                    : ''
+                                } ${
+                                  isGK
+                                    ? 'bg-amber-400 text-black border-white'
+                                    : 'bg-white text-slate-950 border-purple-600'
+                                }`}
+                              >
+                                {player.jersey_number || idx + 1}
+                              </div>
+                              <span className="mt-0.5 text-[8px] font-extrabold text-white bg-black/85 px-1 py-0.2 rounded border border-white/20 whitespace-nowrap max-w-[65px] truncate pointer-events-none shadow">
+                                {player.is_captain && <span className="text-amber-300 mr-0.5">©</span>}
+                                {formatPlayerDisplayName(player.player_name, true)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -1239,26 +1424,47 @@ export default function LineupPosterGenerator({
                     })}
                   </div>
                 ) : (
-                  /* Tactical Pitch Board Preview */
-                  <div className="relative my-auto h-[55%] rounded-xl bg-emerald-900/60 border border-emerald-400/40 p-1 flex flex-col justify-between overflow-hidden">
+                  /* Tactical Pitch Board Preview (Interactive Drag & Drop) */
+                  <div
+                    ref={previewPitchRef}
+                    className="relative my-auto h-[55%] rounded-xl bg-gradient-to-b from-[#064E3B] to-[#042F2E] border border-emerald-400/40 p-1 flex flex-col justify-between overflow-hidden select-none touch-none"
+                  >
                     {/* Pitch markings */}
-                    <div className="absolute inset-x-0 top-1/2 h-[1px] bg-white/30" />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-white/30" />
+                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1px] bg-white/30 pointer-events-none" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-white/30 pointer-events-none" />
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-5 border-b border-x border-white/25 pointer-events-none" />
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-5 border-t border-x border-white/25 pointer-events-none" />
 
-                    {/* Formations positions */}
-                    {FORMATIONS[formationKey]?.positions.slice(0, starters.length).map((pos, i) => {
-                      const p = starters[i];
-                      if (!p) return null;
+                    {/* Formations positions (Supports live drag & drop) */}
+                    {starters.slice(0, 11).map((p, i) => {
+                      const defaultPos = FORMATIONS[formationKey]?.positions[i] || { x: 50, y: 50 };
+                      const pos = customPositions[i] || defaultPos;
+                      const isDragging = activeDragIndex === i && activeBoard === 'preview';
+                      const isGK = p.is_goalkeeper || i === 0;
+
                       return (
                         <div
                           key={i}
-                          className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center"
+                          onPointerDown={(e) => handlePointerDown(e, i, 'preview')}
+                          onPointerMove={(e) => handlePointerMove(e, i, 'preview')}
+                          onPointerUp={(e) => handlePointerUp(e, i)}
+                          onPointerCancel={(e) => handlePointerUp(e, i)}
+                          className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-grab active:cursor-grabbing transition-transform ${
+                            isDragging ? 'scale-125 z-40' : 'hover:scale-110 z-20'
+                          }`}
                           style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
                         >
-                          <div className="w-4 h-4 rounded-full bg-white text-slate-950 font-black text-[8px] flex items-center justify-center shadow">
+                          <div
+                            className={`w-4 h-4 rounded-full font-black text-[8px] flex items-center justify-center shadow ${
+                              isGK
+                                ? 'bg-amber-400 text-black border border-white'
+                                : 'bg-white text-slate-950 border border-purple-600'
+                            }`}
+                          >
                             {p.jersey_number || i + 1}
                           </div>
-                          <span className="text-[7px] font-bold text-white bg-black/70 px-1 rounded truncate max-w-[50px]">
+                          <span className="text-[7px] font-bold text-white bg-black/80 px-1 rounded truncate max-w-[50px] pointer-events-none mt-0.5">
+                            {p.is_captain && <span className="text-amber-300 mr-0.5">©</span>}
                             {formatPlayerDisplayName(p.player_name, true)}
                           </span>
                         </div>
