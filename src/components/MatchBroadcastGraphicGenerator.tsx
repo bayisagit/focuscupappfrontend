@@ -103,11 +103,19 @@ export default function MatchBroadcastGraphicGenerator({
     isMatchCompleted ? 'FINAL' : 'LIVE'
   );
 
-  // Match state controls
+  // Dynamic match events fetching
+  const [fetchedEvents, setFetchedEvents] = useState<any[] | null>(null);
+  const [isRefreshingEvents, setIsRefreshingEvents] = useState<boolean>(false);
+
+  // Quick Add manual scorer state
+  const [quickAddTeam, setQuickAddTeam] = useState<'home' | 'away'>('home');
+  const [quickAddPlayerName, setQuickAddPlayerName] = useState<string>('');
+  const [quickAddMinute, setQuickAddMinute] = useState<string>('');
+
   const [liveMinute, setLiveMinute] = useState<number>(() => {
     if (isMatchCompleted) return 90;
     const goalMinutes = (match.events || [])
-      .filter((e) => e.event_type === 'GOAL')
+      .filter((e) => (e.event_type || '').toUpperCase() === 'GOAL')
       .map((e) => e.minute);
     return goalMinutes.length > 0 ? Math.max(...goalMinutes) : 45;
   });
@@ -115,27 +123,89 @@ export default function MatchBroadcastGraphicGenerator({
   const [homeScoreState, setHomeScoreState] = useState<number>(match.home_score || 0);
   const [awayScoreState, setAwayScoreState] = useState<number>(match.away_score || 0);
 
+  // Fetch full match detail & events whenever modal opens or match id changes
+  const refreshEvents = async () => {
+    if (!match?.id) return;
+    setIsRefreshingEvents(true);
+    try {
+      const detailed = await api.matches.getDetail(match.id);
+      if (detailed) {
+        if (Array.isArray(detailed.events)) {
+          setFetchedEvents(detailed.events);
+        }
+        if (detailed.home_score !== undefined) setHomeScoreState(detailed.home_score);
+        if (detailed.away_score !== undefined) setAwayScoreState(detailed.away_score);
+      }
+    } catch (err) {
+      console.warn('Could not refresh match events in graphic generator:', err);
+    } finally {
+      setIsRefreshingEvents(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && match?.id) {
+      refreshEvents();
+    }
+  }, [isOpen, match?.id]);
+
+  // Sync state if match prop score changes
+  useEffect(() => {
+    if (match.home_score !== undefined) setHomeScoreState(match.home_score);
+    if (match.away_score !== undefined) setAwayScoreState(match.away_score);
+  }, [match.home_score, match.away_score]);
+
+  // Active events list
+  const effectiveEvents = useMemo(() => {
+    if (Array.isArray(fetchedEvents) && fetchedEvents.length > 0) return fetchedEvents;
+    if (Array.isArray(match.events) && match.events.length > 0) return match.events;
+    return fetchedEvents || match.events || [];
+  }, [fetchedEvents, match.events]);
+
   // Extract goal scorers from match events
   const computedGoalScorers = useMemo(() => {
     const homeGoals: string[] = [];
     const awayGoals: string[] = [];
 
-    const sortedEvents = [...(match.events || [])].sort((a, b) => a.minute - b.minute);
+    const sortedEvents = [...effectiveEvents].sort(
+      (a, b) => (Number(a.minute) || 0) - (Number(b.minute) || 0)
+    );
 
     sortedEvents.forEach((evt) => {
-      if (evt.event_type === 'GOAL') {
-        const pName = formatPlayerDisplayName(evt.player_name || 'Player', false);
-        const formatted = `${pName} ${evt.minute}'`;
-        if (Number(evt.team_id) === Number(match.home_team.id)) {
+      const evtType = (evt.event_type || '').toUpperCase();
+      if (evtType !== 'GOAL' && evtType !== 'OWN_GOAL') return;
+
+      // Extract player name safely
+      let playerName = evt.player_name;
+      const pId = evt.player_id ?? evt.player;
+      if (!playerName && pId) {
+        const found = eligiblePlayers.find((p) => String(p.id) === String(pId));
+        if (found) playerName = found.full_name;
+      }
+      if (!playerName && evt.description) {
+        playerName = evt.description;
+      }
+      const pName = formatPlayerDisplayName(playerName || 'Player', false);
+      const minText = evt.minute ? `${evt.minute}'` : '';
+
+      // Determine whether this event belongs to Home or Away
+      const evtTeamId = Number(evt.team_id ?? evt.team);
+      const isHome =
+        evtTeamId === Number(match.home_team.id) ||
+        evt.team_batch === match.home_team.batch_code ||
+        evt.team_name === match.home_team.name;
+
+      if (evtType === 'GOAL') {
+        const formatted = `${pName} ${minText}`.trim();
+        if (isHome) {
           homeGoals.push(formatted);
         } else {
           awayGoals.push(formatted);
         }
-      } else if (evt.event_type === 'OWN_GOAL') {
-        const pName = formatPlayerDisplayName(evt.player_name || 'Player', false);
-        const formatted = `${pName} (OG) ${evt.minute}'`;
+      } else if (evtType === 'OWN_GOAL') {
+        const formatted = `${pName} (OG) ${minText}`.trim();
         // Own goal credits to opposing team
-        if (Number(evt.team_id) === Number(match.home_team.id)) {
+        if (isHome) {
           awayGoals.push(formatted);
         } else {
           homeGoals.push(formatted);
@@ -144,18 +214,32 @@ export default function MatchBroadcastGraphicGenerator({
     });
 
     return { home: homeGoals, away: awayGoals };
-  }, [match.events, match.home_team.id]);
+  }, [effectiveEvents, match.home_team, eligiblePlayers]);
 
-  const [customHomeGoalScorer, setCustomHomeGoalScorer] = useState<string>('');
-  const [customAwayGoalScorer, setCustomAwayGoalScorer] = useState<string>('');
   const [homeScorersList, setHomeScorersList] = useState<string[]>(computedGoalScorers.home);
   const [awayScorersList, setAwayScorersList] = useState<string[]>(computedGoalScorers.away);
 
-  // Sync scorers when match events change
+  // Sync scorers whenever computed events change
   useEffect(() => {
     setHomeScorersList(computedGoalScorers.home);
     setAwayScorersList(computedGoalScorers.away);
   }, [computedGoalScorers]);
+
+  // Quick Add handler to append scorer directly to graphic
+  const handleQuickAddScorer = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!quickAddPlayerName.trim()) return;
+    const minSuffix = quickAddMinute ? ` ${quickAddMinute}'` : '';
+    const formatted = `${formatPlayerDisplayName(quickAddPlayerName.trim(), false)}${minSuffix}`;
+
+    if (quickAddTeam === 'home') {
+      setHomeScorersList((prev) => [...prev, formatted]);
+    } else {
+      setAwayScorersList((prev) => [...prev, formatted]);
+    }
+    setQuickAddPlayerName('');
+    setQuickAddMinute('');
+  };
 
   // POTM selection
   const [selectedPotmId, setSelectedPotmId] = useState<string>(() => {
@@ -920,6 +1004,118 @@ export default function MatchBroadcastGraphicGenerator({
               </div>
             </div>
 
+            {/* Goal Scorers Controls */}
+            <div className="p-4 rounded-2xl bg-[#161D36] border border-[#2C3960] space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-300 block uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="text-sm">⚽</span>
+                  Goal Scorers on Graphic
+                </label>
+                <button
+                  type="button"
+                  onClick={refreshEvents}
+                  disabled={isRefreshingEvents}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 text-[10px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors border border-emerald-500/30 disabled:opacity-50"
+                  title="Reload goal events from match database"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isRefreshingEvents ? 'animate-spin' : ''}`} />
+                  <span>Sync Events</span>
+                </button>
+              </div>
+
+              {/* Display current scorers with quick remove */}
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {/* Home Scorers */}
+                <div className="space-y-1.5 p-2.5 rounded-xl bg-[#0B132B] border border-[#2C3960]">
+                  <p className="text-[10px] font-bold text-indigo-300 uppercase truncate">
+                    {match.home_team.name} ({homeScorersList.length})
+                  </p>
+                  {homeScorersList.length === 0 ? (
+                    <p className="text-[10px] text-slate-500 italic py-1 text-center">No goals</p>
+                  ) : (
+                    homeScorersList.map((scorer, i) => (
+                      <div key={i} className="flex items-center justify-between bg-slate-900/90 px-2 py-1 rounded-lg text-[11px] text-white border border-[#2C3960]/40">
+                        <span className="truncate font-semibold">{scorer} ⚽</span>
+                        <button
+                          type="button"
+                          onClick={() => setHomeScorersList((list) => list.filter((_, idx) => idx !== i))}
+                          className="text-slate-400 hover:text-rose-400 ml-1 cursor-pointer font-bold"
+                          title="Remove from graphic"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Away Scorers */}
+                <div className="space-y-1.5 p-2.5 rounded-xl bg-[#0B132B] border border-[#2C3960]">
+                  <p className="text-[10px] font-bold text-purple-300 uppercase truncate">
+                    {match.away_team.name} ({awayScorersList.length})
+                  </p>
+                  {awayScorersList.length === 0 ? (
+                    <p className="text-[10px] text-slate-500 italic py-1 text-center">No goals</p>
+                  ) : (
+                    awayScorersList.map((scorer, i) => (
+                      <div key={i} className="flex items-center justify-between bg-slate-900/90 px-2 py-1 rounded-lg text-[11px] text-white border border-[#2C3960]/40">
+                        <span className="truncate font-semibold">⚽ {scorer}</span>
+                        <button
+                          type="button"
+                          onClick={() => setAwayScorersList((list) => list.filter((_, idx) => idx !== i))}
+                          className="text-slate-400 hover:text-rose-400 ml-1 cursor-pointer font-bold"
+                          title="Remove from graphic"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Add Scorer Form */}
+              <div className="pt-2 border-t border-[#2C3960]/60 space-y-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  + Add Goal Scorer to Graphic
+                </span>
+                <div className="grid grid-cols-12 gap-1.5 text-xs">
+                  <select
+                    value={quickAddTeam}
+                    onChange={(e) => setQuickAddTeam(e.target.value as 'home' | 'away')}
+                    className="col-span-4 px-2 py-1.5 rounded-lg bg-[#0B132B] border border-[#2C3960] text-white text-[11px] font-semibold"
+                  >
+                    <option value="home">{match.home_team.name.slice(0, 12)}</option>
+                    <option value="away">{match.away_team.name.slice(0, 12)}</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Player Name"
+                    value={quickAddPlayerName}
+                    onChange={(e) => setQuickAddPlayerName(e.target.value)}
+                    className="col-span-5 px-2 py-1.5 rounded-lg bg-[#0B132B] border border-[#2C3960] text-white text-[11px]"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Min'"
+                    min="1"
+                    max="120"
+                    value={quickAddMinute}
+                    onChange={(e) => setQuickAddMinute(e.target.value)}
+                    className="col-span-3 px-2 py-1.5 rounded-lg bg-[#0B132B] border border-[#2C3960] text-white text-[11px] text-center"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleQuickAddScorer}
+                  disabled={!quickAddPlayerName.trim()}
+                  className="w-full py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center gap-1 cursor-pointer transition-colors disabled:opacity-40"
+                >
+                  <span>+ Add Goal to Graphic</span>
+                </button>
+              </div>
+            </div>
+
             {/* Player of the Match Designation */}
             <div className="p-4 rounded-2xl bg-[#161D36] border border-[#2C3960] space-y-2">
               <div className="flex items-center justify-between">
@@ -1196,6 +1392,118 @@ export default function MatchBroadcastGraphicGenerator({
                   <span>@AASTU_FocusCup</span>
                   <span>@FocusFellowship</span>
                 </div>
+              </div>
+            </div>
+
+            {/* Goal Scorers Controls */}
+            <div className="p-4 rounded-2xl bg-[#161D36] border border-[#2C3960] space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-300 block uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="text-sm">⚽</span>
+                  Goal Scorers on Graphic
+                </label>
+                <button
+                  type="button"
+                  onClick={refreshEvents}
+                  disabled={isRefreshingEvents}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 text-[10px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors border border-emerald-500/30 disabled:opacity-50"
+                  title="Reload goal events from match database"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isRefreshingEvents ? 'animate-spin' : ''}`} />
+                  <span>Sync Events</span>
+                </button>
+              </div>
+
+              {/* Display current scorers with quick remove */}
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {/* Home Scorers */}
+                <div className="space-y-1.5 p-2.5 rounded-xl bg-[#0B132B] border border-[#2C3960]">
+                  <p className="text-[10px] font-bold text-indigo-300 uppercase truncate">
+                    {match.home_team.name} ({homeScorersList.length})
+                  </p>
+                  {homeScorersList.length === 0 ? (
+                    <p className="text-[10px] text-slate-500 italic py-1 text-center">No goals</p>
+                  ) : (
+                    homeScorersList.map((scorer, i) => (
+                      <div key={i} className="flex items-center justify-between bg-slate-900/90 px-2 py-1 rounded-lg text-[11px] text-white border border-[#2C3960]/40">
+                        <span className="truncate font-semibold">{scorer} ⚽</span>
+                        <button
+                          type="button"
+                          onClick={() => setHomeScorersList((list) => list.filter((_, idx) => idx !== i))}
+                          className="text-slate-400 hover:text-rose-400 ml-1 cursor-pointer font-bold"
+                          title="Remove from graphic"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Away Scorers */}
+                <div className="space-y-1.5 p-2.5 rounded-xl bg-[#0B132B] border border-[#2C3960]">
+                  <p className="text-[10px] font-bold text-purple-300 uppercase truncate">
+                    {match.away_team.name} ({awayScorersList.length})
+                  </p>
+                  {awayScorersList.length === 0 ? (
+                    <p className="text-[10px] text-slate-500 italic py-1 text-center">No goals</p>
+                  ) : (
+                    awayScorersList.map((scorer, i) => (
+                      <div key={i} className="flex items-center justify-between bg-slate-900/90 px-2 py-1 rounded-lg text-[11px] text-white border border-[#2C3960]/40">
+                        <span className="truncate font-semibold">⚽ {scorer}</span>
+                        <button
+                          type="button"
+                          onClick={() => setAwayScorersList((list) => list.filter((_, idx) => idx !== i))}
+                          className="text-slate-400 hover:text-rose-400 ml-1 cursor-pointer font-bold"
+                          title="Remove from graphic"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Add Scorer Form */}
+              <div className="pt-2 border-t border-[#2C3960]/60 space-y-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  + Add Goal Scorer to Graphic
+                </span>
+                <div className="grid grid-cols-12 gap-1.5 text-xs">
+                  <select
+                    value={quickAddTeam}
+                    onChange={(e) => setQuickAddTeam(e.target.value as 'home' | 'away')}
+                    className="col-span-4 px-2 py-1.5 rounded-lg bg-[#0B132B] border border-[#2C3960] text-white text-[11px] font-semibold"
+                  >
+                    <option value="home">{match.home_team.name.slice(0, 12)}</option>
+                    <option value="away">{match.away_team.name.slice(0, 12)}</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Player Name"
+                    value={quickAddPlayerName}
+                    onChange={(e) => setQuickAddPlayerName(e.target.value)}
+                    className="col-span-5 px-2 py-1.5 rounded-lg bg-[#0B132B] border border-[#2C3960] text-white text-[11px]"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Min'"
+                    min="1"
+                    max="120"
+                    value={quickAddMinute}
+                    onChange={(e) => setQuickAddMinute(e.target.value)}
+                    className="col-span-3 px-2 py-1.5 rounded-lg bg-[#0B132B] border border-[#2C3960] text-white text-[11px] text-center"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleQuickAddScorer}
+                  disabled={!quickAddPlayerName.trim()}
+                  className="w-full py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center gap-1 cursor-pointer transition-colors disabled:opacity-40"
+                >
+                  <span>+ Add Goal to Graphic</span>
+                </button>
               </div>
             </div>
           </div>

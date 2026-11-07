@@ -280,8 +280,23 @@ export default function FrontendAdminPage() {
           setSelectedMatch((prev: any) => {
             if (prev) {
               const found = list.find((m: any) => m.id === prev.id);
-              if (found) return found;
+              if (found) {
+                return {
+                  ...found,
+                  events: prev.events || found.events || [],
+                  home_squad: prev.home_squad || found.home_squad,
+                  away_squad: prev.away_squad || found.away_squad,
+                  player_of_the_match_details: prev.player_of_the_match_details || found.player_of_the_match_details,
+                };
+              }
             }
+            api.matches.getDetail(list[0].id).then((detailed: any) => {
+              if (detailed) {
+                setSelectedMatch(detailed);
+                setHomeScore(detailed.home_score);
+                setAwayScore(detailed.away_score);
+              }
+            }).catch(console.error);
             setHomeScore(list[0].home_score);
             setAwayScore(list[0].away_score);
             return list[0];
@@ -2033,7 +2048,20 @@ export default function FrontendAdminPage() {
                     <div className="flex flex-wrap items-center gap-3">
                       <button
                         type="button"
-                        onClick={() => setBroadcastGraphicOpen(true)}
+                        onClick={() => {
+                          if (selectedMatch?.id) {
+                            api.matches.getDetail(selectedMatch.id).then((detailed: any) => {
+                              if (detailed) {
+                                setSelectedMatch(detailed);
+                                setHomeScore(detailed.home_score);
+                                setAwayScore(detailed.away_score);
+                              }
+                              setBroadcastGraphicOpen(true);
+                            }).catch(() => setBroadcastGraphicOpen(true));
+                          } else {
+                            setBroadcastGraphicOpen(true);
+                          }
+                        }}
                         className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-md shadow-emerald-500/20 flex items-center gap-1.5 cursor-pointer transition-all"
                         title="Open Premier League Match Broadcast Graphic Studio"
                       >
