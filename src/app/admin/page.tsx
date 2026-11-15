@@ -166,6 +166,8 @@ export default function FrontendAdminPage() {
     minute: 45,
     description: '',
   });
+  const [isCustomPlayer, setIsCustomPlayer] = useState(false);
+  const [customPlayerName, setCustomPlayerName] = useState('');
 
   // Match operations sub-tabs in Tab 2
   const [matchSubTab, setMatchSubTab] = useState<'events' | 'squads'>('events');
@@ -863,11 +865,17 @@ export default function FrontendAdminPage() {
     if (!selectedMatch) return;
     const teamIdToUse = eventData.team_id || String(selectedMatch.home_team.id);
 
+    if (isCustomPlayer && !customPlayerName.trim()) {
+      alert('Please enter the unregistered player name.');
+      return;
+    }
+
     try {
       const res = await api.manager.addMatchEvent(selectedMatch.id, {
         event_type: eventData.event_type,
         team_id: Number(teamIdToUse),
-        player_id: eventData.player_id ? Number(eventData.player_id) : null,
+        player_id: isCustomPlayer ? null : (eventData.player_id ? Number(eventData.player_id) : null),
+        custom_player_name: isCustomPlayer ? customPlayerName.trim() : '',
         related_player_id: eventData.related_player_id ? Number(eventData.related_player_id) : null,
         minute: Number(eventData.minute) || 1,
         description: eventData.description,
@@ -879,6 +887,8 @@ export default function FrontendAdminPage() {
         related_player_id: '',
         description: '',
       }));
+      setCustomPlayerName('');
+      setIsCustomPlayer(false);
       loadMatches();
       loadDashboard();
       api.matches.getDetail(selectedMatch.id).then((detailed: any) => {
@@ -1919,26 +1929,69 @@ export default function FrontendAdminPage() {
                         return (
                           <>
                             <div>
-                              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                                Player ({currentTeam.name}) <span className="text-rose-400">*</span>
-                              </label>
-                              <select
-                                value={eventData.player_id}
-                                onChange={(e) => setEventData({ ...eventData, player_id: e.target.value })}
-                                required
-                                className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer"
-                              >
-                                <option value="">Select registered {currentTeam.name} player...</option>
-                                {currentBatchPlayers.length > 0 ? (
-                                  currentBatchPlayers.map((p) => (
-                                    <option key={p.id} value={p.id}>
-                                      #{p.preferred_jersey_number || '-'} {p.full_name} ({p.department ? `${p.department} · ` : ''}{p.primary_position || 'Player'})
-                                    </option>
-                                  ))
-                                ) : (
-                                  <option value="" disabled>No registered players found for {currentTeam.name}</option>
-                                )}
-                              </select>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="block text-[11px] font-semibold text-slate-300">
+                                  Player ({currentTeam.name}) <span className="text-rose-400">*</span>
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsCustomPlayer(!isCustomPlayer);
+                                    if (!isCustomPlayer) {
+                                      setEventData((prev) => ({ ...prev, player_id: '' }));
+                                    } else {
+                                      setCustomPlayerName('');
+                                    }
+                                  }}
+                                  className="text-[10px] text-purple-400 hover:text-purple-300 font-semibold underline cursor-pointer"
+                                >
+                                  {isCustomPlayer ? '📋 Select from Batch' : '✏️ Unregistered Player?'}
+                                </button>
+                              </div>
+                              {isCustomPlayer ? (
+                                <div className="space-y-1">
+                                  <input
+                                    type="text"
+                                    placeholder={`Type unregistered player name for ${currentTeam.name}...`}
+                                    value={customPlayerName}
+                                    onChange={(e) => setCustomPlayerName(e.target.value)}
+                                    required
+                                    autoFocus
+                                    className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-purple-500/50 text-xs text-white focus:outline-none focus:border-purple-400 placeholder:text-slate-500"
+                                  />
+                                  <p className="text-[10px] text-purple-300/80">
+                                    Player name will be recorded directly for {currentTeam.name}.
+                                  </p>
+                                </div>
+                              ) : (
+                                <select
+                                  value={eventData.player_id}
+                                  onChange={(e) => {
+                                    if (e.target.value === '__UNREGISTERED_CUSTOM__') {
+                                      setIsCustomPlayer(true);
+                                      setEventData((prev) => ({ ...prev, player_id: '' }));
+                                    } else {
+                                      setEventData({ ...eventData, player_id: e.target.value });
+                                    }
+                                  }}
+                                  required={!isCustomPlayer}
+                                  className="w-full px-3 py-2 rounded-xl bg-[#0B132B] border border-[#2C3960] text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                                >
+                                  <option value="">Select registered {currentTeam.name} player...</option>
+                                  {currentBatchPlayers.length > 0 ? (
+                                    currentBatchPlayers.map((p) => (
+                                      <option key={p.id} value={p.id}>
+                                        #{p.preferred_jersey_number || '-'} {p.full_name} ({p.department ? `${p.department} · ` : ''}{p.primary_position || 'Player'})
+                                      </option>
+                                    ))
+                                  ) : (
+                                    <option value="" disabled>No registered players found for {currentTeam.name}</option>
+                                  )}
+                                  <option value="__UNREGISTERED_CUSTOM__" className="text-purple-300 font-bold bg-[#161D36]">
+                                    ✏️ + Type Unregistered Player Name...
+                                  </option>
+                                </select>
+                              )}
                             </div>
 
                             <div>

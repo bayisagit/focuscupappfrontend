@@ -31,6 +31,8 @@ export default function ManagerMatchesPage() {
   const [eventType, setEventType] = useState('GOAL');
   const [eventTeamId, setEventTeamId] = useState<number | null>(null);
   const [eventPlayerId, setEventPlayerId] = useState<string>('');
+  const [isCustomPlayer, setIsCustomPlayer] = useState(false);
+  const [customPlayerName, setCustomPlayerName] = useState('');
   const [eventRelatedPlayerId, setEventRelatedPlayerId] = useState<string>('');
   const [eventMinute, setEventMinute] = useState('1');
   const [eventDesc, setEventDesc] = useState('');
@@ -119,13 +121,20 @@ export default function ManagerMatchesPage() {
   const handleRecordEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMatch || !eventTeamId) return;
+
+    if (isCustomPlayer && !customPlayerName.trim()) {
+      alert('Please enter the unregistered player name.');
+      return;
+    }
+
     setEventSubmitting(true);
 
     try {
       const res = await api.manager.addMatchEvent(selectedMatch.id, {
         event_type: eventType,
         team_id: eventTeamId,
-        player_id: eventPlayerId ? Number(eventPlayerId) : null,
+        player_id: isCustomPlayer ? null : (eventPlayerId ? Number(eventPlayerId) : null),
+        custom_player_name: isCustomPlayer ? customPlayerName.trim() : '',
         related_player_id: eventRelatedPlayerId ? Number(eventRelatedPlayerId) : null,
         minute: Number(eventMinute),
         description: eventDesc,
@@ -133,6 +142,8 @@ export default function ManagerMatchesPage() {
       alert(res.message);
       setEventDesc('');
       setEventPlayerId('');
+      setCustomPlayerName('');
+      setIsCustomPlayer(false);
       setEventRelatedPlayerId('');
       loadMatchDetails(selectedMatch.id);
       loadMatches();
@@ -361,21 +372,64 @@ export default function ManagerMatchesPage() {
                 {/* Player Selector strictly filtered to batch */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
-                      Player ({isHomeSelected ? selectedMatch.home_team.name : selectedMatch.away_team.name})
-                    </label>
-                    <select
-                      value={eventPlayerId}
-                      onChange={(e) => setEventPlayerId(e.target.value)}
-                      className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
-                    >
-                      <option value="">Select registered batch player...</option>
-                      {activeTeamPlayers.map((p) => (
-                        <option key={p.member_id} value={p.member_id}>
-                          #{p.jersey_number} {p.full_name} ({p.department ? `${p.department} · ` : ''}{p.position})
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase block">
+                        Player ({isHomeSelected ? selectedMatch.home_team.name : selectedMatch.away_team.name})
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomPlayer(!isCustomPlayer);
+                          if (!isCustomPlayer) {
+                            setEventPlayerId('');
+                          } else {
+                            setCustomPlayerName('');
+                          }
+                        }}
+                        className="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold underline cursor-pointer"
+                      >
+                        {isCustomPlayer ? '📋 Select Registered' : '✏️ Unregistered Player?'}
+                      </button>
+                    </div>
+                    {isCustomPlayer ? (
+                      <div className="space-y-1">
+                        <input
+                          type="text"
+                          placeholder={`Type unregistered player name for ${isHomeSelected ? selectedMatch.home_team.name : selectedMatch.away_team.name}...`}
+                          value={customPlayerName}
+                          onChange={(e) => setCustomPlayerName(e.target.value)}
+                          required
+                          autoFocus
+                          className="w-full bg-[#161D36] border border-emerald-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400 placeholder:text-slate-500"
+                        />
+                        <p className="text-[10px] text-emerald-300/80">
+                          Player name will be recorded directly for {isHomeSelected ? selectedMatch.home_team.name : selectedMatch.away_team.name}.
+                        </p>
+                      </div>
+                    ) : (
+                      <select
+                        value={eventPlayerId}
+                        onChange={(e) => {
+                          if (e.target.value === '__UNREGISTERED_CUSTOM__') {
+                            setIsCustomPlayer(true);
+                            setEventPlayerId('');
+                          } else {
+                            setEventPlayerId(e.target.value);
+                          }
+                        }}
+                        className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                      >
+                        <option value="">Select registered batch player...</option>
+                        {activeTeamPlayers.map((p) => (
+                          <option key={p.member_id} value={p.member_id}>
+                            #{p.jersey_number} {p.full_name} ({p.department ? `${p.department} · ` : ''}{p.position})
+                          </option>
+                        ))}
+                        <option value="__UNREGISTERED_CUSTOM__" className="text-emerald-300 font-bold bg-[#161D36]">
+                          ✏️ + Type Unregistered Player Name...
                         </option>
-                      ))}
-                    </select>
+                      </select>
+                    )}
                   </div>
 
                   <div>

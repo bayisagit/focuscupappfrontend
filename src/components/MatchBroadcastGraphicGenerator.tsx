@@ -68,6 +68,7 @@ export interface MatchBroadcastData {
     event_type: string;
     minute: number;
     player_name?: string;
+    custom_player_name?: string;
     team_id?: number | string;
     team_name?: string;
     player_photo?: string;
@@ -176,7 +177,7 @@ export default function MatchBroadcastGraphicGenerator({
       if (evtType !== 'GOAL' && evtType !== 'OWN_GOAL') return;
 
       // Extract player name safely
-      let playerName = evt.player_name;
+      let playerName = evt.player_name || evt.custom_player_name;
       const pId = evt.player_id ?? evt.player;
       if (!playerName && pId) {
         const found = eligiblePlayers.find((p) => String(p.id) === String(pId));
