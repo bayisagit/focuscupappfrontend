@@ -37,14 +37,16 @@ export default function GalleryPage() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<number | null>(() => (initialAlbums.length > 0 ? initialAlbums[0].id : null));
   const [caption, setCaption] = useState('');
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState('');
   const [quota, setQuota] = useState<any>({
     uploaded_count: 0,
     max_allowed: 3,
     is_manager: false,
     can_upload: true,
     remaining: 3,
+    batch_limit: 1,
   });
 
   // Former Gallery State (dynamically supports photo-16, photo-17, etc.)
@@ -103,47 +105,96 @@ export default function GalleryPage() {
       .catch((err) => console.error('Failed to load former photos from API', err));
   }, []);
 
+  const maxBatchLimit = quota.is_manager ? 10 : Math.max(1, 3 - (quota.uploaded_count || 0));
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const selected = Array.from(e.target.files);
+
+    const combined = [...files, ...selected];
+    const unique = combined.filter(
+      (f, idx, arr) =>
+        arr.findIndex(
+          (x) => x.name === f.name && x.size === f.size && x.lastModified === f.lastModified
+        ) === idx
+    );
+
+    if (unique.length > maxBatchLimit) {
+      alert(
+        `You can select up to ${maxBatchLimit} images at once${
+          quota.is_manager ? ' as a Tournament Manager' : ''
+        }. The first ${maxBatchLimit} images have been selected.`
+      );
+      setFiles(unique.slice(0, maxBatchLimit));
+    } else {
+      setFiles(unique);
+    }
+    e.target.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quota.can_upload) {
       alert('You have reached the maximum limit of 3 match photos.');
       return;
     }
-    if (!file || !selectedAlbum) {
-      alert('Please select an album and an image file.');
+    if (files.length === 0 || !selectedAlbum) {
+      alert('Please select an album and at least one image file.');
       return;
     }
+    if (files.length > maxBatchLimit) {
+      alert(`You can upload a maximum of ${maxBatchLimit} photos at once.`);
+      return;
+    }
+
     setUploading(true);
+    setUploadProgressText(`Preparing ${files.length} photo${files.length > 1 ? 's' : ''}...`);
+
     try {
       let payload: any;
       const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'bzr2e9rj';
       if (cloudName) {
-        const cloudRes = await uploadToCloudinary(file, 'focus_fellowship/matches');
+        const uploadedUrls: string[] = [];
+        for (let i = 0; i < files.length; i++) {
+          setUploadProgressText(`Uploading photo ${i + 1} of ${files.length} to Cloudinary CDN...`);
+          const cloudRes = await uploadToCloudinary(files[i], 'focus_fellowship/matches');
+          uploadedUrls.push(cloudRes.secure_url);
+        }
+
+        setUploadProgressText(`Saving ${uploadedUrls.length} photo${uploadedUrls.length > 1 ? 's' : ''} to tournament gallery...`);
         payload = {
           album: Number(selectedAlbum),
-          image_url: cloudRes.secure_url,
+          image_urls: uploadedUrls,
           caption: caption.trim(),
         };
       } else {
         const formData = new FormData();
         formData.append('album', selectedAlbum.toString());
-        formData.append('image', file);
-        if (caption) formData.append('caption', caption);
+        files.forEach((f) => {
+          formData.append('images', f);
+        });
+        if (caption) formData.append('caption', caption.trim());
         payload = formData;
       }
 
       const res = await api.community.uploadPhoto(payload);
-      alert(res?.message || 'Photo uploaded successfully!');
+      alert(res?.message || `Successfully uploaded ${files.length} photo${files.length > 1 ? 's' : ''}!`);
       setUploadModalOpen(false);
-      setFile(null);
+      setFiles([]);
       setCaption('');
+      setUploadProgressText('');
       apiCache.invalidate('/api/v1/community/gallery/');
       loadGallery(true);
       loadQuota();
     } catch (err: any) {
-      alert(err.data?.error || err.message || 'Failed to upload photo.');
+      alert(err.data?.error || err.message || 'Failed to upload photo(s).');
     } finally {
       setUploading(false);
+      setUploadProgressText('');
     }
   };
 
@@ -418,43 +469,72 @@ export default function GalleryPage() {
 
       {/* Upload Photo Modal */}
       {uploadModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="card-gloss max-w-md w-full p-6 rounded-3xl border border-[#2C3960] relative">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+          <div className="card-gloss max-w-lg w-full max-h-[92vh] flex flex-col p-5 sm:p-6 rounded-3xl border border-[#2C3960] relative overflow-hidden shadow-2xl">
             <button
-              onClick={() => setUploadModalOpen(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-white cursor-pointer"
+              onClick={() => {
+                if (!uploading) {
+                  setUploadModalOpen(false);
+                  setFiles([]);
+                  setCaption('');
+                }
+              }}
+              disabled={uploading}
+              className="absolute right-4 top-4 text-slate-400 hover:text-white cursor-pointer disabled:opacity-40"
             >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-base font-bold text-white mb-2">Share a Tournament Photo</h3>
-            
-            {/* Storage Limit Notice */}
-            <div className={`p-3 rounded-2xl mb-4 text-xs border ${
-              !quota.is_manager && quota.uploaded_count >= 3
-                ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-                : 'bg-[#161D36] border-[#2C3960] text-slate-300'
-            }`}>
-              <p className="font-semibold mb-1 flex items-center justify-between">
-                <span>Storage Conservation Policy</span>
-                <span className="font-mono text-[10px] text-emerald-400">
-                  {quota.is_manager ? 'Unlimited (Manager)' : `${quota.uploaded_count}/3 Used`}
-                </span>
-              </p>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                {!quota.is_manager && quota.uploaded_count >= 3
-                  ? 'You have reached the maximum allowed limit of 3 match photos to preserve database storage. Tournament directors handle broad match coverage.'
-                  : 'To prevent database storage from filling up, each fellowship member can post up to 3 match photos. Tournament managers have unlimited uploads.'}
-              </p>
+
+            <div className="flex items-center gap-2 mb-3">
+              <Camera className="w-5 h-5 text-emerald-400 shrink-0" />
+              <h3 className="text-base font-bold text-white">
+                {quota.is_manager ? 'Share Match Photos (Batch Upload)' : 'Share a Match Photo'}
+              </h3>
             </div>
 
-            <form onSubmit={handleUpload} className="space-y-4">
+            {/* Storage Limit & Batch Notice */}
+            {quota.is_manager ? (
+              <div className="p-3 rounded-2xl mb-4 text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 shrink-0">
+                <p className="font-semibold mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" /> Tournament Manager Upload
+                  </span>
+                  <span className="font-mono text-[10px] bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold">
+                    Up to 10 at once
+                  </span>
+                </p>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  As a tournament manager, you have unlimited storage and can upload <strong>up to 10 match photos simultaneously</strong> in a single batch!
+                </p>
+              </div>
+            ) : (
+              <div className={`p-3 rounded-2xl mb-4 text-xs border shrink-0 ${
+                !quota.can_upload
+                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                  : 'bg-[#161D36] border-[#2C3960] text-slate-300'
+              }`}>
+                <p className="font-semibold mb-1 flex items-center justify-between">
+                  <span>Storage Conservation Policy</span>
+                  <span className="font-mono text-[10px] text-emerald-400">
+                    {`${quota.uploaded_count}/3 Used`}
+                  </span>
+                </p>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {!quota.can_upload
+                    ? 'You have reached the maximum allowed limit of 3 match photos to preserve database storage. Tournament managers handle broad match coverage.'
+                    : `To preserve database storage, each fellowship member can post up to 3 match photos (you have ${Math.max(0, 3 - quota.uploaded_count)} slot(s) remaining). Tournament managers have unlimited batch uploads.`}
+                </p>
+              </div>
+            )}
+
+            <form onSubmit={handleUpload} className="space-y-4 overflow-y-auto pr-1 flex-1">
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">Target Album</label>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Target Match Album</label>
                 <select
                   value={selectedAlbum || ''}
                   onChange={(e) => setSelectedAlbum(Number(e.target.value))}
-                  disabled={!quota.can_upload}
-                  className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50"
+                  disabled={!quota.can_upload || uploading}
+                  className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50 cursor-pointer"
                   required
                 >
                   {safeAlbums.map((a) => (
@@ -464,47 +544,130 @@ export default function GalleryPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">Photo File</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-300">
+                    {quota.is_manager ? 'Select Match Photos (Up to 10)' : 'Select Match Photo'}
+                  </label>
+                  {files.length > 0 && (
+                    <span className="text-[11px] font-mono text-emerald-400 font-bold">
+                      {files.length} / {maxBatchLimit} selected
+                    </span>
+                  )}
+                </div>
+
                 <input
                   type="file"
                   accept="image/*"
-                  disabled={!quota.can_upload}
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 disabled:opacity-50"
-                  required
+                  multiple={maxBatchLimit > 1}
+                  disabled={!quota.can_upload || uploading}
+                  onChange={handleFileChange}
+                  className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 disabled:opacity-50 cursor-pointer"
                 />
+                {quota.is_manager && (
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Hold <kbd className="px-1 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[9px]">Ctrl</kbd> or <kbd className="px-1 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[9px]">Shift</kbd> to select up to 10 images at once.
+                  </p>
+                )}
               </div>
 
+              {/* Selected Thumbnails Grid */}
+              {files.length > 0 && (
+                <div className="space-y-1.5 p-3 rounded-2xl bg-[#0B132B] border border-[#2C3960]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                      <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+                      Selected Photos ({files.length}):
+                    </span>
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => setFiles([])}
+                      className="text-[10px] text-rose-400 hover:text-rose-300 underline cursor-pointer disabled:opacity-40"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 max-h-44 overflow-y-auto p-1">
+                    {files.map((f, idx) => (
+                      <div key={`${f.name}-${idx}`} className="relative group rounded-xl overflow-hidden aspect-square border border-[#2C3960]/80 bg-slate-900 shadow-sm">
+                        <img
+                          src={URL.createObjectURL(f)}
+                          alt={f.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1">
+                          <button
+                            type="button"
+                            disabled={uploading}
+                            onClick={() => removeFile(idx)}
+                            className="p-1 rounded-full bg-rose-600 text-white hover:bg-rose-500 transition-colors shadow-lg cursor-pointer"
+                            title="Remove photo"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-1 pointer-events-none">
+                          <p className="text-[9px] text-white truncate font-medium">{f.name}</p>
+                          <p className="text-[8px] text-slate-400 font-mono">{(f.size / (1024 * 1024)).toFixed(1)} MB</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">Caption / Description</label>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  Caption / Description {files.length > 1 ? '(Applies to all selected photos)' : '(Optional)'}
+                </label>
                 <input
                   type="text"
                   value={caption}
-                  disabled={!quota.can_upload}
+                  disabled={!quota.can_upload || uploading}
                   onChange={(e) => setCaption(e.target.value)}
-                  placeholder="e.g. 2nd Year post-match prayer circle"
+                  placeholder={files.length > 1 ? "e.g. 4th Year vs 5th Year Opening Match Highlights" : "e.g. 2nd Year post-match prayer circle"}
                   className="w-full bg-[#161D36] border border-[#2C3960] rounded-xl px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              {/* Upload Progress Status Indicator */}
+              {uploadProgressText && (
+                <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs flex items-center gap-2">
+                  <Spinner size="xs" color="purple" />
+                  <span className="font-medium">{uploadProgressText}</span>
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#2C3960]/60 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setUploadModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 cursor-pointer"
+                  disabled={uploading}
+                  onClick={() => {
+                    setUploadModalOpen(false);
+                    setFiles([]);
+                    setCaption('');
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 cursor-pointer disabled:opacity-40"
                 >
                   Close
                 </button>
                 <button
                   type="submit"
-                  disabled={uploading || !quota.can_upload}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  disabled={uploading || !quota.can_upload || files.length === 0}
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20"
                 >
-                  {uploading
-                    ? 'Uploading...'
-                    : !quota.can_upload
-                    ? 'Limit Reached (3/3)'
-                    : 'Upload Photo'}
+                  {uploading ? (
+                    <>
+                      <Spinner size="xs" color="slate" />
+                      <span>{uploadProgressText || 'Uploading...'}</span>
+                    </>
+                  ) : !quota.can_upload ? (
+                    'Limit Reached (3/3)'
+                  ) : files.length > 1 ? (
+                    `Upload ${files.length} Photos`
+                  ) : (
+                    'Upload Photo'
+                  )}
                 </button>
               </div>
             </form>
